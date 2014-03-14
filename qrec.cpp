@@ -47,13 +47,24 @@ QRec::QRec(QObject *parent) :
     connect(probe,SIGNAL(flush()),this,SLOT(redirectFlushed()));
 }
 
-QStringList QRec::getDevicesList(QAudio::Mode type = QAudio::AudioOutput) {
+QStringList QRec::getDevicesList(QAudio::Mode type) {
     QStringList devices;
     foreach (const QAudioDeviceInfo &deviceInfo, QAudioDeviceInfo::availableDevices(type)) {
         devices << deviceInfo.deviceName();
     }
     return devices;
 }
+QStringList QRec::getDevicesList() {
+    QStringList names;
+    QList<QAudioDeviceInfo> devices = this->getAllAudioDevice();
+    QList<QAudioDeviceInfo>::iterator i;
+    for (i = devices.begin();i != devices.end();i++) {
+        QAudioDeviceInfo &x = *i;
+        names << x.deviceName();
+    }
+    return QStringList();
+}
+
 void QRec::listDevices() {
     //this function just list devices by names
     int count = 0;
@@ -74,9 +85,6 @@ void QRec::volumeChanged(qreal volume) {
 void QRec::deviceChanged(QString newDevice) {
     qDebug() << "Device changed, new device: " + newDevice;
 }
-void QRec::setCodec(const QString codec) {
-    this->codec = codec;
-}
 void QRec::setTargetFilePath(const QString filePath) {
     targetFile.setFileName(filePath);
     currentTargetMode = QRec::File;
@@ -85,7 +93,7 @@ bool QRec::isRecording() {
     return bIsRecording;
 }
 bool QRec::setSourceId(const int deviceId) {
-    QStringList devices = this->getDevicesList(QAudio::AudioInput);
+    QStringList devices = this->getDevicesList(QAudio::AudioOutput);
     qDebug() << devices;
     if (devices.isEmpty()) return false;
     if (deviceId >= devices.count()) return false;
@@ -151,37 +159,31 @@ QStringList QRec::getSupportedSamplesRates() {
 void QRec::deviceStateChanged(QAudio::State state) {
     qDebug() << "Device state changed: " << state;
 }
-
-bool QRec::setSampleRate(const int sampleRate) {
-    if (currentSourceInfo.supportedSampleRates().contains(sampleRate)) {
-        this->sampleRate = sampleRate;
-        return true;
-    }
-    return false;
-}
 void QRec::flusher() {
 
 }
 bool QRec::startRecAlt() {
     QAudioFormat format;
-    format.setChannelCount(channels);
-    format.setSampleSize(8);
-    format.setCodec(codec);
-    format.setSampleRate(sampleRate);
+    format.setChannelCount(config.channels);
+    format.setSampleSize(config.sampleSize);
+    format.setCodec(config.codec);
+    format.setSampleRate(config.sampleRate);
     format.setByteOrder(QAudioFormat::LittleEndian);
     format.setSampleType(QAudioFormat::UnSignedInt);
-    format.setSampleSize(8);
+    qDebug() << "requested format: " << format;
 
     QAudioDeviceInfo info = getAudioDeviceByName(source);
+    qDebug() << "info ready";
 
     //QAudioDeviceInfo info = QAudioDeviceInfo::defaultInputDevice();
 
+    qDebug() << "supported channels:" << info.supportedChannelCounts();
     qDebug() << "Selected device: " + info.deviceName();
     if (!info.isFormatSupported(format)) {
         qDebug() << "default format not supported try to use nearest";
         qDebug() << info.supportedChannelCounts() << info.supportedCodecs() << info.supportedSampleSizes();
         format = info.nearestFormat(format);
-        qDebug() << format;
+        qDebug() << "selected:" << format;
     }
 
     readedData = 0;
@@ -272,7 +274,7 @@ QList<QAudioDeviceInfo> QRec::getAllAudioDevice() {
     QList<QAudioDeviceInfo> devices;
     QList<QAudio::Mode> states;
     states << QAudio::AudioInput;
-    states << QAudio::AudioOutput;
+    //states << QAudio::AudioOutput;
     foreach (QAudio::Mode currentState,states) {
         foreach (const QAudioDeviceInfo deviceInfo, QAudioDeviceInfo::availableDevices(currentState)) {
             devices.append(deviceInfo);
@@ -292,7 +294,8 @@ QAudioDeviceInfo QRec::getAudioDeviceByName(const QString name) {
     QList<QAudioDeviceInfo> devices = this->getAllAudioDevice();
     QStringList devicesNames = this->getAllAudioDevicesNames();
     const int pos = devicesNames.indexOf(name);
-    if (pos >= devices.count()) return devices.first();
+    if (pos < 0) return QAudioDeviceInfo::defaultInputDevice();
+    if (pos > devices.count()) return devices.first();
     return devices.at(pos);
 }
 void QRec::setAudioOutput(QIODevice *output) {
@@ -340,6 +343,7 @@ bool QRec::setTargetTcp(const QString host, const int port) {
     devOut = tcp;
     this->currentTargetMode = QRec::Tcp;
     connect(tcp,SIGNAL(disconnected()),this,SLOT(tcpDisconnect()));
+    connect(tcp,SIGNAL(connected()),this,SLOT(tcpTargetConnected()));
     return true;
 }
 void QRec::tcpDisconnect() {
@@ -371,16 +375,19 @@ void QRec::tcpSourceDisconnected() {
     currentSourceMode = QRec::Undefined;
     this->stopRec();
 }
-bool QRec::setChannelNumber(const int channels) {
-    if ((channels > currentSourceInfo.supportedChannelCounts().last()) || (channels <= 0)) return false;
-    this->channels =  channels;
-    qDebug() << "new channels number: " << channels;
-    return true;
-}
 int QRec::getMaxChannelsCount() {
     return currentSourceInfo.supportedChannelCounts().last();
 }
 void QRec::setTcpOutputBuffer(const int bufferTimeInMs) {
     if (!bufferTimeInMs) this->tcpOutputBufferSize = 0;
     else this->tcpOutputBufferSize = (int) 1500 / (bufferTimeInMs / 1000);
+}
+void QRec::tcpTargetConnected() {
+    emit(targetConnected());
+}
+void QRec::setUserConfig(userConfig config) {
+    this->config = config;
+}
+quint64 QRec::getReadedData() {
+    return readedData;
 }

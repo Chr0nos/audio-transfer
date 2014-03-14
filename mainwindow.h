@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTimer>
 #include "qrec.h"
 
 namespace Ui {
@@ -15,6 +16,8 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+    QRec *rec;
+    QString wsize(const quint64 size);
 
 private slots:
     void on_refreshSources_clicked();
@@ -26,10 +29,16 @@ private slots:
     void on_sourcesList_currentIndexChanged(int index);
     void refreshEnabledSources();
     void refreshEnabledDestinations();
+    void tcpTargetConnected();
+    void refreshReadedData();
+
+public slots:
 
 private:
     Ui::MainWindow *ui;
-    QRec *rec;
+    QTimer *timer;
+    quint64 lastReadedValue;
 };
+
 
 #endif // MAINWINDOW_H

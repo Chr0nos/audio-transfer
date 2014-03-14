@@ -3,6 +3,7 @@
 #include "qrec.h"
 #include <QtMultimedia/QAudioOutput>
 #include <QFileDialog>
+#include <QTimer>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -10,6 +11,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     rec = new QRec(this);
+    timer = new QTimer(this);
+    timer->setInterval(1000);
     connect(rec,SIGNAL(stoped()),this,SLOT(recStoped()));
     on_refreshSources_clicked();
     ui->destinationDeviceCombo->addItems(rec->getDevicesList(QAudio::AudioOutput));
@@ -19,10 +22,14 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->destinationDeviceRadio,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
+    connect(rec,SIGNAL(targetConnected()),this,SLOT(tcpTargetConnected()));
+    connect(timer,SIGNAL(timeout()),this,SLOT(refreshReadedData()));
+
 }
 
 MainWindow::~MainWindow()
 {
+    delete rec;
     delete ui;
 }
 
@@ -37,20 +44,28 @@ void MainWindow::on_pushButton_clicked()
 {
     //record button.
     if (!rec->isRecording()) {
+        QRec::userConfig config;
+        config.channels = ui->channelsCount->value();
+        config.sampleRate = ui->samplesRates->currentText().toInt();
+        config.sampleSize = 16;
+        config.codec = ui->codecList->currentText();
+        rec->setUserConfig(config);
+
         if (ui->sourceRadioFile->isChecked()) {
             qDebug() << "ui: file source mode";
             rec->setSourceFilePath(ui->sourceFilePath->text());
         }
         else if (ui->sourceRadioDevice->isChecked()) {
-            rec->setSourceId(ui->sourcesList->currentIndex());
+            if (rec->setSourceId(ui->sourcesList->currentIndex())) ui->statusBar->showMessage("Source device opened",3000);
+            else {
+                ui->statusBar->showMessage("error: cannot open source device",3000);
+                return;
+            }
         }
         else if (ui->sourceRadioTcp->isChecked()) {
             rec->setSourceTcp(ui->sourceTcpHostAllowed->text(),ui->sourceTcpHostPort->value());
             rec->setTcpOutputBuffer(ui->destinationTcpBufferDuration->value());
         }
-
-        rec->setCodec(ui->codecList->currentText());
-        rec->setChannelNumber(ui->channelsCount->value());
 
         if (ui->destinationRadioFile->isChecked()) {
             rec->setTargetFilePath(ui->destinationFilePath->text());
@@ -88,9 +103,11 @@ void MainWindow::on_pushButton_clicked()
 
         }
 
-        rec->setSampleRate(ui->samplesRates->currentText().toInt());
-
-        if (rec->startRecAlt()) ui->pushButton->setText("Stop");
+        if (rec->startRecAlt()) {
+            ui->pushButton->setText("Stop");
+            lastReadedValue = 0;
+            timer->start();
+        }
         else ui->statusBar->showMessage("Failed to open the source device.",3000);
     }
     else {
@@ -129,6 +146,7 @@ void MainWindow::on_browseSourceFilePath_clicked()
 
 
 void MainWindow::recStoped() {
+    timer->stop();
     ui->statusBar->showMessage("Record stoped",3000);
     ui->pushButton->setText("Record");
 }
@@ -154,7 +172,7 @@ void MainWindow::on_sourcesList_currentIndexChanged(int index)
         rec->setSourceId(index);
         ui->samplesRates->addItems(rec->getSupportedSamplesRates());
         ui->codecList->addItems(rec->getSupportedCodec());
-        ui->channelsCount->setMaximum(rec->getMaxChannelsCount());
+        //ui->channelsCount->setMaximum(rec->getMaxChannelsCount());
     }
 }
 void MainWindow::refreshEnabledSources() {
@@ -195,4 +213,23 @@ void MainWindow::refreshEnabledDestinations() {
         ui->destinationTcpSocket->setEnabled(true);
         ui->destinationTcpBufferDuration->setEnabled(true);
     }
+}
+void MainWindow::tcpTargetConnected() {
+    ui->statusBar->showMessage("Target connected",3000);
+}
+void MainWindow::refreshReadedData() {
+    quint64 readed = rec->getReadedData();
+    int speed = readed - lastReadedValue;
+    ui->statusBar->showMessage("Readed data: " + wsize(rec->getReadedData()) + " - speed: " + wsize(speed) + "/s");
+
+    lastReadedValue = rec->getReadedData();
+}
+QString MainWindow::wsize(const quint64 size) {
+    double isize = size;
+    QStringList keys;
+    keys << "o" << "Kb" << "Mb" << "Gb" << "Tb" << "Pb" << "Eb" << "Zb" << "Yb";
+    int n;
+    for (n = 0;isize >= 1024;n++) isize = isize / 1024;
+    if (n >= keys.count()) n = keys.count() -1;
+    return QString::number(isize,10,2) + keys.at(n);
 }

@@ -18,15 +18,22 @@ class QRec : public QObject
 {
     Q_OBJECT
 public:
+    enum Mode {File = 0,Device = 1,Tcp = 2,Undefined = 3};
+    struct userConfig {
+        int channels;
+        int sampleRate;
+        int sampleSize;
+        QString codec;
+    };
+
     explicit QRec(QObject *parent = 0);
     QStringList getDevicesList(QAudio::Mode type);
+    QStringList getDevicesList();
     void listDevices();
-    void setCodec(const QString codec);
     void setTargetFilePath(const QString filePath);
     void setSourceFilePath(const QString filePath);
     bool isRecording();
     bool setSourceId(const int deviceId);
-    bool setSampleRate(const int sampleRate);
     QStringList getSupportedCodec();
     QStringList getSupportedSamplesRates();
     bool startRecAlt();
@@ -36,12 +43,12 @@ public:
     QStringList getAllAudioDevicesNames();
     QAudioDeviceInfo getAudioDeviceByName(const QString name);
     void setAudioOutput(QIODevice *output);
-    enum Mode {File = 0,Device = 1,Tcp = 2,Undefined = 3};
     bool setTargetTcp(const QString host,const int port);
     bool setSourceTcp(const QString authorisedHosts,const int port);
-    bool setChannelNumber(const int channels);
     int getMaxChannelsCount();
     void setTcpOutputBuffer(const int bufferTimeInMs);
+    void setUserConfig(userConfig config);
+    quint64 getReadedData();
 
 private:
     QString codec;
@@ -67,9 +74,11 @@ private:
     QAudioDeviceInfo currentSourceInfo;
     int tcpOutputBufferSize;
     QByteArray tcpOutputBuffer;
+    userConfig config;
 
 signals:
     void stoped();
+    void targetConnected();
 
 public slots:
     void redirectBuffer(QAudioBuffer buffer);
@@ -85,6 +94,7 @@ public slots:
     void tcpDisconnect();
     void tcpNewConnection();
     void tcpSourceDisconnected();
+    void tcpTargetConnected();
 };
 
 #endif // QREC_H
