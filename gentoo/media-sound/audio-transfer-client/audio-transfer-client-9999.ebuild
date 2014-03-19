@@ -25,5 +25,5 @@ src_compile() {
 
 src_install() {
         emake install DESTDIR="${D}" || die "Failed to install properly."
-        dobin audio-transfer-server
+        dobin audio-transfer-client
 }
