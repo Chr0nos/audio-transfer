@@ -55,7 +55,7 @@ void MainWindow::on_pushButton_clicked()
         QRec::userConfig config;
         config.channels = ui->channelsCount->value();
         config.sampleRate = ui->samplesRates->currentText().toInt();
-        config.sampleSize = 16;
+        config.sampleSize = ui->samplesSize->currentText().toInt();
         config.codec = ui->codecList->currentText();
         rec->setUserConfig(config);
 

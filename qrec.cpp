@@ -17,6 +17,7 @@ QRec::QRec(QObject *parent) :
     config.codec = "audio/pcm";
     config.sampleRate = 44100;
     config.channels = 2;
+    config.sampleSize = 8;
     readedData = 0;
     bIsRecording = false;
     devIn = 0;
