@@ -3,13 +3,9 @@
 
 #include <QObject>
 #include <QStringList>
-#include <QtMultimedia/QAudioBuffer>
-#include <QtMultimedia/QAudioProbe>
-#include <QtMultimedia/QAudioEncoderSettings>
 #include <QFile>
 #include <QtMultimedia/QAudioInput>
 #include <QTcpSocket>
-#include <QAudioDecoder>
 #include <QTcpServer>
 
 //todo: private: QByteArray tcpOutputBuffer;
@@ -36,6 +32,7 @@ public:
     bool setSourceId(const int deviceId);
     QStringList getSupportedCodec();
     QStringList getSupportedSamplesRates();
+    QStringList getSupportedSamplesSizes();
     bool startRecAlt();
     QAudioDeviceInfo getAudioDeviceById(const int id, QAudio::Mode type);
     QAudioDeviceInfo getAudioDeviceById(const int id);
@@ -51,14 +48,9 @@ public:
     quint64 getReadedData();
 
 private:
-    QString codec;
     QFile targetFile;
     QFile *sourceFile;
     QString source;
-    int sampleRate;
-    int channels;
-    QAudioProbe *probe;
-    QAudioEncoderSettings *audioSettings;
     QIODevice *devIn;
     QIODevice *devOut;
     quint64 readedData;
@@ -66,7 +58,6 @@ private:
     QTcpSocket *tcp;
     QAudioInput *audioInput;
     void decodeSourceFile (QFile *filePath);
-    QAudioDecoder *decoder;
     QRec::Mode currentSourceMode;
     QRec::Mode currentTargetMode;
     QTcpServer *tcpSourceServ;
@@ -81,7 +72,6 @@ signals:
     void targetConnected();
 
 public slots:
-    void redirectBuffer(QAudioBuffer buffer);
     void redirectFlushed();
     void volumeChanged(qreal volume);
     void deviceChanged(QString newDevice);
@@ -90,7 +80,6 @@ public slots:
     void deviceStateChanged(QAudio::State state);
     void readyRead();
     void capture();
-    void decodeReadReady();
     void tcpDisconnect();
     void tcpNewConnection();
     void tcpSourceDisconnected();

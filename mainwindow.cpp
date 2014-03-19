@@ -1,6 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "qrec.h"
+#include "manager.h"
+
+#include <QString>
 #include <QtMultimedia/QAudioOutput>
 #include <QFileDialog>
 #include <QTimer>
@@ -10,12 +13,16 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
     rec = new QRec(this);
+    manager = new Manager(this);
+
     timer = new QTimer(this);
     timer->setInterval(1000);
     connect(rec,SIGNAL(stoped()),this,SLOT(recStoped()));
     on_refreshSources_clicked();
-    ui->destinationDeviceCombo->addItems(rec->getDevicesList(QAudio::AudioOutput));
+    ui->destinationDeviceCombo->addItems(Manager::getDevicesNames(QAudio::AudioOutput));
+
     connect(ui->sourceRadioDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->sourceRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->sourceRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
@@ -30,13 +37,14 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete rec;
+    delete manager;
     delete ui;
 }
 
 void MainWindow::on_refreshSources_clicked()
 {
     ui->sourcesList->clear();
-    ui->sourcesList->addItems(rec->getAllAudioDevicesNames());
+    ui->sourcesList->addItems(Manager::getDevicesNames(QAudio::AudioInput));
 }
 
 
@@ -120,17 +128,19 @@ void MainWindow::on_sourcesList_currentTextChanged()
 {
     ui->codecList->clear();
     ui->samplesRates->clear();
+    ui->samplesSize->clear();
     if (ui->sourcesList->currentIndex() >= 0) {
+        ui->pushButton->setEnabled(true);
         ui->codecList->addItems(rec->getSupportedCodec());
         ui->codecList->setCurrentIndex(0);
-
+        ui->samplesSize->addItems(rec->getSupportedSamplesSizes());
         ui->samplesRates->addItems(rec->getSupportedSamplesRates());
 
         const int goodRatePos = ui->samplesRates->findText("44100");
         if (goodRatePos) ui->samplesRates->setCurrentIndex(goodRatePos);
         else ui->samplesRates->setCurrentIndex(ui->samplesRates->count() -1);
     }
-
+    else ui->pushButton->setEnabled(false);
 }
 
 void MainWindow::on_browseSourceFilePath_clicked()

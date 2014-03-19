@@ -7,7 +7,6 @@
 #include <QDataStream>
 #include <QtNetwork/QTcpSocket>
 #include <QtNetwork/QTcpServer>
-#include <QtMultimedia/QAudioDecoder>
 #include <QtMultimedia/QAudioOutput>
 #include <QtMultimedia/QAudioInput>
 #include <QtMultimedia/QAudioDeviceInfo>
@@ -15,9 +14,9 @@
 QRec::QRec(QObject *parent) :
     QObject(parent)
 {
-    codec = "audio/pcm";
-    sampleRate = 44100;
-    channels = 2;
+    config.codec = "audio/pcm";
+    config.sampleRate = 44100;
+    config.channels = 2;
     readedData = 0;
     bIsRecording = false;
     devIn = 0;
@@ -33,18 +32,8 @@ QRec::QRec(QObject *parent) :
     currentTargetMode = this->Undefined;
     currentSourceInfo = QAudioDeviceInfo::defaultInputDevice();
 
-    qDebug() << "Creating recorder. codec: " + codec;
-    audioSettings = new QAudioEncoderSettings;
-    audioSettings->setQuality(QMultimedia::VeryHighQuality);
-
     //defining the first output device found as the source by default
     this->source = this->getDevicesList(QAudio::AudioOutput).first();
-
-
-
-    probe = new QAudioProbe(this);
-    connect(probe,SIGNAL(audioBufferProbed(QAudioBuffer)),this,SLOT(redirectBuffer(QAudioBuffer)));
-    connect(probe,SIGNAL(flush()),this,SLOT(redirectFlushed()));
 }
 
 QStringList QRec::getDevicesList(QAudio::Mode type) {
@@ -72,9 +61,6 @@ void QRec::listDevices() {
     foreach (QString device, this->getDevicesList()) {
         qDebug() << count++ << ": Device name: " << device;
     }
-}
-void QRec::redirectBuffer(QAudioBuffer buffer) {
-    qDebug() << "Redirect buffer !" << buffer.byteCount();
 }
 void QRec::redirectFlushed() {
     qDebug() << "Flushed !";
@@ -151,9 +137,16 @@ QStringList QRec::getSupportedCodec() {
 QStringList QRec::getSupportedSamplesRates() {
     QStringList rates;
     foreach (int rate,currentSourceInfo.supportedSampleRates()) {
-        rates << QString().number(rate);
+        rates << QString::number(rate);
     }
     return rates;
+}
+QStringList QRec::getSupportedSamplesSizes() {
+    QStringList sizes;
+    foreach (int size,currentSourceInfo.supportedSampleSizes()) {
+        sizes << QString::number(size);
+    }
+    return sizes;
 }
 
 void QRec::deviceStateChanged(QAudio::State state) {
@@ -170,7 +163,6 @@ bool QRec::startRecAlt() {
     format.setSampleRate(config.sampleRate);
     format.setByteOrder(QAudioFormat::LittleEndian);
     format.setSampleType(QAudioFormat::UnSignedInt);
-    qDebug() << "requested format: " << format;
 
     QAudioDeviceInfo info = getAudioDeviceByName(source);
     qDebug() << "info ready";
@@ -183,7 +175,6 @@ bool QRec::startRecAlt() {
         qDebug() << "default format not supported try to use nearest";
         qDebug() << info.supportedChannelCounts() << info.supportedCodecs() << info.supportedSampleSizes();
         format = info.nearestFormat(format);
-        qDebug() << "selected:" << format;
     }
 
     readedData = 0;
@@ -204,13 +195,7 @@ bool QRec::startRecAlt() {
     }
     //if the source is a file: open the file, and set devIn point to sourceFile opened
     else {
-        qDebug() << "Setting file as source: " << sourceFile->fileName();
-        //if the sourcefile is already open but not readable: we close it !
-        if ((sourceFile->isOpen()) && (!sourceFile->isReadable())) sourceFile->close();
-        else sourceFile->open(QIODevice::ReadOnly);
-        devIn = sourceFile;
-        this->decodeSourceFile(sourceFile);
-    }
+        qDebug() << "Setting file as source: " << sourceFile->fileName();    }
 
     //if target is a file
     if (currentTargetMode == QRec::File) {
@@ -224,8 +209,11 @@ bool QRec::startRecAlt() {
     }
     else if (currentTargetMode == QRec::Device) qDebug() << "target device mode.";
     else if (currentTargetMode == QRec::Tcp) {
-        devOut = tcp;
         qDebug() << "target tcp mode";
+        devOut = tcp;
+        QTextStream out(tcp);
+        out << "samplerate:" << config.sampleRate << " samplesize:" << config.sampleSize << " channels:" << config.channels << endl;
+        qDebug() << "configuration sent";
     }
 
     if ((!devIn) || (!devOut)) {
@@ -302,26 +290,6 @@ void QRec::setAudioOutput(QIODevice *output) {
     devOut = output;
     this->currentTargetMode = QRec::Device;
 }
-
-void QRec::decodeSourceFile(QFile *filePath) {
-    QAudioFormat desiredFormat;
-    desiredFormat.setChannelCount(2);
-    desiredFormat.setCodec("audio/pcm");
-    desiredFormat.setSampleType(QAudioFormat::UnSignedInt);
-    desiredFormat.setSampleRate(sampleRate);
-    desiredFormat.setSampleSize(16);
-
-    decoder = new QAudioDecoder(this);
-    decoder->setAudioFormat(desiredFormat);
-    decoder->setSourceFilename(filePath->fileName());
-
-    if (!filePath->isOpen()) filePath->open(QIODevice::ReadOnly);
-    connect(decoder, SIGNAL(bufferReady()), this, SLOT(decodeReadReady()));
-    decoder->start();
-}
-void QRec::decodeReadReady() {
-    qDebug() << "ready to decode";
-}
 void QRec::setSourceFilePath(const QString filePath) {
     //segfault
     //if (sourceFile) delete(sourceFile);
@@ -354,7 +322,7 @@ bool QRec::setSourceTcp(const QString authorisedHosts, const int port) {
     //just to prevent the warning...
     if (authorisedHosts.isNull()) {}
     tcpSourceServ = new QTcpServer;
-    tcpSourceServ->listen(QHostAddress::AnyIPv4,port);
+    tcpSourceServ->listen(QHostAddress::Any,port);
     connect(tcpSourceServ,SIGNAL(newConnection()),this,SLOT(tcpNewConnection()));
     return true;
 }

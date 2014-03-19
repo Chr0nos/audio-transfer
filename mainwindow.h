@@ -3,7 +3,9 @@
 
 #include <QMainWindow>
 #include <QTimer>
+#include <QString>
 #include "qrec.h"
+#include "manager.h"
 
 namespace Ui {
 class MainWindow;
@@ -38,6 +40,7 @@ private:
     Ui::MainWindow *ui;
     QTimer *timer;
     quint64 lastReadedValue;
+    Manager *manager;
 };
 
 

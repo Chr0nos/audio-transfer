@@ -14,9 +14,13 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-        qrec.cpp
+        qrec.cpp \
+    manager.cpp \
+    devices.cpp
 
 HEADERS  += mainwindow.h \
-            qrec.h
+            qrec.h \
+    manager.h \
+    devices.h
 
 FORMS    += mainwindow.ui
