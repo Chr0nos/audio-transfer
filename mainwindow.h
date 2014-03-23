@@ -1,10 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-
 #include <QMainWindow>
 #include <QTimer>
 #include <QString>
-#include "qrec.h"
 #include "manager.h"
 
 namespace Ui {
@@ -18,7 +16,6 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    QRec *rec;
     QString wsize(const quint64 size);
 
 private slots:
@@ -34,8 +31,10 @@ private slots:
     void tcpTargetConnected();
     void refreshReadedData();
 
-public slots:
+    void on_refreshOutputDevices_clicked();
 
+public slots:
+    void errors(const QString error);
 private:
     Ui::MainWindow *ui;
     QTimer *timer;

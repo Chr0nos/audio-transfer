@@ -2,41 +2,80 @@
 #define MANAGER_H
 
 #include "devices.h"
+#include "tcpsink.h"
 
 #include <QObject>
 #include <QIODevice>
+#include <QAudioFormat>
+#include <QFile>
 
 class Manager : public QObject
 {
     Q_OBJECT
 public:
     enum Mode {File = 0,Device = 1,Tcp = 2,None = 3};
+    struct tcpConfig {
+        QString host;
+        int port;
+    };
+
     struct userConfig {
        Mode modeInput;
        Mode modeOutput;
        QString codec;
        int sampleRate;
        int sampleSize;
+       int channels;
+       tcpConfig tcpTarget;
+       struct devicesId {
+           int input;
+           int output;
+       };
+       devicesId devices;
+       QString filePathOutput;
+       QString filePathInput;
+       int bufferSize;
     };
 
     explicit Manager(QObject *parent = 0);
+    ~Manager();
     bool start();
     void stop();
     static QStringList getDevicesNames(QAudio::Mode mode);
+    void setUserConfig(userConfig cfg);
+    QString getAudioConfig();
+    quint64 getTransferedSize();
+    bool isRecording();
+    QAudioDeviceInfo getInputDeviceInfo();
+    static QStringList intListToQStringList(QList<int> source);
 
 private:
-    Mode modeInput;
-    Mode modeOutput;
+    userConfig config;
     bool openInput();
     bool openOutput();
     QIODevice *devIn;
     QIODevice *devOut;
-
+    QAudioFormat format;
+    TcpSink *tcpSink;
+    Devices in;
+    Devices out;
+    QFile *fileOut;
+    QFile *fileIn;
+    QByteArray buffer;
+    quint64 bytesCount;
+    int deviceIdIn;
+    int deviceIdOut;
+    bool bisRecording;
 
 signals:
-
+    void tcpTargetConnected();
+    void errors(const QString error);
+    void stoped();
 public slots:
-
+    void tcpTargetOpened();
+    void tcpTargetReady();
+    void tcpTargetDisconnected();
+    void transfer();
 };
 
 #endif // MANAGER_H

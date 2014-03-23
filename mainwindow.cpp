@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "qrec.h"
 #include "manager.h"
 
 #include <QString>
@@ -14,12 +13,11 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    rec = new QRec(this);
     manager = new Manager(this);
 
     timer = new QTimer(this);
     timer->setInterval(1000);
-    connect(rec,SIGNAL(stoped()),this,SLOT(recStoped()));
+    connect(manager,SIGNAL(stoped()),this,SLOT(recStoped()));
     on_refreshSources_clicked();
     ui->destinationDeviceCombo->addItems(Manager::getDevicesNames(QAudio::AudioOutput));
 
@@ -29,16 +27,19 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->destinationDeviceRadio,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
-    connect(rec,SIGNAL(targetConnected()),this,SLOT(tcpTargetConnected()));
+    connect(manager,SIGNAL(tcpTargetConnected()),this,SLOT(tcpTargetConnected()));
+    connect(manager,SIGNAL(errors(QString)),this,SLOT(errors(QString)));
     connect(timer,SIGNAL(timeout()),this,SLOT(refreshReadedData()));
 
 }
 
 MainWindow::~MainWindow()
 {
-    delete rec;
     delete manager;
     delete ui;
+}
+void MainWindow::errors(const QString error) {
+    ui->statusBar->showMessage(error,3000);
 }
 
 void MainWindow::on_refreshSources_clicked()
@@ -51,48 +52,30 @@ void MainWindow::on_refreshSources_clicked()
 void MainWindow::on_pushButton_clicked()
 {
     //record button.
-    if (!rec->isRecording()) {
-        QRec::userConfig config;
-        config.channels = ui->channelsCount->value();
-        config.sampleRate = ui->samplesRates->currentText().toInt();
-        config.sampleSize = ui->samplesSize->currentText().toInt();
-        config.codec = ui->codecList->currentText();
-        rec->setUserConfig(config);
+    if (!manager->isRecording()) {
+        Manager::userConfig mc;
+        mc.codec = ui->codecList->currentText();
+        mc.modeInput = Manager::None;
+        mc.modeOutput = Manager::None;
+        mc.sampleRate = ui->samplesRates->currentText().toInt();
+        mc.sampleSize = ui->samplesSize->currentText().toInt();
+        mc.channels = ui->channelsCount->value();
+        mc.filePathOutput = ui->sourceFilePath->text();
+        mc.devices.input = ui->sourcesList->currentIndex();
+        mc.devices.output = ui->destinationDeviceCombo->currentIndex();
+        mc.bufferSize = ui->destinationTcpBufferDuration->value() * 1.5;
 
         if (ui->sourceRadioFile->isChecked()) {
             qDebug() << "ui: file source mode";
-            rec->setSourceFilePath(ui->sourceFilePath->text());
+            mc.modeInput = Manager::File;
         }
-        else if (ui->sourceRadioDevice->isChecked()) {
-            if (rec->setSourceId(ui->sourcesList->currentIndex())) ui->statusBar->showMessage("Source device opened",3000);
-            else {
-                ui->statusBar->showMessage("error: cannot open source device",3000);
-                return;
-            }
-        }
-        else if (ui->sourceRadioTcp->isChecked()) {
-            rec->setSourceTcp(ui->sourceTcpHostAllowed->text(),ui->sourceTcpHostPort->value());
-            rec->setTcpOutputBuffer(ui->destinationTcpBufferDuration->value());
-        }
+        else if (ui->sourceRadioDevice->isChecked()) mc.modeInput = Manager::Device;
+        else if (ui->sourceRadioTcp->isChecked()) mc.modeInput = Manager::Tcp;
 
-        if (ui->destinationRadioFile->isChecked()) {
-            rec->setTargetFilePath(ui->destinationFilePath->text());
-            rec->startRecAlt();
-        }
+
+        if (ui->destinationRadioFile->isChecked()) mc.modeInput = Manager::File;
         else if (ui->destinationDeviceRadio->isChecked()) {
-            //this feature is EXPERIMENTAL, may memory leak, crash, and other dirty stuff: please future me: forgive me...
-            QAudioFormat format;
-            format.setChannelCount(ui->channelsCount->value());
-            format.setSampleRate(ui->samplesRates->currentText().toInt());
-            format.setCodec(ui->codecList->currentText());
-            QAudioDeviceInfo info = rec->getAudioDeviceById(ui->destinationDeviceCombo->currentIndex(),QAudio::AudioOutput);
-            if (!info.isFormatSupported(format)) {
-                format = info.nearestFormat(format);
-            }
-            QAudioOutput *audioOut = new QAudioOutput(info,format,this);
-            QIODevice *devOut = audioOut->start();
-
-            rec->setAudioOutput(devOut);
+            mc.modeOutput = Manager::Device;
             ui->statusBar->showMessage("redirecting from " + ui->sourcesList->currentText() + " to " + ui->destinationDeviceCombo->currentText());
         }
         else if (ui->destinationRadioTcp->isChecked()) {
@@ -106,12 +89,15 @@ void MainWindow::on_pushButton_clicked()
                 ui->statusBar->showMessage("Error: invalid port: refusing to connect");
                 return;
             }
+            mc.tcpTarget.host = host;
+            mc.tcpTarget.port = port;
+            mc.modeOutput = Manager::Tcp;
             ui->statusBar->showMessage("Connecting to " + host + " on port " + QString().number(port));
-            rec->setTargetTcp(host,port);
-
         }
 
-        if (rec->startRecAlt()) {
+
+        manager->setUserConfig(mc);
+        if (manager->start()) {
             ui->pushButton->setText("Stop");
             lastReadedValue = 0;
             timer->start();
@@ -119,7 +105,7 @@ void MainWindow::on_pushButton_clicked()
         else ui->statusBar->showMessage("Failed to open the source device.",3000);
     }
     else {
-        rec->stopRec();
+        manager->stop();
         ui->pushButton->setText("Record");
     }
 }
@@ -130,15 +116,16 @@ void MainWindow::on_sourcesList_currentTextChanged()
     ui->samplesRates->clear();
     ui->samplesSize->clear();
     if (ui->sourcesList->currentIndex() >= 0) {
+        QAudioDeviceInfo info = QAudioDeviceInfo::availableDevices(QAudio::AudioInput).at(ui->sourcesList->currentIndex());
         ui->pushButton->setEnabled(true);
-        ui->codecList->addItems(rec->getSupportedCodec());
+        ui->codecList->addItems(info.supportedCodecs());
         ui->codecList->setCurrentIndex(0);
-        ui->samplesSize->addItems(rec->getSupportedSamplesSizes());
-        ui->samplesRates->addItems(rec->getSupportedSamplesRates());
+        ui->samplesSize->addItems(Manager::intListToQStringList(info.supportedSampleSizes()));
+        ui->samplesRates->addItems(Manager::intListToQStringList(info.supportedSampleRates()));
 
-        const int goodRatePos = ui->samplesRates->findText("44100");
-        if (goodRatePos) ui->samplesRates->setCurrentIndex(goodRatePos);
-        else ui->samplesRates->setCurrentIndex(ui->samplesRates->count() -1);
+        //setting current config as the best possible
+        ui->samplesSize->setCurrentIndex(ui->samplesSize->count() -1);
+        ui->samplesRates->setCurrentIndex(ui->samplesRates->count() -1);
     }
     else ui->pushButton->setEnabled(false);
 }
@@ -179,9 +166,9 @@ void MainWindow::on_sourcesList_currentIndexChanged(int index)
     ui->samplesRates->clear();
     ui->codecList->clear();
     if (index >= 0) {
-        rec->setSourceId(index);
-        ui->samplesRates->addItems(rec->getSupportedSamplesRates());
-        ui->codecList->addItems(rec->getSupportedCodec());
+        QAudioDeviceInfo info = QAudioDeviceInfo::availableDevices(QAudio::AudioInput).at(ui->sourcesList->currentIndex());
+        ui->samplesRates->addItems(Manager::intListToQStringList(info.supportedSampleRates()));
+        ui->codecList->addItems(info.supportedCodecs());
         //ui->channelsCount->setMaximum(rec->getMaxChannelsCount());
     }
 }
@@ -211,9 +198,11 @@ void MainWindow::refreshEnabledDestinations() {
     ui->destinationTcpBufferDuration->setEnabled(false);
     ui->destinationTcpSocket->setEnabled(false);
     ui->destinationDeviceCombo->setEnabled(false);
+    ui->refreshOutputDevices->setEnabled(false);
 
     if (ui->destinationDeviceRadio->isChecked()) {
         ui->destinationDeviceCombo->setEnabled(true);
+        ui->refreshOutputDevices->setEnabled(true);
     }
     else if (ui->destinationRadioFile->isChecked()) {
         ui->destinationFilePath->setEnabled(true);
@@ -228,11 +217,11 @@ void MainWindow::tcpTargetConnected() {
     ui->statusBar->showMessage("Target connected",3000);
 }
 void MainWindow::refreshReadedData() {
-    quint64 readed = rec->getReadedData();
-    int speed = readed - lastReadedValue;
-    ui->statusBar->showMessage("Readed data: " + wsize(rec->getReadedData()) + " - speed: " + wsize(speed) + "/s");
+    quint64 size = manager->getTransferedSize();
+    int speed = size - lastReadedValue;
+    ui->statusBar->showMessage("Readed data: " + wsize(size) + " - speed: " + wsize(speed) + "/s");
 
-    lastReadedValue = rec->getReadedData();
+    lastReadedValue = size;
 }
 QString MainWindow::wsize(const quint64 size) {
     double isize = size;
@@ -243,3 +232,10 @@ QString MainWindow::wsize(const quint64 size) {
     if (n >= keys.count()) n = keys.count() -1;
     return QString::number(isize,10,2) + keys.at(n);
 }
+
+void MainWindow::on_refreshOutputDevices_clicked()
+{
+    ui->destinationDeviceCombo->clear();
+    ui->destinationDeviceCombo->addItems(Manager::getDevicesNames(QAudio::AudioOutput));
+}
+

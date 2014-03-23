@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>481</width>
-    <height>430</height>
+    <height>431</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -43,6 +43,9 @@
        </item>
        <item row="1" column="0">
         <widget class="QRadioButton" name="sourceRadioFile">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
          <property name="text">
           <string>file</string>
          </property>
@@ -67,6 +70,9 @@
        </item>
        <item row="2" column="0">
         <widget class="QRadioButton" name="sourceRadioTcp">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>Tcp listen</string>
          </property>
@@ -268,6 +274,16 @@
          </property>
          <property name="value">
           <number>50</number>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2">
+        <widget class="QPushButton" name="refreshOutputDevices">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>refresh</string>
          </property>
         </widget>
        </item>

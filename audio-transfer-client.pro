@@ -14,13 +14,16 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-        qrec.cpp \
     manager.cpp \
-    devices.cpp
+    devices.cpp \
+    comline.cpp \
+    tcpsink.cpp
 
 HEADERS  += mainwindow.h \
-            qrec.h \
     manager.h \
-    devices.h
+    devices.h \
+    main.h \
+    comline.h \
+    tcpsink.h
 
 FORMS    += mainwindow.ui
