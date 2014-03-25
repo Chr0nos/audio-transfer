@@ -134,7 +134,7 @@ void Manager::transfer() {
     if (bsize > config.bufferMaxSize) return;
     buffer.append(data);
     if (bsize >= config.bufferSize) {
-        //devOut << buffer;
+        devOut << buffer;
         buffer.remove(0,config.bufferSize);
     }
 }
