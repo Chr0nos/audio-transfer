@@ -35,6 +35,7 @@ public:
        QString filePathOutput;
        QString filePathInput;
        int bufferSize;
+       int bufferMaxSize;
     };
 
     explicit Manager(QObject *parent = 0);

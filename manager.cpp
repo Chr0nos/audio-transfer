@@ -129,10 +129,13 @@ void Manager::transfer() {
     }
     QByteArray data = devIn->readAll();
     bytesCount += data.size();
+    const int bsize = buffer.size();
+    //if the buffer size is too big: we just drop the datas to prevent memory overflow by this buffer
+    if (bsize > config.bufferMaxSize) return;
     buffer.append(data);
-    if (buffer.size() >= 75) {
-        devOut << buffer;
-        buffer.remove(0,75);
+    if (bsize >= config.bufferSize) {
+        //devOut << buffer;
+        buffer.remove(0,config.bufferSize);
     }
 }
 quint64 Manager::getTransferedSize() {

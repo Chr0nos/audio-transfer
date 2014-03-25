@@ -64,6 +64,7 @@ void MainWindow::on_pushButton_clicked()
         mc.devices.input = ui->sourcesList->currentIndex();
         mc.devices.output = ui->destinationDeviceCombo->currentIndex();
         mc.bufferSize = ui->destinationTcpBufferDuration->value() * 1.5;
+        mc.bufferMaxSize = 2097152; //2Mb
 
         if (ui->sourceRadioFile->isChecked()) {
             qDebug() << "ui: file source mode";
