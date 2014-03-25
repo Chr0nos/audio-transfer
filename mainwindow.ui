@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>481</width>
-    <height>431</height>
+    <height>401</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -65,42 +65,6 @@
         <widget class="QPushButton" name="refreshSources">
          <property name="text">
           <string>refresh</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QRadioButton" name="sourceRadioTcp">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="text">
-          <string>Tcp listen</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QLineEdit" name="sourceTcpHostAllowed">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="text">
-          <string>192.168.1.1</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="3">
-        <widget class="QSpinBox" name="sourceTcpHostPort">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="minimum">
-          <number>1</number>
-         </property>
-         <property name="maximum">
-          <number>65534</number>
-         </property>
-         <property name="value">
-          <number>1042</number>
          </property>
         </widget>
        </item>

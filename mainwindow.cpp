@@ -23,7 +23,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->sourceRadioDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->sourceRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
-    connect(ui->sourceRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->destinationDeviceRadio,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
@@ -71,7 +70,6 @@ void MainWindow::on_pushButton_clicked()
             mc.modeInput = Manager::File;
         }
         else if (ui->sourceRadioDevice->isChecked()) mc.modeInput = Manager::Device;
-        else if (ui->sourceRadioTcp->isChecked()) mc.modeInput = Manager::Tcp;
 
 
         if (ui->destinationRadioFile->isChecked()) mc.modeInput = Manager::File;
@@ -178,8 +176,6 @@ void MainWindow::refreshEnabledSources() {
     ui->sourceFilePath->setEnabled(false);
     ui->sourcesList->setEnabled(false);
     ui->browseSourceFilePath->setEnabled(false);
-    ui->sourceTcpHostAllowed->setEnabled(false);
-    ui->sourceTcpHostPort->setEnabled(false);
     if (ui->sourceRadioDevice->isChecked()) {
         ui->sourcesList->setEnabled(true);
         ui->refreshSources->setEnabled(true);
@@ -187,10 +183,6 @@ void MainWindow::refreshEnabledSources() {
     else if (ui->sourceRadioFile->isChecked()) {
         ui->sourceFilePath->setEnabled(true);
         ui->browseSourceFilePath->setEnabled(true);
-    }
-    else if (ui->sourceRadioTcp->isChecked()) {
-        ui->sourceTcpHostAllowed->setEnabled(true);
-        ui->sourceTcpHostPort->setEnabled(true);
     }
 }
 void MainWindow::refreshEnabledDestinations() {
