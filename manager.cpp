@@ -134,8 +134,9 @@ void Manager::transfer() {
     if (bsize > config.bufferMaxSize) return;
     buffer.append(data);
     if (bsize >= config.bufferSize) {
-        devOut << buffer;
-        buffer.remove(0,config.bufferSize);
+        devOut->write(buffer);
+        buffer.clear();
+        //buffer.remove(0,config.bufferSize);
     }
 }
 quint64 Manager::getTransferedSize() {
