@@ -121,10 +121,12 @@ void MainWindow::on_sourcesList_currentTextChanged()
         ui->codecList->setCurrentIndex(0);
         ui->samplesSize->addItems(Manager::intListToQStringList(info.supportedSampleSizes()));
         ui->samplesRates->addItems(Manager::intListToQStringList(info.supportedSampleRates()));
+        ui->channelsCount->setMaximum(info.supportedChannelCounts().last());
 
         //setting current config as the best possible
         ui->samplesSize->setCurrentIndex(ui->samplesSize->count() -1);
         ui->samplesRates->setCurrentIndex(ui->samplesRates->count() -1);
+        ui->channelsCount->setValue(info.supportedChannelCounts().last());
     }
     else ui->pushButton->setEnabled(false);
 }
