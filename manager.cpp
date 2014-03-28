@@ -22,7 +22,6 @@ Manager::Manager(QObject *parent) :
     deviceIdOut = 0;
     bytesCount = 0;
     bisRecording = false;
-
     qDebug() << "manager ready";
 }
 Manager::~Manager() {
@@ -34,30 +33,7 @@ Manager::~Manager() {
 }
 
 bool Manager::start() {
-    //outputs
-    qDebug() << "using: " << getAudioConfig();
-
-    if (config.modeOutput == None) emit(errors("no output method specified: abording."));
-    else if (config.modeOutput == Tcp) {
-        tcpSink = new TcpSink(this);
-        connect(tcpSink,SIGNAL(connected()),this,SLOT(tcpTargetOpened()));
-        connect(tcpSink,SIGNAL(disconnected()),this,SLOT(tcpTargetDisconnected()));
-        tcpSink->connectToHost(config.tcpTarget.host,config.tcpTarget.port);
-        devOut = tcpSink->getDevice();
-    }
-    else if (config.modeOutput == Device) {
-        out.setFormat(format);
-        out.setOutputDevice(deviceIdOut);
-        devOut = in.getOutputDevice();
-        if (!devOut) emit(errors("can't open input device: " + QString::number(config.devices.output)));
-    }
-    else if ((config.modeOutput == File) && (!config.filePathOutput.isEmpty())) {
-        fileOut = new QFile(config.filePathOutput);
-        if (!fileOut->open(QIODevice::WriteOnly)) return false;
-        devOut = fileOut;
-    }
-    else return false;
-    if (!devOut) return false;
+    debug("Starting manager...");
 
     //inputs
     if (config.modeInput == None) emit(errors("no input method specifed: abording"));
@@ -81,15 +57,51 @@ bool Manager::start() {
         devIn = fileIn;
         connect(fileIn,SIGNAL(readyRead()),this,SLOT(transfer()));
     }
+    if (!devIn) return false;
+    debug("selected input mode: " + QString::number(config.modeInput));
+
+    //outputs
+    qDebug() << "using: " << getAudioConfig();
+
+    if (config.modeOutput == None) emit(errors("no output method specified: abording."));
+    else if (config.modeOutput == Tcp) {
+        tcpSink = new TcpSink(this);
+        connect(tcpSink,SIGNAL(connected()),this,SLOT(tcpTargetOpened()));
+        connect(tcpSink,SIGNAL(disconnected()),this,SLOT(tcpTargetDisconnected()));
+        tcpSink->connectToHost(config.tcpTarget.host,config.tcpTarget.port);
+    }
+    else if (config.modeOutput == Device) {
+        out.setFormat(format);
+        out.setOutputDevice(deviceIdOut);
+        devOut = in.getOutputDevice();
+        if (!devOut) emit(errors("can't open output device: " + QString::number(config.devices.output)));
+    }
+    else if ((config.modeOutput == File) && (!config.filePathOutput.isEmpty())) {
+        fileOut = new QFile(config.filePathOutput);
+        if (!fileOut->open(QIODevice::WriteOnly)) return false;
+        devOut = fileOut;
+    }
+    else return false;
+    if (!devOut) return false;
+    debug("selected output mode: " + QString::number(config.modeOutput));
+
     qDebug() << "started";
     bisRecording = true;
+    emit(started());
     return true;
 }
 void Manager::stop() {
     bisRecording = false;
-    devIn->close();
+    if (devIn != 0) {
+        devIn->close();
+        disconnect(devIn,SIGNAL(readyRead()),this,SLOT(transfer()));
+    }
     if (config.modeOutput != Tcp) devOut->close();
-    else tcpSink->disconnectFromHost();
+    else {
+        tcpSink->disconnectFromHost();
+        disconnect(tcpSink,SIGNAL(connected()),this,SLOT(tcpTargetOpened()));
+        disconnect(tcpSink,SIGNAL(disconnected()),this,SLOT(tcpTargetDisconnected()));
+    }
     if ((fileOut != 0) && (fileOut->isOpen())) fileOut->close();
     emit(stoped());
 }
@@ -112,8 +124,10 @@ QString Manager::getAudioConfig() {
     return "samplerate:" + QString::number(config.sampleRate) + " samplesize:" + QString::number(config.sampleSize) + " channels:" + QString::number(config.channels);
 }
 void Manager::tcpTargetOpened() {
+    debug("Tcp connected to remote server");
     qDebug() << "sending configuration to server";
     devOut = tcpSink->getDevice();
+
     //send the client config
     QString srvCfg = getAudioConfig();
     tcpSink->send(&srvCfg);
@@ -124,6 +138,7 @@ void Manager::tcpTargetReady() {
 }
 void Manager::transfer() {
     if ((!devOut) || (!devIn) || (!devIn->isOpen()) || (!devOut->isOpen())) {
+        debug("manager: stoping record");
         stop();
         return;
     }
@@ -143,6 +158,7 @@ quint64 Manager::getTransferedSize() {
     return bytesCount;
 }
 void Manager::tcpTargetDisconnected() {
+    debug("Tcp disconnected");
     this->stop();
 }
 bool Manager::isRecording() {

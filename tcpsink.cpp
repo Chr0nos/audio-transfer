@@ -19,9 +19,8 @@ void TcpSink::connectToHost(const QString targetAddress, const int targetPort) {
     sock->setSocketOption(QAbstractSocket::LowDelayOption,0);
     connect(sock,SIGNAL(connected()),this,SIGNAL(connected()));
     connect(sock,SIGNAL(readyRead()),this,SIGNAL(readyWrite()));
-    connect(sock,SIGNAL(aboutToClose()),this,SIGNAL(disconnected()));
+    connect(sock,SIGNAL(disconnected()),this,SIGNAL(disconnected()));
     connect(sock,SIGNAL(destroyed()),this,SIGNAL(disconnected()));
-    connect(sock,SIGNAL(stateChanged(QAbstractSocket::SocketState)),this,SLOT(sockEvents(QAbstractSocket::SocketState)));
 
     sock->connectToHost(host,port);
     sock->waitForConnected();
@@ -32,6 +31,7 @@ void TcpSink::disconnectFromHost() {
 }
 
 QIODevice* TcpSink::getDevice() {
+    if (!devOut) devOut = sock;
     return devOut;
 }
 void TcpSink::send(QString *message) {
@@ -40,8 +40,4 @@ void TcpSink::send(QString *message) {
     qDebug() << "sending: " << *message;
     out << *message << endl;
 }
-void TcpSink::sockEvents(QAbstractSocket::SocketState event) {
-    if (event == QAbstractSocket::ClosingState) emit(disconnected());
-    else if (event == QAbstractSocket::ConnectedState) emit(connected());
-    //qDebug() << "event: " << event;
-}
+

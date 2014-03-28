@@ -35,6 +35,8 @@ private slots:
 
 public slots:
     void errors(const QString error);
+    void debug(const QString message);
+    void started();
 private:
     Ui::MainWindow *ui;
     QTimer *timer;

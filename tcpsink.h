@@ -29,7 +29,6 @@ signals:
 
 public slots:
 private slots:
-    void sockEvents(QAbstractSocket::SocketState event);
 
 };
 

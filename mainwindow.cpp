@@ -28,8 +28,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->destinationRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(manager,SIGNAL(tcpTargetConnected()),this,SLOT(tcpTargetConnected()));
     connect(manager,SIGNAL(errors(QString)),this,SLOT(errors(QString)));
+    connect(manager,SIGNAL(started()),this,SLOT(started()));
+    connect(manager,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
     connect(timer,SIGNAL(timeout()),this,SLOT(refreshReadedData()));
-
 }
 
 MainWindow::~MainWindow()
@@ -39,6 +40,10 @@ MainWindow::~MainWindow()
 }
 void MainWindow::errors(const QString error) {
     ui->statusBar->showMessage(error,3000);
+    this->debug(error);
+}
+void MainWindow::debug(const QString message) {
+    ui->debug->addItem(message);
 }
 
 void MainWindow::on_refreshSources_clicked()
@@ -50,6 +55,7 @@ void MainWindow::on_refreshSources_clicked()
 
 void MainWindow::on_pushButton_clicked()
 {
+    ui->debug->clear();
     //record button.
     if (!manager->isRecording()) {
         Manager::userConfig mc;
@@ -96,12 +102,7 @@ void MainWindow::on_pushButton_clicked()
 
 
         manager->setUserConfig(mc);
-        if (manager->start()) {
-            ui->pushButton->setText("Stop");
-            lastReadedValue = 0;
-            timer->start();
-        }
-        else ui->statusBar->showMessage("Failed to open the source device.",3000);
+        manager->start();
     }
     else {
         manager->stop();
@@ -234,3 +235,8 @@ void MainWindow::on_refreshOutputDevices_clicked()
     ui->destinationDeviceCombo->addItems(Manager::getDevicesNames(QAudio::AudioOutput));
 }
 
+void MainWindow::started() {
+    ui->pushButton->setText("Stop");
+    lastReadedValue = 0;
+    timer->start();
+}

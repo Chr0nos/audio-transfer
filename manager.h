@@ -72,6 +72,8 @@ signals:
     void tcpTargetConnected();
     void errors(const QString error);
     void stoped();
+    void started();
+    void debug(const QString message);
 public slots:
     void tcpTargetOpened();
     void tcpTargetReady();
