@@ -87,6 +87,7 @@ bool Manager::start() {
 
     qDebug() << "started";
     bisRecording = true;
+    bytesCount = 0;
     emit(started());
     return true;
 }
