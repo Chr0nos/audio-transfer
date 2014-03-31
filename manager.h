@@ -49,6 +49,7 @@ public:
     bool isRecording();
     QAudioDeviceInfo getInputDeviceInfo();
     static QStringList intListToQStringList(QList<int> source);
+    static QStringList getLocalIps(const bool ignoreLocal = true);
 
 private:
     userConfig config;
@@ -67,6 +68,7 @@ private:
     int deviceIdIn;
     int deviceIdOut;
     bool bisRecording;
+    void debugList(const QStringList list);
 
 signals:
     void tcpTargetConnected();

@@ -4,6 +4,7 @@
 
 #include <QString>
 #include <QIODevice>
+#include <QtNetwork/QNetworkInterface>
 #include <QDebug>
 
 //todo: this class will replace the whole Rec class (too bloated and nasty to evolut it)
@@ -65,6 +66,13 @@ bool Manager::start() {
 
     if (config.modeOutput == None) emit(errors("no output method specified: abording."));
     else if (config.modeOutput == Tcp) {
+        QStringList ips = getLocalIps();
+        if (ips.isEmpty()) {
+            emit(errors("No local ip:  wait for DHCP or set local ip manualy."));
+            return false;
+        }
+        debug("local ips:");
+        debugList(ips);
         tcpSink = new TcpSink(this);
         connect(tcpSink,SIGNAL(connected()),this,SLOT(tcpTargetOpened()));
         connect(tcpSink,SIGNAL(disconnected()),this,SLOT(tcpTargetDisconnected()));
@@ -175,4 +183,25 @@ QStringList Manager::intListToQStringList(QList<int> source) {
         result << QString::number(*i);
     }
     return result;
+}
+QStringList Manager::getLocalIps(const bool ignoreLocal) {
+    QStringList ips;
+    QStringList localhost;
+    localhost << "127.0.0.1" << "::1";
+    QList<QHostAddress> addresses = QNetworkInterface::allAddresses();
+    QList<QHostAddress>::iterator i;
+    for (i = addresses.begin();i != addresses.end();i++) {
+        QHostAddress &add = *i;
+        QString addr = add.toString();
+        if (!ignoreLocal) ips << addr;
+        else if (localhost.contains(addr));
+        else ips << addr;
+    }
+    return ips;
+}
+void Manager::debugList(const QStringList list) {
+    int count = 0;
+    foreach (QString x,list) {
+        debug("[" + QString::number(count++) + "] " + x);
+    }
 }
