@@ -75,6 +75,7 @@ bool Manager::start() {
         debugList(ips);
         tcpSink = new TcpSink(this);
         connect(tcpSink,SIGNAL(connected()),this,SLOT(tcpTargetOpened()));
+        connect(tcpSink,SIGNAL(reply(QString)),this,SLOT(tcpTargetSockRead(QString)));
         connect(tcpSink,SIGNAL(disconnected()),this,SLOT(tcpTargetDisconnected()));
         tcpSink->connectToHost(config.tcpTarget.host,config.tcpTarget.port);
     }
@@ -204,4 +205,7 @@ void Manager::debugList(const QStringList list) {
     foreach (QString x,list) {
         debug("[" + QString::number(count++) + "] " + x);
     }
+}
+void Manager::tcpTargetSockRead(const QString message) {
+    debug("server reply: " + message);
 }

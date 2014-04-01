@@ -80,6 +80,7 @@ public slots:
     void tcpTargetOpened();
     void tcpTargetReady();
     void tcpTargetDisconnected();
+    void tcpTargetSockRead(const QString message);
     void transfer();
 };
 

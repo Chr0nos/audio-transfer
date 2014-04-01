@@ -30,6 +30,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(manager,SIGNAL(errors(QString)),this,SLOT(errors(QString)));
     connect(manager,SIGNAL(started()),this,SLOT(started()));
     connect(manager,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
+    connect(ui->samplesRates,SIGNAL(currentIndexChanged(int)),this,SLOT(refreshEstimatedBitrate()));
+    connect(ui->samplesSize,SIGNAL(currentIndexChanged(int)),this,SLOT(refreshEstimatedBitrate()));
+    connect(ui->channelsCount,SIGNAL(valueChanged(int)),this,SLOT(refreshEstimatedBitrate()));
     connect(timer,SIGNAL(timeout()),this,SLOT(refreshReadedData()));
 }
 
@@ -239,4 +242,8 @@ void MainWindow::started() {
     ui->pushButton->setText("Stop");
     lastReadedValue = 0;
     timer->start();
+}
+void MainWindow::refreshEstimatedBitrate() {
+    const int bitrate = (ui->samplesRates->currentText().toInt() * ui->samplesSize->currentText().toInt() / 8) * ui->channelsCount->value();
+    ui->statusBar->showMessage("estimated bitrate: " + wsize(bitrate) + "/s",2000);
 }

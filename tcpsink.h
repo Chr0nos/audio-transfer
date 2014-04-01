@@ -26,9 +26,11 @@ signals:
     void readyWrite();
     void connected();
     void disconnected();
+    void reply(const QString line);
 
 public slots:
 private slots:
+    void sockRead();
 
 };
 

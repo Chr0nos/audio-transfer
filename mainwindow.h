@@ -37,6 +37,7 @@ public slots:
     void errors(const QString error);
     void debug(const QString message);
     void started();
+    void refreshEstimatedBitrate();
 private:
     Ui::MainWindow *ui;
     QTimer *timer;

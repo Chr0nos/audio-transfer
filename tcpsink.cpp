@@ -2,6 +2,7 @@
 #include <QtNetwork/QTcpSocket>
 #include <QtNetwork/QAbstractSocket>
 #include <QTextStream>
+#include <QByteArray>
 #include <QDebug>
 
 TcpSink::TcpSink(QObject *parent) :
@@ -21,6 +22,7 @@ void TcpSink::connectToHost(const QString targetAddress, const int targetPort) {
     connect(sock,SIGNAL(readyRead()),this,SIGNAL(readyWrite()));
     connect(sock,SIGNAL(disconnected()),this,SIGNAL(disconnected()));
     connect(sock,SIGNAL(destroyed()),this,SIGNAL(disconnected()));
+    connect(sock,SIGNAL(readyRead()),this,SLOT(sockRead()));
 
     sock->connectToHost(host,port);
     sock->waitForConnected();
@@ -41,3 +43,7 @@ void TcpSink::send(QString *message) {
     out << *message << endl;
 }
 
+void TcpSink::sockRead() {
+    QByteArray data = sock->readAll();
+    emit(reply(QString(data)));
+}
