@@ -11,6 +11,7 @@ TcpSink::TcpSink(QObject *parent) :
 }
 TcpSink::~TcpSink() {
     sock->deleteLater();
+    devOut = 0;
 }
 void TcpSink::connectToHost(const QString targetAddress, const int targetPort) {
     host = targetAddress;
@@ -26,6 +27,7 @@ void TcpSink::connectToHost(const QString targetAddress, const int targetPort) {
 
     sock->connectToHost(host,port);
     sock->waitForConnected();
+    //if (!sock->isOpen()) emit(disconnected());
     devOut = sock;
 }
 void TcpSink::disconnectFromHost() {

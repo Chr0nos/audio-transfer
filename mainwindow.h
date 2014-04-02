@@ -17,6 +17,8 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     QString wsize(const quint64 size);
+    bool isValidIp(const QString host);
+    void setUserControlState(const bool state);
 
 private slots:
     void on_refreshSources_clicked();
@@ -24,13 +26,11 @@ private slots:
     void on_sourcesList_currentTextChanged();
     void on_browseSourceFilePath_clicked();
     void recStoped();
-    bool isValidIp(const QString host);
     void on_sourcesList_currentIndexChanged(int index);
     void refreshEnabledSources();
     void refreshEnabledDestinations();
     void tcpTargetConnected();
     void refreshReadedData();
-
     void on_refreshOutputDevices_clicked();
 
 public slots:

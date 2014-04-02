@@ -58,9 +58,9 @@ void MainWindow::on_refreshSources_clicked()
 
 void MainWindow::on_pushButton_clicked()
 {
-    ui->debug->clear();
     //record button.
     if (!manager->isRecording()) {
+        ui->debug->clear();
         Manager::userConfig mc;
         mc.codec = ui->codecList->currentText();
         mc.modeInput = Manager::None;
@@ -151,6 +151,9 @@ void MainWindow::recStoped() {
     timer->stop();
     ui->statusBar->showMessage("Record stoped",3000);
     ui->pushButton->setText("Record");
+    setUserControlState(true);
+    refreshEnabledSources();
+    refreshEnabledDestinations();
 }
 
 bool MainWindow::isValidIp(const QString host) {
@@ -239,6 +242,7 @@ void MainWindow::on_refreshOutputDevices_clicked()
 }
 
 void MainWindow::started() {
+    setUserControlState(false);
     ui->pushButton->setText("Stop");
     lastReadedValue = 0;
     timer->start();
@@ -246,4 +250,28 @@ void MainWindow::started() {
 void MainWindow::refreshEstimatedBitrate() {
     const int bitrate = (ui->samplesRates->currentText().toInt() * ui->samplesSize->currentText().toInt() / 8) * ui->channelsCount->value();
     ui->statusBar->showMessage("estimated bitrate: " + wsize(bitrate) + "/s",2000);
+}
+void MainWindow::setUserControlState(const bool state) {
+    ui->samplesRates->setEnabled(state);
+    ui->samplesSize->setEnabled(state);
+    ui->channelsCount->setEnabled(state);
+    ui->codecList->setEnabled(state);
+
+    ui->sourceRadioDevice->setEnabled(state);
+    ui->sourcesList->setEnabled(state);
+    ui->refreshSources->setEnabled(state);
+
+    ui->sourceRadioFile->setEnabled(state);
+    ui->sourceFilePath->setEnabled(state);
+    ui->browseSourceFilePath->setEnabled(state);
+
+    ui->destinationDeviceRadio->setEnabled(state);
+    ui->destinationDeviceCombo->setEnabled(state);
+
+    ui->destinationRadioFile->setEnabled(state);
+    ui->destinationFilePath->setEnabled(state);
+    ui->destinationTcpBufferDuration->setEnabled(state);
+    ui->destinationRadioTcp->setEnabled(state);
+    ui->destinationTcpSocket->setEnabled(state);
+
 }
