@@ -189,6 +189,9 @@
              <property name="enabled">
               <bool>true</bool>
              </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;1042 for audio-transfer-server&lt;/p&gt;&lt;p&gt;4712 for pulseaudio module-simple-protocol-tcp&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>192.168.1.1:1042</string>
              </property>

@@ -61,6 +61,8 @@ void MainWindow::on_pushButton_clicked()
     //record button.
     if (!manager->isRecording()) {
         ui->debug->clear();
+        const int bitrate = (ui->samplesRates->currentText().toInt() * ui->samplesSize->currentText().toInt() / 8) * ui->channelsCount->value();
+        debug("estimated bitrate: " + QString::number(bitrate));
         Manager::userConfig mc;
         mc.codec = ui->codecList->currentText();
         mc.modeInput = Manager::None;
@@ -71,7 +73,7 @@ void MainWindow::on_pushButton_clicked()
         mc.filePathOutput = ui->sourceFilePath->text();
         mc.devices.input = ui->sourcesList->currentIndex();
         mc.devices.output = ui->destinationDeviceCombo->currentIndex();
-        mc.bufferSize = ui->destinationTcpBufferDuration->value() * 1.5;
+        mc.bufferSize = bitrate * (1 + ui->destinationTcpBufferDuration->value() / 1000);
         mc.bufferMaxSize = 2097152; //2Mb
 
         if (ui->sourceRadioFile->isChecked()) {
