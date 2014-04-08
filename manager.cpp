@@ -22,6 +22,9 @@ Manager::Manager(QObject *parent) :
     deviceIdIn = 0;
     deviceIdOut = 0;
     bytesCount = 0;
+#ifdef PULSE
+    pulse = 0;
+#endif
     bisRecording = false;
     qDebug() << "manager ready";
 }
@@ -31,6 +34,9 @@ Manager::~Manager() {
     if (fileOut) fileOut->deleteLater();
     if (tcpSink) tcpSink->deleteLater();
     if (fileIn) fileIn->deleteLater();
+#ifdef PULSE
+    if (pulse) pulse->deleteLater();
+#endif
 }
 
 bool Manager::start() {
@@ -90,7 +96,17 @@ bool Manager::start() {
         if (!fileOut->open(QIODevice::WriteOnly)) return false;
         devOut = fileOut;
     }
-    else return false;
+#ifdef PULSE
+    else if (config.modeOutput == PulseAudio) {
+        this->pulse = new Pulse(config.pulseTarget,format,this);
+        connect(pulse,SIGNAL(error(QString)),this,SIGNAL(debug(QString)));
+        devOut = this->pulse->getDevice();
+    }
+#endif
+    else {
+        errors("unsuported output mode: " + QString::number(config.modeOutput));
+        return false;
+}
     if (!devOut) return false;
     debug("selected output mode: " + QString::number(config.modeOutput));
 
@@ -106,7 +122,9 @@ void Manager::stop() {
         devIn->close();
         disconnect(devIn,SIGNAL(readyRead()),this,SLOT(transfer()));
     }
-    if (config.modeOutput != Tcp) devOut->close();
+    if (config.modeOutput != Tcp) {
+        if (devOut != 0) devOut->close();
+    }
     else {
         tcpSink->disconnectFromHost();
         disconnect(tcpSink,SIGNAL(connected()),this,SLOT(tcpTargetOpened()));
@@ -138,9 +156,11 @@ void Manager::tcpTargetOpened() {
     qDebug() << "sending configuration to server";
     devOut = tcpSink->getDevice();
 
-    //send the client config
-    QString srvCfg = getAudioConfig();
-    tcpSink->send(&srvCfg);
+    if (config.tcpTarget.sendConfig) {
+        //send the client config
+        QString srvCfg = getAudioConfig();
+        tcpSink->send(&srvCfg);
+    }
     emit(tcpTargetConnected());
 }
 void Manager::tcpTargetReady() {

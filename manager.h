@@ -4,6 +4,10 @@
 #include "devices.h"
 #include "tcpsink.h"
 
+#ifdef PULSE
+    #include "pulse.h"
+#endif
+
 #include <QObject>
 #include <QIODevice>
 #include <QAudioFormat>
@@ -13,10 +17,11 @@ class Manager : public QObject
 {
     Q_OBJECT
 public:
-    enum Mode {File = 0,Device = 1,Tcp = 2,None = 3};
+    enum Mode {File = 0,Device = 1,Tcp = 2,None = 3,PulseAudio = 4};
     struct tcpConfig {
         QString host;
         int port;
+        bool sendConfig;
     };
 
     struct userConfig {
@@ -36,6 +41,7 @@ public:
        QString filePathInput;
        int bufferSize;
        int bufferMaxSize;
+       QString pulseTarget;
     };
 
     explicit Manager(QObject *parent = 0);
@@ -69,6 +75,9 @@ private:
     int deviceIdOut;
     bool bisRecording;
     void debugList(const QStringList list);
+#ifdef PULSE
+    Pulse *pulse;
+#endif
 
 signals:
     void tcpTargetConnected();

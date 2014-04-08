@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->destinationDeviceRadio,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
+    connect(ui->destinationRadioPulseAudio,SIGNAL(clicked()),SLOT(refreshEnabledDestinations()));
     connect(manager,SIGNAL(tcpTargetConnected()),this,SLOT(tcpTargetConnected()));
     connect(manager,SIGNAL(errors(QString)),this,SLOT(errors(QString)));
     connect(manager,SIGNAL(started()),this,SLOT(started()));
@@ -34,6 +35,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->samplesSize,SIGNAL(currentIndexChanged(int)),this,SLOT(refreshEstimatedBitrate()));
     connect(ui->channelsCount,SIGNAL(valueChanged(int)),this,SLOT(refreshEstimatedBitrate()));
     connect(timer,SIGNAL(timeout()),this,SLOT(refreshReadedData()));
+#ifndef PULSE
+    ui->destinationRadioPulseAudio->setEnabled(false);
+#endif
 }
 
 MainWindow::~MainWindow()
@@ -62,7 +66,7 @@ void MainWindow::on_pushButton_clicked()
     if (!manager->isRecording()) {
         ui->debug->clear();
         const int bitrate = (ui->samplesRates->currentText().toInt() * ui->samplesSize->currentText().toInt() / 8) * ui->channelsCount->value();
-        debug("estimated bitrate: " + QString::number(bitrate));
+        debug("estimated bitrate: " + wsize(bitrate));
         Manager::userConfig mc;
         mc.codec = ui->codecList->currentText();
         mc.modeInput = Manager::None;
@@ -73,8 +77,9 @@ void MainWindow::on_pushButton_clicked()
         mc.filePathOutput = ui->sourceFilePath->text();
         mc.devices.input = ui->sourcesList->currentIndex();
         mc.devices.output = ui->destinationDeviceCombo->currentIndex();
-        mc.bufferSize = bitrate * (1 + ui->destinationTcpBufferDuration->value() / 1000);
+        mc.bufferSize = bitrate * ui->destinationTcpBufferDuration->value() / 1000;
         mc.bufferMaxSize = 2097152; //2Mb
+        debug("buffer size: " + wsize(mc.bufferSize));
 
         if (ui->sourceRadioFile->isChecked()) {
             qDebug() << "ui: file source mode";
@@ -101,11 +106,19 @@ void MainWindow::on_pushButton_clicked()
             }
             mc.tcpTarget.host = host;
             mc.tcpTarget.port = port;
+            mc.tcpTarget.sendConfig = true;
             mc.modeOutput = Manager::Tcp;
+
             ui->statusBar->showMessage("Connecting to " + host + " on port " + QString().number(port));
         }
+        else if (ui->destinationRadioPulseAudio->isChecked()) {
+            debug("using pulseaudio target: this is an experimental feature!");
+            if (!ui->destinationPulseAudioLineEdit->text().isEmpty()) {
+                mc.pulseTarget = ui->destinationPulseAudioLineEdit->text();
+            }
+            mc.modeOutput = Manager::PulseAudio;
 
-
+        }
         manager->setUserConfig(mc);
         manager->start();
     }
@@ -203,6 +216,7 @@ void MainWindow::refreshEnabledDestinations() {
     ui->destinationTcpSocket->setEnabled(false);
     ui->destinationDeviceCombo->setEnabled(false);
     ui->refreshOutputDevices->setEnabled(false);
+    ui->destinationPulseAudioLineEdit->setEnabled(false);
 
     if (ui->destinationDeviceRadio->isChecked()) {
         ui->destinationDeviceCombo->setEnabled(true);
@@ -215,6 +229,9 @@ void MainWindow::refreshEnabledDestinations() {
     else if (ui->destinationRadioTcp->isChecked()) {
         ui->destinationTcpSocket->setEnabled(true);
         ui->destinationTcpBufferDuration->setEnabled(true);
+    }
+    else if (ui->destinationRadioPulseAudio->isChecked()) {
+        ui->destinationPulseAudioLineEdit->setEnabled(true);
     }
 }
 void MainWindow::tcpTargetConnected() {
@@ -276,4 +293,6 @@ void MainWindow::setUserControlState(const bool state) {
     ui->destinationRadioTcp->setEnabled(state);
     ui->destinationTcpSocket->setEnabled(state);
 
+    ui->destinationRadioPulseAudio->setEnabled(state);
+    ui->destinationPulseAudioLineEdit->setEnabled(state);
 }

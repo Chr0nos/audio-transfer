@@ -17,13 +17,19 @@ SOURCES += main.cpp\
     manager.cpp \
     devices.cpp \
     comline.cpp \
-    tcpsink.cpp
+    tcpsink.cpp \
+    pulse.cpp
 
 HEADERS  += mainwindow.h \
     manager.h \
     devices.h \
     main.h \
     comline.h \
-    tcpsink.h
+    tcpsink.h \
+    pulse.h
 
 FORMS    += mainwindow.ui
+
+#comment this two lines to disable pulseaudio
+LIBS += -lpulse-simple -lpulse
+DEFINES += PULSE
