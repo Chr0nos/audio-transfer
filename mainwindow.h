@@ -19,6 +19,8 @@ public:
     QString wsize(const quint64 size);
     bool isValidIp(const QString host);
     void setUserControlState(const bool state);
+    void configSave();
+    void configLoad();
 
 private slots:
     void on_refreshSources_clicked();
@@ -32,17 +34,21 @@ private slots:
     void tcpTargetConnected();
     void refreshReadedData();
     void on_refreshOutputDevices_clicked();
+    void on_configSave_clicked();
 
 public slots:
     void errors(const QString error);
     void debug(const QString message);
     void started();
     void refreshEstimatedBitrate();
+    QString getConfigFilePath();
 private:
     Ui::MainWindow *ui;
     QTimer *timer;
     quint64 lastReadedValue;
     Manager *manager;
+    Manager::Mode modeSource;
+    Manager::Mode modeDest;
 };
 
 

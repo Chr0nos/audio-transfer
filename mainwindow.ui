@@ -319,7 +319,14 @@
       <property name="title">
        <string>Controls</string>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,1">
+       <item>
+        <widget class="QPushButton" name="configSave">
+         <property name="text">
+          <string>Save</string>
+         </property>
+        </widget>
+       </item>
        <item>
         <widget class="QPushButton" name="pushButton">
          <property name="text">
