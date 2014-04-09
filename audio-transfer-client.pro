@@ -30,6 +30,7 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-#comment this two lines to disable pulseaudio
-LIBS += -lpulse-simple -lpulse
+#comment thoses lines to disable pulseaudio
+win32:LIBS += c:\pulseaudio\bin\libpulse-simple-0.dll c:\pulseaudio\bin\libpulse-0.dll
+else:LIBS += -lpulse-simple -lpulse
 DEFINES += PULSE
