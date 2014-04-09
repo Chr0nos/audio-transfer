@@ -30,10 +30,10 @@ Manager::Manager(QObject *parent) :
 }
 Manager::~Manager() {
     if (devIn) devIn->deleteLater();
-    if (devOut) devOut->deleteLater();
     if (fileOut) fileOut->deleteLater();
     if (tcpSink) tcpSink->deleteLater();
     if (fileIn) fileIn->deleteLater();
+    if (devOut) devOut->deleteLater();
 #ifdef PULSE
     if (pulse) pulse->deleteLater();
 #endif
@@ -98,8 +98,9 @@ bool Manager::start() {
     }
 #ifdef PULSE
     else if (config.modeOutput == PulseAudio) {
+        debug("using module: PULSE");
         this->pulse = new Pulse(config.pulseTarget,format,this);
-        connect(pulse,SIGNAL(error(QString)),this,SIGNAL(debug(QString)));
+        connect(this->pulse,SIGNAL(say(QString)),this,SIGNAL(debug(QString)));
         devOut = this->pulse->getDevice();
     }
 #endif
@@ -124,6 +125,11 @@ void Manager::stop() {
     }
     if (config.modeOutput != Tcp) {
         if (devOut != 0) devOut->close();
+#ifdef PULSE
+        if (config.modeOutput == PulseAudio) {
+            pulse->deleteLater();
+        }
+#endif
     }
     else {
         tcpSink->disconnectFromHost();

@@ -77,7 +77,7 @@ void MainWindow::on_pushButton_clicked()
         mc.filePathOutput = ui->sourceFilePath->text();
         mc.devices.input = ui->sourcesList->currentIndex();
         mc.devices.output = ui->destinationDeviceCombo->currentIndex();
-        mc.bufferSize = bitrate * ui->destinationTcpBufferDuration->value() / 1000;
+        mc.bufferSize = bitrate * ui->destinationTcpBufferDuration->value() / 1000 / 100;
         mc.bufferMaxSize = 2097152; //2Mb
         debug("buffer size: " + wsize(mc.bufferSize));
 
@@ -230,9 +230,12 @@ void MainWindow::refreshEnabledDestinations() {
         ui->destinationTcpSocket->setEnabled(true);
         ui->destinationTcpBufferDuration->setEnabled(true);
     }
+#ifdef PULSE
     else if (ui->destinationRadioPulseAudio->isChecked()) {
         ui->destinationPulseAudioLineEdit->setEnabled(true);
     }
+#endif
+
 }
 void MainWindow::tcpTargetConnected() {
     ui->statusBar->showMessage("Target connected",3000);
@@ -292,7 +295,8 @@ void MainWindow::setUserControlState(const bool state) {
     ui->destinationTcpBufferDuration->setEnabled(state);
     ui->destinationRadioTcp->setEnabled(state);
     ui->destinationTcpSocket->setEnabled(state);
-
+#ifdef PULSE
     ui->destinationRadioPulseAudio->setEnabled(state);
     ui->destinationPulseAudioLineEdit->setEnabled(state);
+#endif
 }

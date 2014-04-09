@@ -4,6 +4,7 @@
 #define PULSE_H
 
 #include <pulse/simple.h>
+#include <pulse/channelmap.h>
 
 #include <QObject>
 #include <QIODevice>
@@ -17,13 +18,16 @@ public:
     ~Pulse();
     void write(const QByteArray &data);
     QIODevice* getDevice();
+    bool getChannelMap(pa_channel_map *map);
 private:
     pa_simple *s;
     pa_sample_spec ss;
     QIODevice *device;
+    QAudioFormat format;
+    pa_sample_format getSampleSize();
 
 signals:
-    void error(const QString message);
+    void say(const QString message);
 public slots:
 
 };
