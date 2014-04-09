@@ -25,7 +25,7 @@ Pulse::Pulse(const QString target, QAudioFormat format, QObject *parent) :
     ss.format = getSampleSize();
     ss.channels = format.channelCount();
     ss.rate = format.sampleRate();
-    if (ss.rate == (u_int32_t) PA_SAMPLE_INVALID) {
+    if ((quint32) ss.rate == (quint32) PA_SAMPLE_INVALID) {
         say("pulse: error: invalid sample rate");
         return;
     }
