@@ -33,11 +33,7 @@ Manager::~Manager() {
     if (fileOut) fileOut->deleteLater();
     if (tcpSink) tcpSink->deleteLater();
     if (fileIn) fileIn->deleteLater();
-    //this line seems causing a crash with PulseAudio output, i have to see why
-    //if (devOut) devOut->deleteLater();
-#ifdef PULSE
-    if (pulse) pulse->deleteLater();
-#endif
+    if (devOut) devOut->deleteLater();
 }
 
 bool Manager::start() {

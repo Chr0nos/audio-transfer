@@ -30,7 +30,9 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-#comment thoses lines to disable pulseaudio
-win32:LIBS += c:\pulseaudio\bin\libpulse-simple-0.dll c:\pulseaudio\bin\libpulse-0.dll
-else:LIBS += -lpulse-simple -lpulse
+#comment thoses lines to disable pulseaudio , for windows it disabled because: pulseaudio is a **** bullshit on windows:
+#the windows port is version 1.1 and make audio-transfer crash: go thanks the PA developers who absolutly dont care about win32...
+!win32 {
+LIBS += -lpulse-simple -lpulse
 DEFINES += PULSE
+}

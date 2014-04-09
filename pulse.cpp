@@ -31,7 +31,7 @@ Pulse::Pulse(const QString target, QAudioFormat format, QObject *parent) :
     }
 
     pa_channel_map map;
-    getChannelMap(&map);
+    makeChannelMap(&map);
 
     int errorCode = 0;
 
@@ -66,7 +66,6 @@ Pulse::Pulse(const QString target, QAudioFormat format, QObject *parent) :
 Pulse::~Pulse() {
     if (s) {
         pa_simple_free(s);
-        device->deleteLater();
     }
 }
 void Pulse::write(const QByteArray &data) {
@@ -75,7 +74,7 @@ void Pulse::write(const QByteArray &data) {
 QIODevice* Pulse::getDevice() {
     return device;
 }
-bool Pulse::getChannelMap(pa_channel_map* map) {
+bool Pulse::makeChannelMap(pa_channel_map* map) {
     map->channels = format.channelCount();
     pa_channel_map_init_auto(map,format.channelCount(),PA_CHANNEL_MAP_ALSA);
     return true;

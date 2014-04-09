@@ -18,7 +18,7 @@ public:
     ~Pulse();
     void write(const QByteArray &data);
     QIODevice* getDevice();
-    bool getChannelMap(pa_channel_map *map);
+    bool makeChannelMap(pa_channel_map *map);
 private:
     pa_simple *s;
     pa_sample_spec ss;
