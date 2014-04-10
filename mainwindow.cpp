@@ -324,6 +324,7 @@ void MainWindow::on_configSave_clicked()
     configSave();
 }
 void MainWindow::configSave() {
+    ui->configSave->setEnabled(false);
     Readini ini(getConfigFilePath(),this);
     ini.setValue("format","codec",ui->codecList->currentText());
     ini.setValue("format","sampleSize",ui->samplesSize->currentText());
@@ -346,8 +347,10 @@ void MainWindow::configSave() {
     ini.flush();
     debug("configuration saved");
     ui->statusBar->showMessage("configuration saved",3000);
+    ui->configSave->setEnabled(true);
 }
 void MainWindow::configLoad() {
+    ui->configSave->setEnabled(false);
     Readini ini(getConfigFilePath(),this);
     if (!ini.exists()) return;
     const int deviceIdSource = ui->sourcesList->findText(ini.getValue("source","device"));
@@ -367,6 +370,10 @@ void MainWindow::configLoad() {
 
     const int deviceIdTarget = ui->destinationDeviceCombo->findText(ini.getValue("target","device"));
     if (deviceIdTarget) ui->destinationDeviceCombo->setCurrentIndex(deviceIdTarget);
+
+#ifdef PULSE
+    ui->destinationPulseAudioLineEdit->setText(ini.getValue("target","pulse"));
+#endif
 
     ui->destinationFilePath->setText(ini.getValue("target","file"));
     ui->destinationTcpSocket->setText(ini.getValue("target","tcp"));
@@ -404,4 +411,5 @@ void MainWindow::configLoad() {
             break;
     }
     refreshEnabledDestinations();
+    ui->configSave->setEnabled(true);
 }
