@@ -352,7 +352,10 @@ void MainWindow::configSave() {
 void MainWindow::configLoad() {
     ui->configSave->setEnabled(false);
     Readini ini(getConfigFilePath(),this);
-    if (!ini.exists()) return;
+    if (!ini.exists()) {
+        ui->configSave->setEnabled(true);
+        return;
+    }
     const int deviceIdSource = ui->sourcesList->findText(ini.getValue("source","device"));
     if (deviceIdSource) ui->sourcesList->setCurrentIndex(deviceIdSource);
 
