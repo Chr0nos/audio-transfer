@@ -10,10 +10,10 @@ Readini::Readini(const QString filePath, QObject *parent) :
     QObject(parent)
 {
     this->filePath = filePath;
+    file.setFileName(filePath);
     parseIni();
 }
 void Readini::parseIni() {
-    QFile file(filePath);
     if (!file.exists()) return;
     else if (!file.open(QIODevice::ReadOnly));
     else {
@@ -104,4 +104,10 @@ bool Readini::flush() {
 }
 bool Readini::exists() {
     return QFile::exists(filePath);
+}
+bool Readini::isWritable() {
+    return file.isWritable();
+}
+bool Readini::open(QIODevice::OpenModeFlag mode) {
+    return file.open(mode);
 }

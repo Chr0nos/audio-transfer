@@ -4,6 +4,7 @@
 #include <QTimer>
 #include <QString>
 #include "manager.h"
+#include "readini.h"
 
 namespace Ui {
 class MainWindow;
@@ -19,8 +20,8 @@ public:
     QString wsize(const quint64 size);
     bool isValidIp(const QString host);
     void setUserControlState(const bool state);
-    void configSave();
-    void configLoad();
+    void configSave(Readini *ini);
+    void configLoad(Readini *ini);
 
 private slots:
     void on_refreshSources_clicked();
@@ -49,6 +50,7 @@ private:
     Manager *manager;
     Manager::Mode modeSource;
     Manager::Mode modeDest;
+    Readini *ini;
 };
 
 

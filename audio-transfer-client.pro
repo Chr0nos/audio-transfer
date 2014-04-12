@@ -19,7 +19,8 @@ SOURCES += main.cpp\
     comline.cpp \
     tcpsink.cpp \
     pulse.cpp \
-    readini.cpp
+    readini.cpp \
+    zerodevice.cpp
 
 HEADERS  += mainwindow.h \
     manager.h \
@@ -28,7 +29,8 @@ HEADERS  += mainwindow.h \
     comline.h \
     tcpsink.h \
     pulse.h \
-    readini.h
+    readini.h \
+    zerodevice.h
 
 FORMS    += mainwindow.ui
 

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>551</width>
-    <height>471</height>
+    <width>552</width>
+    <height>527</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -57,14 +57,14 @@
               <bool>true</bool>
              </property>
              <property name="text">
-              <string>file</string>
+              <string>File</string>
              </property>
             </widget>
            </item>
            <item row="0" column="0">
             <widget class="QRadioButton" name="sourceRadioDevice">
              <property name="text">
-              <string>device</string>
+              <string>Device</string>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -75,6 +75,13 @@
             <widget class="QPushButton" name="refreshSources">
              <property name="text">
               <string>refresh</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QRadioButton" name="sourceRadioZeroDevice">
+             <property name="text">
+              <string>Zero</string>
              </property>
             </widget>
            </item>
@@ -209,6 +216,9 @@
            </item>
            <item row="0" column="0">
             <widget class="QRadioButton" name="destinationRadioFile">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;you can read the file with audacity for example&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>File</string>
              </property>
@@ -264,6 +274,16 @@
              </property>
             </widget>
            </item>
+           <item row="2" column="1">
+            <widget class="QLineEdit" name="destinationPulseAudioLineEdit">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>tcp:192.168.1.1:4713</string>
+             </property>
+            </widget>
+           </item>
            <item row="2" column="0">
             <widget class="QRadioButton" name="destinationRadioPulseAudio">
              <property name="toolTip">
@@ -274,13 +294,10 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
-            <widget class="QLineEdit" name="destinationPulseAudioLineEdit">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
+           <item row="4" column="0">
+            <widget class="QRadioButton" name="destinationRadioZeroDevice">
              <property name="text">
-              <string>tcp:192.168.1.1:4713</string>
+              <string>Zero</string>
              </property>
             </widget>
            </item>

@@ -1,6 +1,7 @@
 #include "manager.h"
 #include "devices.h"
 #include "tcpsink.h"
+#include "zerodevice.h"
 
 #include <QString>
 #include <QIODevice>
@@ -36,17 +37,15 @@ Manager::~Manager() {
     if (devOut) devOut->deleteLater();
 }
 
-bool Manager::start() {
-    debug("Starting manager...");
-
-    //inputs
+bool Manager::prepareSource() {
+    //input
+    devIn = 0;
     if (config.modeInput == None) emit(errors("no input method specifed: abording"));
     else if (config.modeInput == Device) {
         in.setFormat(format);
         in.setInputDevice(deviceIdIn);
         devIn = in.getInputDevice();
         if (!devIn) return false;
-        connect(devIn,SIGNAL(readyRead()),this,SLOT(transfer()));
     }
     else if (config.modeInput == File) {
         fileIn = new QFile(config.filePathInput);
@@ -54,20 +53,36 @@ bool Manager::start() {
             emit(errors("can't open the input file: no such file or directory."));
             return false;
         }
-        else if (!fileIn->open(QIODevice::ReadOnly)) {
-            emit(errors("Can't open the input file, check the permissions."));
-            return false;
-        }
         devIn = fileIn;
-        connect(fileIn,SIGNAL(readyRead()),this,SLOT(transfer()));
+    }
+    else if (config.modeInput == Zero) {
+        devIn = new ZeroDevice(this);
     }
     if (!devIn) return false;
-    debug("selected input mode: " + QString::number(config.modeInput));
 
-    //outputs
+    //connecting the source to transfer function (main function)
+    connect(devIn,SIGNAL(readyRead()),this,SLOT(transfer()));
+
+    //opening source
+    if (!devIn->open(QIODevice::ReadOnly)) {
+        emit(errors("can't open input device: abording"));
+        return false;
+    }
+    else debug("source device opened");
+
+
+    debug("selected input mode: " + QString::number(config.modeInput));
+    return true;
+}
+bool Manager::prepareOutput() {
+    //output
+    devOut = 0;
     qDebug() << "using: " << getAudioConfig();
 
-    if (config.modeOutput == None) emit(errors("no output method specified: abording."));
+    if (config.modeOutput == None) {
+        emit(errors("no output method specified: abording."));
+        return false;
+    }
     else if (config.modeOutput == Tcp) {
         QStringList ips = getLocalIps();
         if (ips.isEmpty()) {
@@ -101,17 +116,41 @@ bool Manager::start() {
         devOut = this->pulse->getDevice();
     }
 #endif
+    else if (config.modeOutput == Zero) {
+        devOut = new ZeroDevice(this);
+    }
     else {
         errors("unsuported output mode: " + QString::number(config.modeOutput));
         return false;
-}
+    }
     if (!devOut) return false;
+    if (!devOut->isOpen()) {
+        if (!devOut->open(QIODevice::WriteOnly)) {
+            emit(errors("cannot open output device in writeOnly"));
+            return false;
+        }
+    }
     debug("selected output mode: " + QString::number(config.modeOutput));
+    return true;
+}
 
+bool Manager::start() {
+    debug("Starting manager...");
+    if (!prepareSource()) {
+        errors("failed to start input");
+        return false;
+    }
+    debug("input ready");
+    if (!prepareOutput()) {
+        errors("failed to stard input");
+        return false;
+    }
+    debug("output: ready");
     qDebug() << "started";
     bisRecording = true;
     bytesCount = 0;
     emit(started());
+    transfer();
     return true;
 }
 void Manager::stop() {
@@ -128,7 +167,7 @@ void Manager::stop() {
         }
 #endif
     }
-    else {
+    else if (tcpSink != 0) {
         tcpSink->disconnectFromHost();
         disconnect(tcpSink,SIGNAL(connected()),this,SLOT(tcpTargetOpened()));
         disconnect(tcpSink,SIGNAL(disconnected()),this,SLOT(tcpTargetDisconnected()));
@@ -170,12 +209,16 @@ void Manager::tcpTargetReady() {
     transfer();
 }
 void Manager::transfer() {
+    //qDebug() << "transfer!" << devIn << devIn->isOpen();
+    qDebug() << devIn;
+    qDebug() << devOut;
     if ((!devOut) || (!devIn) || (!devIn->isOpen()) || (!devOut->isOpen())) {
         debug("manager: stoping record");
         stop();
         return;
     }
     QByteArray data = devIn->readAll();
+    //qDebug() << "data: " << data.toHex();
     bytesCount += data.size();
     const int bsize = buffer.size();
     //if the buffer size is too big: we just drop the datas to prevent memory overflow by this buffer
@@ -231,4 +274,10 @@ void Manager::debugList(const QStringList list) {
 }
 void Manager::tcpTargetSockRead(const QString message) {
     debug("server reply: " + message);
+}
+void Manager::devOutClose() {
+    debug("output closed");
+}
+void Manager::devInClose() {
+    debug("input closed");
 }

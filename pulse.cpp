@@ -104,6 +104,7 @@ qint64 PulseDevice::writeData(const char *data, qint64 len) {
 }
 qint64 PulseDevice::readData(char *data, qint64 maxlen) {
     pa_simple_read(*this->pulseAudio,data,maxlen,NULL);
+    readyRead();
     return maxlen;
 }
 bool PulseDevice::isOpen() {

@@ -8,6 +8,8 @@
 TcpSink::TcpSink(QObject *parent) :
     QObject(parent)
 {
+    sock = 0;
+    devOut = 0;
 }
 TcpSink::~TcpSink() {
     sock->deleteLater();

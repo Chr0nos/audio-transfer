@@ -5,6 +5,7 @@
 #include <QMap>
 #include <QString>
 #include <QStringList>
+#include <QFile>
 
 class Readini : public QObject
 {
@@ -23,8 +24,11 @@ public:
     bool removeSection(const QString section);
     bool flush();
     bool exists();
+    bool isWritable();
+    bool open(QIODevice::OpenModeFlag mode);
 
 private:
+    QFile file;
     QString filePath;
     QMap<QString,QMap<QString,QString> > iniContent;
 

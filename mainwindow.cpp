@@ -26,10 +26,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->sourceRadioDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->sourceRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
+    connect(ui->sourceRadioZeroDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->destinationDeviceRadio,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioPulseAudio,SIGNAL(clicked()),SLOT(refreshEnabledDestinations()));
+    connect(ui->destinationRadioZeroDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
+
     connect(manager,SIGNAL(tcpTargetConnected()),this,SLOT(tcpTargetConnected()));
     connect(manager,SIGNAL(errors(QString)),this,SLOT(errors(QString)));
     connect(manager,SIGNAL(started()),this,SLOT(started()));
@@ -44,13 +47,19 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->destinationPulseAudioLineEdit->deleteLater();
 #endif
     debug("configuration path: " + getConfigFilePath());
-    configLoad();
+
+    this->ini = new Readini(getConfigFilePath(),this);
+    if (ini->exists()) {
+        configLoad(ini);
+        if (ini->getValue("general","auto-start") == "1") on_pushButton_clicked();
+    }
 
 }
 
 MainWindow::~MainWindow()
 {
     delete manager;
+    delete ini;
     delete ui;
 }
 void MainWindow::errors(const QString error) {
@@ -82,21 +91,24 @@ void MainWindow::on_pushButton_clicked()
         mc.sampleRate = ui->samplesRates->currentText().toInt();
         mc.sampleSize = ui->samplesSize->currentText().toInt();
         mc.channels = ui->channelsCount->value();
-        mc.filePathOutput = ui->sourceFilePath->text();
+        mc.filePathOutput = ui->destinationFilePath->text();
+        mc.filePathInput = ui->sourceFilePath->text();
         mc.devices.input = ui->sourcesList->currentIndex();
         mc.devices.output = ui->destinationDeviceCombo->currentIndex();
         mc.bufferSize = bitrate * ui->destinationTcpBufferDuration->value() / 1000 / 100;
         mc.bufferMaxSize = 2097152; //2Mb
         debug("buffer size: " + wsize(mc.bufferSize));
 
-        if (ui->sourceRadioFile->isChecked()) {
-            qDebug() << "ui: file source mode";
-            mc.modeInput = Manager::File;
-        }
+        //SOURCES
+        if (ui->sourceRadioFile->isChecked()) mc.modeInput = Manager::File;
         else if (ui->sourceRadioDevice->isChecked()) mc.modeInput = Manager::Device;
+        else if (ui->sourceRadioZeroDevice->isChecked()) mc.modeInput = Manager::Zero;
 
+        //DESTINATIONS
+        if (ui->destinationRadioFile->isChecked()) {
+            mc.modeOutput = Manager::File;
+        }
 
-        if (ui->destinationRadioFile->isChecked()) mc.modeInput = Manager::File;
         else if (ui->destinationDeviceRadio->isChecked()) {
             mc.modeOutput = Manager::Device;
             ui->statusBar->showMessage("redirecting from " + ui->sourcesList->currentText() + " to " + ui->destinationDeviceCombo->currentText());
@@ -127,6 +139,8 @@ void MainWindow::on_pushButton_clicked()
             mc.modeOutput = Manager::PulseAudio;
 
         }
+        else if (ui->destinationRadioZeroDevice->isChecked()) mc.modeOutput = Manager::Zero;
+
         manager->setUserConfig(mc);
         manager->start();
     }
@@ -216,8 +230,9 @@ void MainWindow::refreshEnabledSources() {
     else if (ui->sourceRadioFile->isChecked()) {
         ui->sourceFilePath->setEnabled(true);
         ui->browseSourceFilePath->setEnabled(true);
-        modeDest = Manager::File;
+        modeSource = Manager::File;
     }
+    else if (ui->sourceRadioZeroDevice->isChecked()) modeSource = Manager::Zero;
 }
 void MainWindow::refreshEnabledDestinations() {
     ui->destinationFilePath->setEnabled(false);
@@ -226,8 +241,9 @@ void MainWindow::refreshEnabledDestinations() {
     ui->destinationTcpSocket->setEnabled(false);
     ui->destinationDeviceCombo->setEnabled(false);
     ui->refreshOutputDevices->setEnabled(false);
+#ifdef PULSE
     ui->destinationPulseAudioLineEdit->setEnabled(false);
-
+#endif
     if (ui->destinationDeviceRadio->isChecked()) {
         ui->destinationDeviceCombo->setEnabled(true);
         ui->refreshOutputDevices->setEnabled(true);
@@ -249,6 +265,7 @@ void MainWindow::refreshEnabledDestinations() {
         modeDest = Manager::PulseAudio;
     }
 #endif
+    else if (ui->destinationRadioZeroDevice->isChecked()) modeDest = Manager::Zero;
 
 }
 void MainWindow::tcpTargetConnected() {
@@ -301,6 +318,8 @@ void MainWindow::setUserControlState(const bool state) {
     ui->sourceFilePath->setEnabled(state);
     ui->browseSourceFilePath->setEnabled(state);
 
+    ui->sourceRadioZeroDevice->setEnabled(state);
+
     ui->destinationDeviceRadio->setEnabled(state);
     ui->destinationDeviceCombo->setEnabled(state);
 
@@ -313,6 +332,7 @@ void MainWindow::setUserControlState(const bool state) {
     ui->destinationRadioPulseAudio->setEnabled(state);
     ui->destinationPulseAudioLineEdit->setEnabled(state);
 #endif
+    ui->destinationRadioZeroDevice->setEnabled(state);
 }
 
 QString MainWindow::getConfigFilePath() {
@@ -321,72 +341,82 @@ QString MainWindow::getConfigFilePath() {
 
 void MainWindow::on_configSave_clicked()
 {
-    configSave();
+    configSave(this->ini);
 }
-void MainWindow::configSave() {
+void MainWindow::configSave(Readini *ini) {
+    ini->open(QIODevice::WriteOnly);
+    if (!ini->isWritable()) {
+        errors("cannot write in the configuration file: check perms");
+        return;
+    }
     ui->configSave->setEnabled(false);
-    Readini ini(getConfigFilePath(),this);
-    ini.setValue("format","codec",ui->codecList->currentText());
-    ini.setValue("format","sampleSize",ui->samplesSize->currentText());
-    ini.setValue("format","sampleRate",ui->samplesRates->currentText());
-    ini.setValue("format","channels",ui->channelsCount->value());
+    ini->setValue("format","codec",ui->codecList->currentText());
+    ini->setValue("format","sampleSize",ui->samplesSize->currentText());
+    ini->setValue("format","sampleRate",ui->samplesRates->currentText());
+    ini->setValue("format","channels",ui->channelsCount->value());
 
-    ini.setValue("source","device",ui->sourcesList->currentText());
-    ini.setValue("source","mode",modeSource);
+    ini->setValue("source","device",ui->sourcesList->currentText());
+    ini->setValue("source","mode",modeSource);
+    ini->setValue("source","file",ui->sourceFilePath->text());
 
-    ini.setValue("target","mode",modeDest);
-    ini.setValue("target","file",ui->destinationFilePath->text());
-    ini.setValue("target","tcp",ui->destinationTcpSocket->text());
-    ini.setValue("target","tcpBuffer",ui->destinationTcpBufferDuration->value());
+    ini->setValue("target","mode",modeDest);
+    ini->setValue("target","file",ui->destinationFilePath->text());
+    ini->setValue("target","tcp",ui->destinationTcpSocket->text());
+    ini->setValue("target","tcpBuffer",ui->destinationTcpBufferDuration->value());
 #ifdef PULSE
-    ini.setValue("target","pulse",ui->destinationPulseAudioLineEdit->text());
+    ini->setValue("target","pulse",ui->destinationPulseAudioLineEdit->text());
 #endif
-    ini.setValue("target","device",ui->destinationDeviceCombo->currentText());
+    ini->setValue("target","device",ui->destinationDeviceCombo->currentText());
 
     //write all of this inside the .ini file
-    ini.flush();
+    ini->flush();
     debug("configuration saved");
     ui->statusBar->showMessage("configuration saved",3000);
     ui->configSave->setEnabled(true);
 }
-void MainWindow::configLoad() {
+void MainWindow::configLoad(Readini *ini) {
     ui->configSave->setEnabled(false);
-    Readini ini(getConfigFilePath(),this);
-    if (!ini.exists()) {
+    if (!ini->exists()) {
         ui->configSave->setEnabled(true);
         return;
     }
-    const int deviceIdSource = ui->sourcesList->findText(ini.getValue("source","device"));
+    const int deviceIdSource = ui->sourcesList->findText(ini->getValue("source","device"));
     if (deviceIdSource) ui->sourcesList->setCurrentIndex(deviceIdSource);
 
-    const int codecId = ui->codecList->findText(ini.getValue("format","codec"));
+    const int codecId = ui->codecList->findText(ini->getValue("format","codec"));
     if (codecId) ui->codecList->setCurrentIndex(codecId);
 
-    const int sampleSizePos = ui->samplesSize->findText(ini.getValue("format","sampleSize"));
+    const int sampleSizePos = ui->samplesSize->findText(ini->getValue("format","sampleSize"));
     if (sampleSizePos) ui->samplesSize->setCurrentIndex(sampleSizePos);
 
-    const int sampleRatePos = ui->samplesRates->findText(ini.getValue("format","sampleRate"));
+    const int sampleRatePos = ui->samplesRates->findText(ini->getValue("format","sampleRate"));
     if (sampleRatePos) ui->samplesRates->setCurrentIndex(sampleRatePos);
 
-    const int channels = ini.getValue("format","channels").toInt();
+    const int channels = ini->getValue("format","channels").toInt();
     if ((channels) && (channels <= ui->channelsCount->maximum())) ui->channelsCount->setValue(channels);
 
-    const int deviceIdTarget = ui->destinationDeviceCombo->findText(ini.getValue("target","device"));
+    const int deviceIdTarget = ui->destinationDeviceCombo->findText(ini->getValue("target","device"));
     if (deviceIdTarget) ui->destinationDeviceCombo->setCurrentIndex(deviceIdTarget);
 
+    ui->sourceFilePath->setText(ini->getValue("source","file"));
+
+
 #ifdef PULSE
-    ui->destinationPulseAudioLineEdit->setText(ini.getValue("target","pulse"));
+    ui->destinationPulseAudioLineEdit->setText(ini->getValue("target","pulse"));
 #endif
 
-    ui->destinationFilePath->setText(ini.getValue("target","file"));
-    ui->destinationTcpSocket->setText(ini.getValue("target","tcp"));
-    ui->destinationTcpBufferDuration->setValue(ini.getValue("target","tcpBuffer").toInt());
-    switch (ini.getValue("source","mode").toInt()) {
+    ui->destinationFilePath->setText(ini->getValue("target","file"));
+    ui->destinationTcpSocket->setText(ini->getValue("target","tcp"));
+    ui->destinationTcpBufferDuration->setValue(ini->getValue("target","tcpBuffer").toInt());
+    switch (ini->getValue("source","mode").toInt()) {
         case Manager::Device:
             ui->sourceRadioDevice->setChecked(true);
             break;
         case Manager::File:
             ui->sourceRadioFile->setChecked(true);
+            break;
+        case Manager::Zero:
+            ui->sourceRadioZeroDevice->setChecked(true);
             break;
         default:
             debug("config: ignored source mode");
@@ -394,7 +424,7 @@ void MainWindow::configLoad() {
     }
     refreshEnabledSources();
 
-    switch (ini.getValue("target","mode").toInt()) {
+    switch (ini->getValue("target","mode").toInt()) {
         case Manager::Device:
             ui->destinationDeviceRadio->setChecked(true);
             break;
@@ -409,6 +439,9 @@ void MainWindow::configLoad() {
             ui->destinationRadioPulseAudio->setChecked(true);
             break;
 #endif
+        case Manager::Zero:
+            ui->destinationRadioZeroDevice->setChecked(true);
+            break;
         default:
             debug("config: ignored target mode");
             break;

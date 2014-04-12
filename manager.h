@@ -17,7 +17,14 @@ class Manager : public QObject
 {
     Q_OBJECT
 public:
-    enum Mode {File = 0,Device = 1,Tcp = 2,None = 3,PulseAudio = 4};
+    enum Mode {
+        File = 0,
+        Device = 1,
+        Tcp = 2,
+        None = 3,
+        PulseAudio = 4,
+        Zero = 5
+    };
     struct tcpConfig {
         QString host;
         int port;
@@ -75,6 +82,8 @@ private:
     int deviceIdOut;
     bool bisRecording;
     void debugList(const QStringList list);
+    bool prepareSource();
+    bool prepareOutput();
 #ifdef PULSE
     Pulse *pulse;
 #endif
@@ -91,6 +100,8 @@ public slots:
     void tcpTargetDisconnected();
     void tcpTargetSockRead(const QString message);
     void transfer();
+    void devInClose();
+    void devOutClose();
 };
 
 #endif // MANAGER_H
