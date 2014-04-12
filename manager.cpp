@@ -150,7 +150,7 @@ bool Manager::start() {
     bisRecording = true;
     bytesCount = 0;
     emit(started());
-    transfer();
+    //transfer();
     return true;
 }
 void Manager::stop() {
