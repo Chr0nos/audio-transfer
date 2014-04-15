@@ -3,6 +3,7 @@
 #include "manager.h"
 #include "readini.h"
 
+#include <QtGui>
 #include <QString>
 #include <QtMultimedia/QAudioOutput>
 #include <QFileDialog>
