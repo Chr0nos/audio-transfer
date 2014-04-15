@@ -210,8 +210,6 @@ void Manager::tcpTargetReady() {
 }
 void Manager::transfer() {
     //qDebug() << "transfer!" << devIn << devIn->isOpen();
-    qDebug() << devIn;
-    qDebug() << devOut;
     if ((!devOut) || (!devIn) || (!devIn->isOpen()) || (!devOut->isOpen())) {
         debug("manager: stoping record");
         stop();
