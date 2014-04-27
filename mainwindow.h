@@ -23,6 +23,7 @@ public:
     void setUserControlState(const bool state);
     void configSave(Readini *ini);
     void configLoad(Readini *ini);
+    void moveToCenter();
 
 private slots:
     void on_refreshSources_clicked();

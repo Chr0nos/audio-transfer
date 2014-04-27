@@ -78,10 +78,17 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
+           <item row="3" column="0">
             <widget class="QRadioButton" name="sourceRadioZeroDevice">
              <property name="text">
               <string>Zero</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QRadioButton" name="sourceRadioPulseAudio">
+             <property name="text">
+              <string>PulseAudio</string>
              </property>
             </widget>
            </item>

@@ -34,10 +34,7 @@ public:
     struct userConfig {
        Mode modeInput;
        Mode modeOutput;
-       QString codec;
-       int sampleRate;
-       int sampleSize;
-       int channels;
+       QAudioFormat format;
        tcpConfig tcpTarget;
        struct devicesId {
            int input;
@@ -84,9 +81,6 @@ private:
     void debugList(const QStringList list);
     bool prepareSource();
     bool prepareOutput();
-#ifdef PULSE
-    Pulse *pulse;
-#endif
 
 signals:
     void tcpTargetConnected();

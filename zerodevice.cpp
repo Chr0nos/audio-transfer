@@ -1,11 +1,16 @@
 #include "zerodevice.h"
 #include <QDebug>
 #include <QTimer>
+#include <QTime>
+
 //this class is just to be an equivalent to QFile("/dev/zero");
 
-ZeroDevice::ZeroDevice(QObject *parent) :
+ZeroDevice::ZeroDevice(QAudioFormat* format,QObject *parent) :
     QIODevice(parent)
 {
+    this->format = format;
+    bytesCountPs = (format->sampleRate() * format->sampleSize() / 8) * format->channelCount();
+    lastReadTime = 0;
     timer = new QTimer(this);
     timer->setInterval(100);
     connect(timer,SIGNAL(timeout()),this,SIGNAL(readyRead()));
@@ -14,12 +19,21 @@ qint64 ZeroDevice::writeData(const char *data, qint64 len) {
     return len;
 }
 qint64 ZeroDevice::readData(char *data, qint64 maxlen) {
-    memset(data,0,maxlen);
-    return maxlen;
+    const int currentTime = QTime::currentTime().msec();
+    const int elapsedTime = currentTime - lastReadTime;
+    int bytesToRead = (int) (bytesCountPs * elapsedTime / 500);
+    if (bytesToRead > maxlen) bytesToRead = maxlen;
+    else if (bytesToRead < 0) bytesToRead = maxlen;
+    memset(data,0,bytesToRead);
+
+    lastReadTime = currentTime;
+    return bytesToRead;
 }
 bool ZeroDevice::open(OpenMode mode) {
     QIODevice::open(mode);
-    timer->start();
-    if ((mode == QIODevice::ReadOnly) || (mode == QIODevice::ReadWrite)) emit(readyRead());
+    if ((mode == QIODevice::ReadOnly) || (mode == QIODevice::ReadWrite)) {
+        emit(readyRead());
+        timer->start();
+    }
     return true;
 }

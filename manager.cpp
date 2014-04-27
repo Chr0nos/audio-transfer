@@ -8,7 +8,7 @@
 #include <QtNetwork/QNetworkInterface>
 #include <QDebug>
 
-//todo: this class will replace the whole Rec class (too bloated and nasty to evolut it)
+//todo: make evry output a child of QIODevice to prevent special case each time
 
 Manager::Manager(QObject *parent) :
     QObject(parent)
@@ -23,13 +23,11 @@ Manager::Manager(QObject *parent) :
     deviceIdIn = 0;
     deviceIdOut = 0;
     bytesCount = 0;
-#ifdef PULSE
-    pulse = 0;
-#endif
     bisRecording = false;
     qDebug() << "manager ready";
 }
 Manager::~Manager() {
+    qDebug() << "deleting manager";
     if (devIn) devIn->deleteLater();
     if (fileOut) fileOut->deleteLater();
     if (tcpSink) tcpSink->deleteLater();
@@ -56,12 +54,18 @@ bool Manager::prepareSource() {
         devIn = fileIn;
     }
     else if (config.modeInput == Zero) {
-        devIn = new ZeroDevice(this);
+        devIn = new ZeroDevice(&format,this);
     }
+#ifdef PULSE
+    else if (config.modeInput == PulseAudio) {
+        devIn = new PulseDevice("Audio-Transfer-Client",NULL,format,this);
+    }
+#endif
     if (!devIn) return false;
 
     //connecting the source to transfer function (main function)
     connect(devIn,SIGNAL(readyRead()),this,SLOT(transfer()));
+    debug("source connected");
 
     //opening source
     if (!devIn->open(QIODevice::ReadOnly)) {
@@ -92,9 +96,11 @@ bool Manager::prepareOutput() {
         debug("local ips:");
         debugList(ips);
         tcpSink = new TcpSink(this);
+        debug("tcp sink created");
         connect(tcpSink,SIGNAL(connected()),this,SLOT(tcpTargetOpened()));
         connect(tcpSink,SIGNAL(reply(QString)),this,SLOT(tcpTargetSockRead(QString)));
         connect(tcpSink,SIGNAL(disconnected()),this,SLOT(tcpTargetDisconnected()));
+        debug("tcp sink connected to manager, connecting to host...");
         tcpSink->connectToHost(config.tcpTarget.host,config.tcpTarget.port);
     }
     else if (config.modeOutput == Device) {
@@ -111,13 +117,11 @@ bool Manager::prepareOutput() {
 #ifdef PULSE
     else if (config.modeOutput == PulseAudio) {
         debug("using module: PULSE");
-        this->pulse = new Pulse(config.pulseTarget,format,this);
-        connect(this->pulse,SIGNAL(say(QString)),this,SIGNAL(debug(QString)));
-        devOut = this->pulse->getDevice();
+        devOut = new PulseDevice("Audio-Transfer-Client",config.pulseTarget,format,this);
     }
 #endif
     else if (config.modeOutput == Zero) {
-        devOut = new ZeroDevice(this);
+        devOut = new ZeroDevice(&format,this);
     }
     else {
         errors("unsuported output mode: " + QString::number(config.modeOutput));
@@ -136,16 +140,18 @@ bool Manager::prepareOutput() {
 
 bool Manager::start() {
     debug("Starting manager...");
+    if (!prepareOutput()) {
+        errors("failed to start output");
+        return false;
+    }
+
+    debug("output: ready");
     if (!prepareSource()) {
         errors("failed to start input");
         return false;
     }
     debug("input ready");
-    if (!prepareOutput()) {
-        errors("failed to stard input");
-        return false;
-    }
-    debug("output: ready");
+
     qDebug() << "started";
     bisRecording = true;
     bytesCount = 0;
@@ -155,19 +161,14 @@ bool Manager::start() {
 }
 void Manager::stop() {
     bisRecording = false;
-    if (devIn != 0) {
+    if (devIn) {
         devIn->close();
         disconnect(devIn,SIGNAL(readyRead()),this,SLOT(transfer()));
     }
     if (config.modeOutput != Tcp) {
-        if (devOut != 0) devOut->close();
-#ifdef PULSE
-        if (config.modeOutput == PulseAudio) {
-            pulse->deleteLater();
-        }
-#endif
+        if (devOut) devOut->close();
     }
-    else if (tcpSink != 0) {
+    else if (tcpSink) {
         tcpSink->disconnectFromHost();
         disconnect(tcpSink,SIGNAL(connected()),this,SLOT(tcpTargetOpened()));
         disconnect(tcpSink,SIGNAL(disconnected()),this,SLOT(tcpTargetDisconnected()));
@@ -185,13 +186,10 @@ void Manager::setUserConfig(userConfig cfg) {
         return;
     }
     config = cfg;
-    format.setCodec(config.codec);
-    format.setChannelCount(config.channels);
-    format.setSampleRate(config.sampleRate);
-    format.setSampleSize(config.sampleSize);
+    format = cfg.format;
 }
 QString Manager::getAudioConfig() {
-    return "samplerate:" + QString::number(config.sampleRate) + " samplesize:" + QString::number(config.sampleSize) + " channels:" + QString::number(config.channels);
+    return "samplerate:" + QString::number(config.format.sampleRate()) + " samplesize:" + QString::number(config.format.sampleSize()) + " channels:" + QString::number(config.format.channelCount());
 }
 void Manager::tcpTargetOpened() {
     debug("Tcp connected to remote server");
@@ -211,12 +209,20 @@ void Manager::tcpTargetReady() {
 void Manager::transfer() {
     //qDebug() << "transfer!" << devIn << devIn->isOpen();
     if ((!devOut) || (!devIn) || (!devIn->isOpen()) || (!devOut->isOpen())) {
+        qDebug() << "manager: transfer: stoping";
+        qDebug() << "devOut: " << devOut;
+        if (!devOut) qDebug() << "manager: transfer: devOut is null";
+        else if (!devOut->isOpen()) qDebug() << "manager: transfer: devOut is closed";
+
+        qDebug() << "devIn: " << devIn;
+        if (!devIn) qDebug() << "manager: transfer: devIn is null";
+        else if (!devIn->isOpen()) qDebug() << "manager: transfer: devIn is closed";
+
         debug("manager: stoping record");
         stop();
         return;
     }
     QByteArray data = devIn->readAll();
-    //qDebug() << "data: " << data.toHex();
     bytesCount += data.size();
     const int bsize = buffer.size();
     //if the buffer size is too big: we just drop the datas to prevent memory overflow by this buffer
@@ -225,7 +231,6 @@ void Manager::transfer() {
     if (bsize >= config.bufferSize) {
         devOut->write(buffer);
         buffer.clear();
-        //buffer.remove(0,config.bufferSize);
     }
 }
 quint64 Manager::getTransferedSize() {

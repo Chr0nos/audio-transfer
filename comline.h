@@ -2,6 +2,7 @@
 #define COMLINE_H
 
 #include <QObject>
+#include <QTextStream>
 #include "manager.h"
 
 class Comline : public QObject
@@ -12,11 +13,12 @@ public:
     void start();
 private:
     Manager* manager;
+    QTextStream* out;
 
 signals:
 
 public slots:
-
+    void debug(QString message);
 };
 
 #endif // COMLINE_H

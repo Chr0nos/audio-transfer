@@ -10,37 +10,37 @@
 #include <QIODevice>
 #include <QtMultimedia/QAudioFormat>
 #include <QString>
-
-class Pulse : public QObject {
-    Q_OBJECT
-public:
-    explicit Pulse(const QString host, QAudioFormat format, QObject *parent = 0);
-    ~Pulse();
-    void write(const QByteArray &data);
-    QIODevice* getDevice();
-    bool makeChannelMap(pa_channel_map *map);
-private:
-    pa_simple *s;
-    pa_sample_spec ss;
-    QIODevice *device;
-    QAudioFormat format;
-    pa_sample_format getSampleSize();
-
-signals:
-    void say(const QString message);
-public slots:
-
-};
+#include <QTimer>
 
 class PulseDevice : public QIODevice {
+    Q_OBJECT
 public:
-    PulseDevice(pa_simple** pa, QObject* parent = 0);
-    bool isOpen();
+    PulseDevice(const QString name,const QString target, QAudioFormat format, QObject *parent);
+    ~PulseDevice();
+    bool open(OpenMode mode);
+    void close();
 private:
     qint64 writeData(const char *data, qint64 len);
     qint64 readData(char *data, qint64 maxlen);
-    pa_simple **pulseAudio;
     QObject *parent;
+    pa_simple *s;
+    pa_simple *rec;
+    pa_sample_spec ss;
+    pa_sample_format getSampleSize();
+    bool makeChannelMap(pa_channel_map *map);
+    QAudioFormat format;
+    void say(const QString message);
+    QString target;
+    QString name;
+    bool debugMode;
+    QTimer* timer;
+    int latencyRec;
+signals:
+    void readyRead();
+public slots:
+    void deleteLater();
+private slots:
+    void testSlot();
 };
 
 #endif // PULSE_H

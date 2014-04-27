@@ -8,12 +8,14 @@
 #include <QtMultimedia/QAudioOutput>
 #include <QFileDialog>
 #include <QTimer>
+#include <QDesktopWidget>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    moveToCenter();
     modeSource = Manager::Device;
     modeDest = Manager::Tcp;
 
@@ -28,6 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->sourceRadioDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->sourceRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->sourceRadioZeroDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
+    connect(ui->sourceRadioPulseAudio,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->destinationDeviceRadio,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
@@ -46,6 +49,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->destinationRadioPulseAudio->setEnabled(false);
     ui->destinationRadioPulseAudio->deleteLater();
     ui->destinationPulseAudioLineEdit->deleteLater();
+    ui->sourceRadioPulseAudio->setEnabled(false);
+    ui->sourceRadioPulseAudio->deleteLater();
 #endif
     debug("configuration path: " + getConfigFilePath());
 
@@ -86,12 +91,12 @@ void MainWindow::on_pushButton_clicked()
         const int bitrate = (ui->samplesRates->currentText().toInt() * ui->samplesSize->currentText().toInt() / 8) * ui->channelsCount->value();
         debug("estimated bitrate: " + wsize(bitrate));
         Manager::userConfig mc;
-        mc.codec = ui->codecList->currentText();
         mc.modeInput = Manager::None;
         mc.modeOutput = Manager::None;
-        mc.sampleRate = ui->samplesRates->currentText().toInt();
-        mc.sampleSize = ui->samplesSize->currentText().toInt();
-        mc.channels = ui->channelsCount->value();
+        mc.format.setCodec(ui->codecList->currentText());
+        mc.format.setSampleRate(ui->samplesRates->currentText().toInt());
+        mc.format.setSampleSize(ui->samplesSize->currentText().toInt());
+        mc.format.setChannelCount(ui->channelsCount->value());
         mc.filePathOutput = ui->destinationFilePath->text();
         mc.filePathInput = ui->sourceFilePath->text();
         mc.devices.input = ui->sourcesList->currentIndex();
@@ -104,6 +109,7 @@ void MainWindow::on_pushButton_clicked()
         if (ui->sourceRadioFile->isChecked()) mc.modeInput = Manager::File;
         else if (ui->sourceRadioDevice->isChecked()) mc.modeInput = Manager::Device;
         else if (ui->sourceRadioZeroDevice->isChecked()) mc.modeInput = Manager::Zero;
+        else if (ui->sourceRadioPulseAudio->isChecked()) mc.modeInput = Manager::PulseAudio;
 
         //DESTINATIONS
         if (ui->destinationRadioFile->isChecked()) {
@@ -234,6 +240,7 @@ void MainWindow::refreshEnabledSources() {
         modeSource = Manager::File;
     }
     else if (ui->sourceRadioZeroDevice->isChecked()) modeSource = Manager::Zero;
+    else if (ui->sourceRadioPulseAudio->isChecked()) modeSource = Manager::PulseAudio;
 }
 void MainWindow::refreshEnabledDestinations() {
     ui->destinationFilePath->setEnabled(false);
@@ -332,6 +339,7 @@ void MainWindow::setUserControlState(const bool state) {
 #ifdef PULSE
     ui->destinationRadioPulseAudio->setEnabled(state);
     ui->destinationPulseAudioLineEdit->setEnabled(state);
+    ui->sourceRadioPulseAudio->setEnabled(state);
 #endif
     ui->destinationRadioZeroDevice->setEnabled(state);
 }
@@ -419,6 +427,11 @@ void MainWindow::configLoad(Readini *ini) {
         case Manager::Zero:
             ui->sourceRadioZeroDevice->setChecked(true);
             break;
+#ifdef PULSE
+        case Manager::PulseAudio:
+            ui->sourceRadioPulseAudio->setChecked(true);
+            break;
+#endif
         default:
             debug("config: ignored source mode");
             break;
@@ -449,4 +462,8 @@ void MainWindow::configLoad(Readini *ini) {
     }
     refreshEnabledDestinations();
     ui->configSave->setEnabled(true);
+}
+void MainWindow::moveToCenter() {
+    const QRect screen = QApplication::desktop()->screenGeometry();
+    this->move(screen.center() - this->rect().center());
 }
