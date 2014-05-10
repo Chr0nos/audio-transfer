@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>552</width>
-    <height>527</height>
+    <height>553</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -322,6 +322,24 @@
          <widget class="QListWidget" name="debug"/>
         </item>
        </layout>
+      </widget>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Options</string>
+       </attribute>
+       <widget class="QCheckBox" name="checkboxSourceOutput">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>20</y>
+          <width>181</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Enable output as source</string>
+        </property>
+       </widget>
       </widget>
      </widget>
     </item>

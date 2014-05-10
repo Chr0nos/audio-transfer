@@ -12,7 +12,7 @@ Comline::Comline(QObject *parent) :
 
     QAudioDeviceInfo info = QAudioDeviceInfo::availableDevices(QAudio::AudioInput).at(0);
     Manager::userConfig mc;
-    mc.bufferSize = 75;
+    mc.bufferSize = 0;
     mc.bufferMaxSize = 2*1024*1024; //2Mb
     mc.format.setCodec("audio/pcm");
     mc.format.setSampleRate(info.supportedSampleRates().last());

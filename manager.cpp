@@ -224,13 +224,19 @@ void Manager::transfer() {
     }
     QByteArray data = devIn->readAll();
     bytesCount += data.size();
-    const int bsize = buffer.size();
-    //if the buffer size is too big: we just drop the datas to prevent memory overflow by this buffer
-    if (bsize > config.bufferMaxSize) return;
-    buffer.append(data);
-    if (bsize >= config.bufferSize) {
-        devOut->write(buffer);
-        buffer.clear();
+    //in case of no buffer usage we dont copy data to buffer (better performance)
+    if (!config.bufferSize) {
+        devOut->write(data);
+    }
+    else {
+        //if the buffer size is too big: we just drop the datas to prevent memory overflow by this buffer
+        const int bsize = buffer.size();
+        if (bsize > config.bufferMaxSize) return;
+        buffer.append(data);
+        if (bsize >= config.bufferSize) {
+            devOut->write(buffer);
+            buffer.clear();
+        }
     }
 }
 quint64 Manager::getTransferedSize() {

@@ -24,6 +24,7 @@ public:
     void configSave(Readini *ini);
     void configLoad(Readini *ini);
     void moveToCenter();
+    bool intToBool(const int value);
 
 private slots:
     void on_refreshSources_clicked();

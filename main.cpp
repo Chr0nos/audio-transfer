@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
         Comline* com = new Comline();
         com->start();
         out << "Done." << endl;
+        com->deleteLater();
         return 0;
     }
 

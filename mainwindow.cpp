@@ -36,6 +36,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->destinationRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioPulseAudio,SIGNAL(clicked()),SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioZeroDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
+    connect(ui->checkboxSourceOutput,SIGNAL(clicked()),this,SLOT(on_refreshSources_clicked()));
 
     connect(manager,SIGNAL(tcpTargetConnected()),this,SLOT(tcpTargetConnected()));
     connect(manager,SIGNAL(errors(QString)),this,SLOT(errors(QString)));
@@ -59,7 +60,6 @@ MainWindow::MainWindow(QWidget *parent) :
         configLoad(ini);
         if (ini->getValue("general","auto-start") == "1") on_pushButton_clicked();
     }
-
 }
 
 MainWindow::~MainWindow()
@@ -80,6 +80,9 @@ void MainWindow::on_refreshSources_clicked()
 {
     ui->sourcesList->clear();
     ui->sourcesList->addItems(Manager::getDevicesNames(QAudio::AudioInput));
+    if (ui->checkboxSourceOutput->isChecked()) {
+        ui->sourcesList->addItems(Manager::getDevicesNames(QAudio::AudioOutput));
+    }
 }
 
 
@@ -163,7 +166,12 @@ void MainWindow::on_sourcesList_currentTextChanged()
     ui->samplesRates->clear();
     ui->samplesSize->clear();
     if (ui->sourcesList->currentIndex() >= 0) {
-        QAudioDeviceInfo info = QAudioDeviceInfo::availableDevices(QAudio::AudioInput).at(ui->sourcesList->currentIndex());
+        QList<QAudioDeviceInfo> infoList = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
+        if (ui->checkboxSourceOutput->isChecked()) {
+            infoList << QAudioDeviceInfo::availableDevices(QAudio::AudioOutput);
+        }
+
+        QAudioDeviceInfo info = infoList.at(ui->sourcesList->currentIndex());
         ui->pushButton->setEnabled(true);
         ui->codecList->addItems(info.supportedCodecs());
         ui->codecList->setCurrentIndex(0);
@@ -218,7 +226,11 @@ void MainWindow::on_sourcesList_currentIndexChanged(int index)
     ui->samplesRates->clear();
     ui->codecList->clear();
     if (index >= 0) {
-        QAudioDeviceInfo info = QAudioDeviceInfo::availableDevices(QAudio::AudioInput).at(ui->sourcesList->currentIndex());
+        QList<QAudioDeviceInfo> infoList = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
+        infoList.append(QAudioDeviceInfo::availableDevices(QAudio::AudioOutput));
+
+        QAudioDeviceInfo info = infoList.at(ui->sourcesList->currentIndex());
+
         ui->samplesRates->addItems(Manager::intListToQStringList(info.supportedSampleRates()));
         ui->codecList->addItems(info.supportedCodecs());
         //ui->channelsCount->setMaximum(rec->getMaxChannelsCount());
@@ -342,6 +354,8 @@ void MainWindow::setUserControlState(const bool state) {
     ui->sourceRadioPulseAudio->setEnabled(state);
 #endif
     ui->destinationRadioZeroDevice->setEnabled(state);
+
+    ui->checkboxSourceOutput->setEnabled(state);
 }
 
 QString MainWindow::getConfigFilePath() {
@@ -376,6 +390,7 @@ void MainWindow::configSave(Readini *ini) {
     ini->setValue("target","pulse",ui->destinationPulseAudioLineEdit->text());
 #endif
     ini->setValue("target","device",ui->destinationDeviceCombo->currentText());
+    ini->setValue("options","sourceOutput",ui->checkboxSourceOutput->isChecked());
 
     //write all of this inside the .ini file
     ini->flush();
@@ -389,6 +404,8 @@ void MainWindow::configLoad(Readini *ini) {
         ui->configSave->setEnabled(true);
         return;
     }
+    ui->checkboxSourceOutput->setChecked(intToBool(ini->getValue("options","sourceOutput").toInt()));
+
     const int deviceIdSource = ui->sourcesList->findText(ini->getValue("source","device"));
     if (deviceIdSource) ui->sourcesList->setCurrentIndex(deviceIdSource);
 
@@ -406,6 +423,7 @@ void MainWindow::configLoad(Readini *ini) {
 
     const int deviceIdTarget = ui->destinationDeviceCombo->findText(ini->getValue("target","device"));
     if (deviceIdTarget) ui->destinationDeviceCombo->setCurrentIndex(deviceIdTarget);
+
 
     ui->sourceFilePath->setText(ini->getValue("source","file"));
 
@@ -466,4 +484,8 @@ void MainWindow::configLoad(Readini *ini) {
 void MainWindow::moveToCenter() {
     const QRect screen = QApplication::desktop()->screenGeometry();
     this->move(screen.center() - this->rect().center());
+}
+bool MainWindow::intToBool(const int value) {
+    if (value) return true;
+    else return false;
 }

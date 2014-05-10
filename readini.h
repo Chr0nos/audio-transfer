@@ -20,6 +20,7 @@ public:
     bool isKey(const QString section,const QString key);
     void setValue(const QString section,const QString item,const QString value);
     void setValue(const QString section, const QString item, const int value);
+    void setValue(const QString section,const QString item,const bool value);
     bool removeItem(const QString section,const QString item);
     bool removeSection(const QString section);
     bool flush();

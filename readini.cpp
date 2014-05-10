@@ -68,6 +68,10 @@ void Readini::setValue(const QString section, const QString item, const QString 
 void Readini::setValue(const QString section, const QString item, const int value) {
     setValue(section,item,QString::number(value));
 }
+void Readini::setValue(const QString section, const QString item, const bool value) {
+    if (value) setValue(section,item,QString::number(1));
+    else setValue(section,item,QString::number(0));
+}
 
 bool Readini::removeItem(const QString section, const QString item) {
     if (isKey(section,item)) {
