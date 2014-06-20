@@ -21,6 +21,7 @@ private:
     int port;
     AudioFormat *format;
     void sendFormatSpecs();
+    void say(const QString message);
 
 signals:
 

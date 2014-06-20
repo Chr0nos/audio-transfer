@@ -13,6 +13,7 @@ TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format, QO
     this->port = port;
     this->host = host;
     this->sock = new QTcpSocket(this);
+    sock->setSocketOption(QAbstractSocket::LowDelayOption,0);
     connect(sock,SIGNAL(disconnected()),this,SLOT(sockClose()));
     connect(sock,SIGNAL(disconnected()),this,SIGNAL(aboutToClose()));
     connect(sock,SIGNAL(connected()),this,SLOT(sockOpen()));
@@ -23,7 +24,10 @@ bool TcpDevice::open(OpenMode mode) {
     if (mode == QIODevice::WriteOnly) {
         sock->connectToHost(host,port,mode);
         sock->waitForConnected();
-        if (sock->isOpen()) return true;
+        if (sock->isOpen()) {
+            QIODevice::open(mode);
+            return true;
+        }
     }
     return false;
 }
@@ -50,4 +54,7 @@ void TcpDevice::sockClose() {
 }
 void TcpDevice::sockOpen() {
     sendFormatSpecs();
+}
+void TcpDevice::say(const QString message) {
+    qDebug() << "TcpDevice: " + message;
 }
