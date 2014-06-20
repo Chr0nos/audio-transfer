@@ -96,10 +96,13 @@ void MainWindow::on_pushButton_clicked()
         Manager::userConfig mc;
         mc.modeInput = Manager::None;
         mc.modeOutput = Manager::None;
-        mc.format.setCodec(ui->codecList->currentText());
-        mc.format.setSampleRate(ui->samplesRates->currentText().toInt());
-        mc.format.setSampleSize(ui->samplesSize->currentText().toInt());
-        mc.format.setChannelCount(ui->channelsCount->value());
+
+        mc.format = new AudioFormat();
+        mc.format->setCodec(ui->codecList->currentText());
+        mc.format->setSampleRate(ui->samplesRates->currentText().toInt());
+        mc.format->setSampleSize(ui->samplesSize->currentText().toInt());
+        mc.format->setChannelCount(ui->channelsCount->value());
+
         mc.filePathOutput = ui->destinationFilePath->text();
         mc.filePathInput = ui->sourceFilePath->text();
         mc.devices.input = ui->sourcesList->currentIndex();
@@ -321,9 +324,12 @@ void MainWindow::started() {
     timer->start();
 }
 void MainWindow::refreshEstimatedBitrate() {
-    const int bitrate = (ui->samplesRates->currentText().toInt() * ui->samplesSize->currentText().toInt() / 8) * ui->channelsCount->value();
-    ui->statusBar->showMessage("estimated bitrate: " + wsize(bitrate) + "/s",2000);
+    ui->statusBar->showMessage("estimated bitrate: " + wsize(this->getBitrate()) + "/s",2000);
 }
+int MainWindow::getBitrate() {
+    return (ui->samplesRates->currentText().toInt() * ui->samplesSize->currentText().toInt() / 8) * ui->channelsCount->value();
+}
+
 void MainWindow::setUserControlState(const bool state) {
     ui->samplesRates->setEnabled(state);
     ui->samplesSize->setEnabled(state);

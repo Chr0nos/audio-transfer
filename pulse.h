@@ -15,7 +15,7 @@
 class PulseDevice : public QIODevice {
     Q_OBJECT
 public:
-    PulseDevice(const QString name,const QString target, QAudioFormat format, QObject *parent);
+    PulseDevice(const QString name, const QString target, QAudioFormat *format, QObject *parent);
     ~PulseDevice();
     bool open(OpenMode mode);
     void close();
@@ -28,15 +28,13 @@ private:
     pa_sample_spec ss;
     pa_sample_format getSampleSize();
     bool makeChannelMap(pa_channel_map *map);
-    QAudioFormat format;
+    QAudioFormat *format;
     void say(const QString message);
     QString target;
     QString name;
     bool debugMode;
     QTimer* timer;
     int latencyRec;
-signals:
-    void readyRead();
 public slots:
     void deleteLater();
 private slots:

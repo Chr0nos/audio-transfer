@@ -13,17 +13,17 @@
 #include <QDebug>
 
 bool PulseDevice::makeChannelMap(pa_channel_map* map) {
-    if (format.channelCount() > PA_CHANNELS_MAX) {
-        say("error: max channels is: " + QString::number(PA_CHANNELS_MAX) + " current is: " + QString::number(format.channelCount()));
+    if ((uint) format->channelCount() > PA_CHANNELS_MAX) {
+        say("error: max channels is: " + QString::number(PA_CHANNELS_MAX) + " current is: " + QString::number(format->channelCount()));
         return false;
     }
-    map->channels = format.channelCount();
-    pa_channel_map_init_auto(map,format.channelCount(),PA_CHANNEL_MAP_ALSA);
+    map->channels = format->channelCount();
+    pa_channel_map_init_auto(map,format->channelCount(),PA_CHANNEL_MAP_ALSA);
     //pa_channel_map_init_auto(map,2,PA_CHANNEL_MAP_DEFAULT);
     return true;
 }
 pa_sample_format PulseDevice::getSampleSize() {
-    switch (format.sampleSize()) {
+    switch (format->sampleSize()) {
         case 8:
             return PA_SAMPLE_U8;
         case 16:
@@ -41,11 +41,11 @@ void PulseDevice::testSlot() {
     emit(readyRead());
 }
 
-PulseDevice::PulseDevice(const QString name,const QString target, QAudioFormat format, QObject *parent) {
+PulseDevice::PulseDevice(const QString name,const QString target, QAudioFormat *format, QObject *parent) {
     this->parent = parent;
     this->debugMode = true;
     say("init : start");
-    say("requested format: channels:" + QString::number(format.channelCount()) + " sampleRate:" + QString::number(format.sampleRate()) + " sampleSize:" + QString::number(format.sampleSize()));
+    say("requested format: channels:" + QString::number(format->channelCount()) + " sampleRate:" + QString::number(format->sampleRate()) + " sampleSize:" + QString::number(format->sampleSize()));
     //s is a pa_simple*
     s = 0;
     rec = 0;
@@ -59,8 +59,8 @@ PulseDevice::PulseDevice(const QString name,const QString target, QAudioFormat f
     //connect(this->timer,SIGNAL(timeout()),this,SLOT(testSlot()));
 
     ss.format = getSampleSize();
-    ss.channels = format.channelCount();
-    ss.rate = format.sampleRate();
+    ss.channels = format->channelCount();
+    ss.rate = format->sampleRate();
     if ((quint32) ss.rate == (quint32) PA_SAMPLE_INVALID) {
         say("pulse: error: invalid sample rate");
         return;

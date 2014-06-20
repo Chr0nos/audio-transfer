@@ -3,15 +3,14 @@
 
 #include "devices.h"
 #include "tcpsink.h"
+#include "audioformat.h"
 
 #ifdef PULSE
-    #include "pulse.h"
+    #include "modules/pulse.h"
 #endif
 
 #include <QObject>
 #include <QIODevice>
-#include <QAudioFormat>
-#include <QFile>
 
 class Manager : public QObject
 {
@@ -23,7 +22,8 @@ public:
         Tcp = 2,
         None = 3,
         PulseAudio = 4,
-        Zero = 5
+        Zero = 5,
+        Udp = 6
     };
     struct tcpConfig {
         QString host;
@@ -34,7 +34,7 @@ public:
     struct userConfig {
        Mode modeInput;
        Mode modeOutput;
-       QAudioFormat format;
+       AudioFormat *format;
        tcpConfig tcpTarget;
        struct devicesId {
            int input;
@@ -67,32 +67,21 @@ private:
     bool openOutput();
     QIODevice *devIn;
     QIODevice *devOut;
-    QAudioFormat format;
-    TcpSink *tcpSink;
+    AudioFormat *format;
     Devices in;
     Devices out;
-    QFile *fileOut;
-    QFile *fileIn;
     QByteArray buffer;
     quint64 bytesCount;
-    int deviceIdIn;
-    int deviceIdOut;
     bool bisRecording;
     void debugList(const QStringList list);
-    bool prepareSource();
-    bool prepareOutput();
+    bool prepare(QAudio::Mode mode, QIODevice **device);
 
 signals:
-    void tcpTargetConnected();
     void errors(const QString error);
     void stoped();
     void started();
     void debug(const QString message);
 public slots:
-    void tcpTargetOpened();
-    void tcpTargetReady();
-    void tcpTargetDisconnected();
-    void tcpTargetSockRead(const QString message);
     void transfer();
     void devInClose();
     void devOutClose();

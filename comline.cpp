@@ -14,10 +14,11 @@ Comline::Comline(QObject *parent) :
     Manager::userConfig mc;
     mc.bufferSize = 0;
     mc.bufferMaxSize = 2*1024*1024; //2Mb
-    mc.format.setCodec("audio/pcm");
-    mc.format.setSampleRate(info.supportedSampleRates().last());
-    mc.format.setSampleSize(info.supportedSampleSizes().last());
-    mc.format.setChannelCount(2);
+    mc.format = new AudioFormat();
+    mc.format->setCodec("audio/pcm");
+    mc.format->setSampleRate(info.supportedSampleRates().last());
+    mc.format->setSampleSize(info.supportedSampleSizes().last());
+    mc.format->setChannelCount(2);
 
     mc.devices.input = 0;
     mc.devices.output = 0;

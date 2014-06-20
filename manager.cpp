@@ -1,163 +1,96 @@
 #include "manager.h"
 #include "devices.h"
+
+#include "modules/nativeaudio.h"
+#include "modules/tcpdevice.h"
+#include "modules/udpdevice.h"
+#include "modules/zerodevice.h"
 #include "tcpsink.h"
-#include "zerodevice.h"
 
 #include <QString>
 #include <QIODevice>
 #include <QtNetwork/QNetworkInterface>
+#include <QFile>
 #include <QDebug>
-
-//todo: make evry output a child of QIODevice to prevent special case each time
 
 Manager::Manager(QObject *parent) :
     QObject(parent)
 {
     config.modeOutput = None;
     config.modeInput = None;
-    devIn = 0;
-    devOut = 0;
-    tcpSink = 0;
-    fileOut = 0;
-    fileIn = 0;
-    deviceIdIn = 0;
-    deviceIdOut = 0;
+    devIn = NULL;
+    devOut = NULL;
     bytesCount = 0;
+    format = new AudioFormat();
     bisRecording = false;
     qDebug() << "manager ready";
 }
 Manager::~Manager() {
     qDebug() << "deleting manager";
     if (devIn) devIn->deleteLater();
-    if (fileOut) fileOut->deleteLater();
-    if (tcpSink) tcpSink->deleteLater();
-    if (fileIn) fileIn->deleteLater();
     if (devOut) devOut->deleteLater();
+    delete(format);
 }
+bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
+    if ((*device)) (**device).deleteLater();
+    *device = NULL;
+    const QString name = "Audio-Transfer-Client";
+    QString filePath;
+    Manager::Mode target = Manager::None;
+    QIODevice::OpenModeFlag flag;
+    int deviceId;
+    if (mode == QAudio::AudioInput) { target = config.modeInput; flag = QIODevice::ReadOnly; deviceId = config.devices.input; }
+    else if (mode == QAudio::AudioOutput) { target = config.modeOutput; flag = QIODevice::WriteOnly; deviceId = config.devices.output; }
 
-bool Manager::prepareSource() {
-    //input
-    devIn = 0;
-    if (config.modeInput == None) emit(errors("no input method specifed: abording"));
-    else if (config.modeInput == Device) {
-        in.setFormat(format);
-        in.setInputDevice(deviceIdIn);
-        devIn = in.getInputDevice();
-        if (!devIn) return false;
-    }
-    else if (config.modeInput == File) {
-        fileIn = new QFile(config.filePathInput);
-        if (!fileIn->exists()) {
-            emit(errors("can't open the input file: no such file or directory."));
-            return false;
-        }
-        devIn = fileIn;
-    }
-    else if (config.modeInput == Zero) {
-        devIn = new ZeroDevice(&format,this);
-    }
+    switch (target) {
+        case Manager::Device:
+            NativeAudio *native;
+            native = new NativeAudio(name,format,this);
+            if (!native->setDeviceId(mode,deviceId)) return false;
+            *device = native;
+            break;
+        case Manager::Tcp:
+            *device = new TcpDevice(config.tcpTarget.host,config.tcpTarget.port,format,this);
+            break;
+        case Manager::Udp:
+            *device = new UdpDevice(config.tcpTarget.host,config.tcpTarget.port,format,this);
+            break;
 #ifdef PULSE
-    else if (config.modeInput == PulseAudio) {
-        devIn = new PulseDevice("Audio-Transfer-Client",NULL,format,this);
-    }
+        case Manager::PulseAudio:
+            *device = new PulseDevice(name,config.pulseTarget,format,this);
+            break;
 #endif
-    if (!devIn) return false;
+        case Manager::Zero:
+            *device = new ZeroDevice(format,this);
+            break;
+        case Manager::None:
+            *device = NULL;
+            break;
+         case Manager::File:
+            *device = new QFile(filePath);
+            break;
+    }
+    if (!*device) return false;
 
-    //connecting the source to transfer function (main function)
-    connect(devIn,SIGNAL(readyRead()),this,SLOT(transfer()));
-    debug("source connected");
-
-    //opening source
-    if (!devIn->open(QIODevice::ReadOnly)) {
-        emit(errors("can't open input device: abording"));
-        return false;
-    }
-    else debug("source device opened");
-
-
-    debug("selected input mode: " + QString::number(config.modeInput));
-    return true;
-}
-bool Manager::prepareOutput() {
-    //output
-    devOut = 0;
-    qDebug() << "using: " << getAudioConfig();
-
-    if (config.modeOutput == None) {
-        emit(errors("no output method specified: abording."));
-        return false;
-    }
-    else if (config.modeOutput == Tcp) {
-        QStringList ips = getLocalIps();
-        if (ips.isEmpty()) {
-            emit(errors("No local ip:  wait for DHCP or set local ip manualy."));
-            return false;
-        }
-        debug("local ips:");
-        debugList(ips);
-        tcpSink = new TcpSink(this);
-        debug("tcp sink created");
-        connect(tcpSink,SIGNAL(connected()),this,SLOT(tcpTargetOpened()));
-        connect(tcpSink,SIGNAL(reply(QString)),this,SLOT(tcpTargetSockRead(QString)));
-        connect(tcpSink,SIGNAL(disconnected()),this,SLOT(tcpTargetDisconnected()));
-        debug("tcp sink connected to manager, connecting to host...");
-        tcpSink->connectToHost(config.tcpTarget.host,config.tcpTarget.port);
-    }
-    else if (config.modeOutput == Device) {
-        out.setFormat(format);
-        out.setOutputDevice(deviceIdOut);
-        devOut = in.getOutputDevice();
-        if (!devOut) emit(errors("can't open output device: " + QString::number(config.devices.output)));
-    }
-    else if ((config.modeOutput == File) && (!config.filePathOutput.isEmpty())) {
-        fileOut = new QFile(config.filePathOutput);
-        if (!fileOut->open(QIODevice::WriteOnly)) return false;
-        devOut = fileOut;
-    }
-#ifdef PULSE
-    else if (config.modeOutput == PulseAudio) {
-        debug("using module: PULSE");
-        devOut = new PulseDevice("Audio-Transfer-Client",config.pulseTarget,format,this);
-    }
-#endif
-    else if (config.modeOutput == Zero) {
-        devOut = new ZeroDevice(&format,this);
-    }
-    else {
-        errors("unsuported output mode: " + QString::number(config.modeOutput));
-        return false;
-    }
-    if (!devOut) return false;
-    if (!devOut->isOpen()) {
-        if (!devOut->open(QIODevice::WriteOnly)) {
-            emit(errors("cannot open output device in writeOnly"));
-            return false;
-        }
-    }
-    debug("selected output mode: " + QString::number(config.modeOutput));
-    return true;
+    if (mode == QAudio::AudioInput) connect(*device,SIGNAL(readyRead()),this,SLOT(transfer()));
+    return (**device).open(flag);
 }
 
 bool Manager::start() {
     debug("Starting manager...");
-    if (!prepareOutput()) {
-        errors("failed to start output");
-        return false;
-    }
 
-    debug("output: ready");
-    if (!prepareSource()) {
-        errors("failed to start input");
-        return false;
+    if (!prepare(QAudio::AudioOutput,&devOut)) emit(errors("failed to  start output"));
+    else if (!prepare(QAudio::AudioInput,&devIn)) emit(errors("failed to start input"));
+    else {
+        emit(debug("devices ok"));
+        qDebug() << "started";
+        bisRecording = true;
+        bytesCount = 0;
+        emit(started());
+        //transfer();
+        return true;
     }
-    debug("input ready");
-
-    qDebug() << "started";
-    bisRecording = true;
-    bytesCount = 0;
-    emit(started());
-    //transfer();
-    return true;
+    return false;
 }
 void Manager::stop() {
     bisRecording = false;
@@ -168,17 +101,11 @@ void Manager::stop() {
     if (config.modeOutput != Tcp) {
         if (devOut) devOut->close();
     }
-    else if (tcpSink) {
-        tcpSink->disconnectFromHost();
-        disconnect(tcpSink,SIGNAL(connected()),this,SLOT(tcpTargetOpened()));
-        disconnect(tcpSink,SIGNAL(disconnected()),this,SLOT(tcpTargetDisconnected()));
-    }
-    if ((fileOut != 0) && (fileOut->isOpen())) fileOut->close();
     emit(stoped());
 }
 
 QStringList Manager::getDevicesNames(QAudio::Mode mode) {
-    return Devices::getDevicesNames(mode);
+    return NativeAudio::getDevicesNames(mode);
 }
 void Manager::setUserConfig(userConfig cfg) {
     if (isRecording()) {
@@ -189,23 +116,9 @@ void Manager::setUserConfig(userConfig cfg) {
     format = cfg.format;
 }
 QString Manager::getAudioConfig() {
-    return "samplerate:" + QString::number(config.format.sampleRate()) + " samplesize:" + QString::number(config.format.sampleSize()) + " channels:" + QString::number(config.format.channelCount());
+    return "samplerate:" + QString::number(config.format->getSampleRate()) + " samplesize:" + QString::number(config.format->getSampleSize()) + " channels:" + QString::number(config.format->getChannelsCount());
 }
-void Manager::tcpTargetOpened() {
-    debug("Tcp connected to remote server");
-    qDebug() << "sending configuration to server";
-    devOut = tcpSink->getDevice();
 
-    if (config.tcpTarget.sendConfig) {
-        //send the client config
-        QString srvCfg = getAudioConfig();
-        tcpSink->send(&srvCfg);
-    }
-    emit(tcpTargetConnected());
-}
-void Manager::tcpTargetReady() {
-    transfer();
-}
 void Manager::transfer() {
     //qDebug() << "transfer!" << devIn << devIn->isOpen();
     if ((!devOut) || (!devIn) || (!devIn->isOpen()) || (!devOut->isOpen())) {
@@ -242,10 +155,6 @@ void Manager::transfer() {
 quint64 Manager::getTransferedSize() {
     return bytesCount;
 }
-void Manager::tcpTargetDisconnected() {
-    debug("Tcp disconnected");
-    this->stop();
-}
 bool Manager::isRecording() {
     return bisRecording;
 }
@@ -281,12 +190,11 @@ void Manager::debugList(const QStringList list) {
         debug("[" + QString::number(count++) + "] " + x);
     }
 }
-void Manager::tcpTargetSockRead(const QString message) {
-    debug("server reply: " + message);
-}
 void Manager::devOutClose() {
     debug("output closed");
+    stop();
 }
 void Manager::devInClose() {
     debug("input closed");
+    stop();
 }

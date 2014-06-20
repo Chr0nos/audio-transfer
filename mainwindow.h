@@ -25,6 +25,7 @@ public:
     void configLoad(Readini *ini);
     void moveToCenter();
     bool intToBool(const int value);
+    int getBitrate();
 
 private slots:
     void on_refreshSources_clicked();
