@@ -41,7 +41,7 @@ quint64 AudioFormat::getBytesSizeForDuration(const int msecs) {
     return this->getBitrate() / 1000 * msecs;
 }
 const QString AudioFormat::getFormatTextInfo() {
-    return QString("samplesize:" + QString::number(sampleSize) + " samplerate:" + QString::number(sampleSize) + " channels:" + QString::number(channelsCount));
+    return QString("samplesize:" + QString::number(sampleSize) + " samplerate:" + QString::number(sampleRate) + " channels:" + QString::number(channelsCount));
 }
 bool AudioFormat::setFormat(AudioFormat *format) {
     sampleRate = format->getSampleRate();
