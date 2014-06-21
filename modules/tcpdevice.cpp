@@ -7,7 +7,7 @@
 #include <QIODevice>
 #include <QDebug>
 
-TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format, QObject *parent) :
+TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,bool sendConfig,QObject *parent) :
     QIODevice(parent)
 {
     this->port = port;
@@ -19,6 +19,7 @@ TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format, QO
     connect(sock,SIGNAL(connected()),this,SLOT(sockOpen()));
     connect(sock,SIGNAL(readyRead()),this,SIGNAL(readyRead()));
     this->format = format;
+    bSendConfig = true;
 }
 bool TcpDevice::open(OpenMode mode) {
     if (mode == QIODevice::WriteOnly) {
@@ -53,8 +54,13 @@ void TcpDevice::sockClose() {
     this->close();
 }
 void TcpDevice::sockOpen() {
-    sendFormatSpecs();
+   if (bSendConfig) sendFormatSpecs();
 }
 void TcpDevice::say(const QString message) {
     qDebug() << "TcpDevice: " + message;
+}
+void TcpDevice::close() {
+    say("closing device");
+    QIODevice::close();
+    sock->close();
 }

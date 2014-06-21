@@ -1,14 +1,14 @@
 #ifndef MANAGER_H
 #define MANAGER_H
 
-#include "devices.h"
-#include "tcpsink.h"
 #include "audioformat.h"
 
 #ifdef PULSE
     #include "modules/pulse.h"
 #endif
 
+#include <QtMultimedia/QAudio>
+#include <QtMultimedia/QAudioDeviceInfo>
 #include <QObject>
 #include <QIODevice>
 
@@ -57,7 +57,6 @@ public:
     QString getAudioConfig();
     quint64 getTransferedSize();
     bool isRecording();
-    QAudioDeviceInfo getInputDeviceInfo();
     static QStringList intListToQStringList(QList<int> source);
     static QStringList getLocalIps(const bool ignoreLocal = true);
 
@@ -68,8 +67,6 @@ private:
     QIODevice *devIn;
     QIODevice *devOut;
     AudioFormat *format;
-    Devices in;
-    Devices out;
     QByteArray buffer;
     quint64 bytesCount;
     bool bisRecording;

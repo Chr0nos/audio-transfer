@@ -36,7 +36,6 @@ private slots:
     void on_sourcesList_currentIndexChanged(int index);
     void refreshEnabledSources();
     void refreshEnabledDestinations();
-    void tcpTargetConnected();
     void refreshReadedData();
     void on_refreshOutputDevices_clicked();
     void on_configSave_clicked();

@@ -1,6 +1,6 @@
 #include "udpdevice.h"
 
-UdpDevice::UdpDevice(const QString host, const int port, AudioFormat *format, QObject *parent) :
+UdpDevice::UdpDevice(const QString host, const int port, AudioFormat *format, const bool sendConfig, QObject *parent) :
     QIODevice(parent)
 {
     this->host= host;
@@ -9,6 +9,7 @@ UdpDevice::UdpDevice(const QString host, const int port, AudioFormat *format, QO
     sock = new QUdpSocket(this);
     connect(sock,SIGNAL(disconnected()),this,SLOT(sockClose()));
     connect(sock,SIGNAL(connected()),this,SLOT(sockOpen()));
+    bSendConfig = sendConfig;
 }
 bool UdpDevice::open(OpenMode mode) {
     if ((mode == QIODevice::WriteOnly || (mode == QIODevice::ReadWrite))) {
@@ -40,10 +41,12 @@ void UdpDevice::sockClose() {
 }
 void UdpDevice::sockOpen() {
     say("connected to target");
+    if (bSendConfig) sock->write(format->getFormatTextInfo().toLocal8Bit());
 }
 
 void UdpDevice::close() {
     QIODevice::close();
+    if (sock->isOpen()) sock->close();
     say("device closed");
 }
 void UdpDevice::say(const QString message) {

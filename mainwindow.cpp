@@ -38,7 +38,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->destinationRadioZeroDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->checkboxSourceOutput,SIGNAL(clicked()),this,SLOT(on_refreshSources_clicked()));
 
-    connect(manager,SIGNAL(tcpTargetConnected()),this,SLOT(tcpTargetConnected()));
     connect(manager,SIGNAL(errors(QString)),this,SLOT(errors(QString)));
     connect(manager,SIGNAL(started()),this,SLOT(started()));
     connect(manager,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
@@ -290,9 +289,6 @@ void MainWindow::refreshEnabledDestinations() {
 #endif
     else if (ui->destinationRadioZeroDevice->isChecked()) modeDest = Manager::Zero;
 
-}
-void MainWindow::tcpTargetConnected() {
-    ui->statusBar->showMessage("Target connected",3000);
 }
 void MainWindow::refreshReadedData() {
     quint64 size = manager->getTransferedSize();

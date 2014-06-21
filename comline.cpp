@@ -24,7 +24,7 @@ Comline::Comline(QObject *parent) :
     mc.devices.output = 0;
     mc.modeInput = Manager::Device;
     mc.modeOutput = Manager::Tcp;
-    mc.tcpTarget.host = "127.0.0.1";
+    mc.tcpTarget.host = "192.168.1.1";
     mc.tcpTarget.port = 1042;
     mc.tcpTarget.sendConfig = true;
 

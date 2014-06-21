@@ -1,11 +1,9 @@
 #include "manager.h"
-#include "devices.h"
 
 #include "modules/nativeaudio.h"
 #include "modules/tcpdevice.h"
 #include "modules/udpdevice.h"
 #include "modules/zerodevice.h"
-#include "tcpsink.h"
 
 #include <QString>
 #include <QIODevice>
@@ -50,14 +48,20 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
             *device = native;
             break;
         case Manager::Tcp:
-            *device = new TcpDevice(config.tcpTarget.host,config.tcpTarget.port,format,this);
+            *device = new TcpDevice(config.tcpTarget.host,config.tcpTarget.port,format,config.tcpTarget.sendConfig,this);
             break;
         case Manager::Udp:
-            *device = new UdpDevice(config.tcpTarget.host,config.tcpTarget.port,format,this);
+            *device = new UdpDevice(config.tcpTarget.host,config.tcpTarget.port,format,config.tcpTarget.sendConfig,this);
             break;
 #ifdef PULSE
         case Manager::PulseAudio:
             *device = new PulseDevice(name,config.pulseTarget,format,this);
+            break;
+#else
+    case Manager::PulseAudio:
+            //in normal case: this condition will NEVER appens: the ui will not send PulseAudio is the module is not built in: but: security before evrythink.
+            emit(errors("pulse audio output requested but ATC was not compiled with pa module"));
+            return false;
             break;
 #endif
         case Manager::Zero:
@@ -98,9 +102,7 @@ void Manager::stop() {
         devIn->close();
         disconnect(devIn,SIGNAL(readyRead()),this,SLOT(transfer()));
     }
-    if (config.modeOutput != Tcp) {
-        if (devOut) devOut->close();
-    }
+    if (devOut) devOut->close();
     emit(stoped());
 }
 
@@ -157,9 +159,6 @@ quint64 Manager::getTransferedSize() {
 }
 bool Manager::isRecording() {
     return bisRecording;
-}
-QAudioDeviceInfo Manager::getInputDeviceInfo() {
-    return in.getInputDeviceInfo();
 }
 QStringList Manager::intListToQStringList(QList<int> source) {
     QStringList result;
