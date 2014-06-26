@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "manager.h"
 #include "readini.h"
+#include "size.h"
 
 #include <QtGui>
 #include <QString>
@@ -91,7 +92,7 @@ void MainWindow::on_pushButton_clicked()
     if (!manager->isRecording()) {
         ui->debug->clear();
         const int bitrate = (ui->samplesRates->currentText().toInt() * ui->samplesSize->currentText().toInt() / 8) * ui->channelsCount->value();
-        debug("estimated bitrate: " + wsize(bitrate));
+        debug("estimated bitrate: " + Size::getWsize(bitrate));
         Manager::userConfig mc;
         mc.modeInput = Manager::None;
         mc.modeOutput = Manager::None;
@@ -108,7 +109,7 @@ void MainWindow::on_pushButton_clicked()
         mc.devices.output = ui->destinationDeviceCombo->currentIndex();
         mc.bufferSize = bitrate * ui->destinationTcpBufferDuration->value() / 1000 / 100;
         mc.bufferMaxSize = 2097152; //2Mb
-        debug("buffer size: " + wsize(mc.bufferSize));
+        debug("buffer size: " + Size::getWsize(mc.bufferSize));
 
         //SOURCES
         if (ui->sourceRadioFile->isChecked()) mc.modeInput = Manager::File;
@@ -127,6 +128,7 @@ void MainWindow::on_pushButton_clicked()
         }
         else if (ui->destinationRadioTcp->isChecked()) {
             const QString host = ui->destinationTcpSocket->text().split(":").first();
+
             const int port = ui->destinationTcpSocket->text().split(":").last().toInt();
             if (!isValidIp(host)) {
                 ui->statusBar->showMessage("Error: invalid target ip: refusing to connect");
@@ -149,6 +151,7 @@ void MainWindow::on_pushButton_clicked()
                 mc.pulseTarget = ui->destinationPulseAudioLineEdit->text();
             }
             mc.modeOutput = Manager::PulseAudio;
+            //mc.modeOutput = Manager::PulseAudioAsync;
 
         }
         else if (ui->destinationRadioZeroDevice->isChecked()) mc.modeOutput = Manager::Zero;
@@ -293,20 +296,10 @@ void MainWindow::refreshEnabledDestinations() {
 void MainWindow::refreshReadedData() {
     quint64 size = manager->getTransferedSize();
     int speed = size - lastReadedValue;
-    ui->statusBar->showMessage("Readed data: " + wsize(size) + " - speed: " + wsize(speed) + "/s");
+    ui->statusBar->showMessage("Readed data: " + Size::getWsize(size) + " - speed: " + Size::getWsize(speed) + "/s");
 
     lastReadedValue = size;
 }
-QString MainWindow::wsize(const quint64 size) {
-    double isize = size;
-    QStringList keys;
-    keys << "o" << "Kb" << "Mb" << "Gb" << "Tb" << "Pb" << "Eb" << "Zb" << "Yb";
-    int n;
-    for (n = 0;isize >= 1024;n++) isize = isize / 1024;
-    if (n >= keys.count()) n = keys.count() -1;
-    return QString::number(isize,10,2) + keys.at(n);
-}
-
 void MainWindow::on_refreshOutputDevices_clicked()
 {
     ui->destinationDeviceCombo->clear();
@@ -320,7 +313,7 @@ void MainWindow::started() {
     timer->start();
 }
 void MainWindow::refreshEstimatedBitrate() {
-    ui->statusBar->showMessage("estimated bitrate: " + wsize(this->getBitrate()) + "/s",2000);
+    ui->statusBar->showMessage("estimated bitrate: " + Size::getWsize(this->getBitrate()) + "/s",2000);
 }
 int MainWindow::getBitrate() {
     return (ui->samplesRates->currentText().toInt() * ui->samplesSize->currentText().toInt() / 8) * ui->channelsCount->value();

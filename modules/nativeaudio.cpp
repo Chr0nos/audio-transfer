@@ -7,6 +7,8 @@
 #include <QIODevice>
 #include <QDebug>
 
+//Todo: allow output to be selected as input (may not work but in some rares cases it does so...)
+
 NativeAudio::NativeAudio(const QString name,AudioFormat *format, QObject *parent) :
     QIODevice(parent)
 {
@@ -19,8 +21,8 @@ NativeAudio::NativeAudio(const QString name,AudioFormat *format, QObject *parent
     this->name = name;
     in = 0;
     out = 0;
-    devIn = 0;
-    devOut = 0;
+    devIn = NULL;
+    devOut = NULL;
     deviceIdIn = -1;
     deviceIdOut = -1;
 }
@@ -57,6 +59,7 @@ bool NativeAudio::configureDevice(QAudio::Mode mode, const int deviceId) {
         if (in) in->deleteLater();
         in = new QAudioInput(info,format,this);
         in->setObjectName(name);
+        devIn = NULL;
         devIn = in->start();
         connect(devIn,SIGNAL(readyRead()),this,SIGNAL(readyRead()));
         connect(devIn,SIGNAL(aboutToClose()),this,SIGNAL(aboutToClose()));
@@ -88,6 +91,10 @@ bool NativeAudio::configureDevice(QAudio::Mode mode, const int deviceId) {
 
 void NativeAudio::close() {
     QIODevice::close();
+    if (devOut) devOut->close();
+    if (devIn) devIn->close();
+    devOut = NULL;
+    devIn = NULL;
     say("closed");
 }
 

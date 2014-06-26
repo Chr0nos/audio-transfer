@@ -57,7 +57,13 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
         case Manager::PulseAudio:
             *device = new PulseDevice(name,config.pulseTarget,format,this);
             break;
+        case Manager::PulseAudioAsync:
+            *device = new PulseDeviceASync(format,this);
+            break;
 #else
+    case Manager::PulseAudioAsync:
+            return false;
+            break;
     case Manager::PulseAudio:
             //in normal case: this condition will NEVER appens: the ui will not send PulseAudio is the module is not built in: but: security before evrythink.
             emit(errors("pulse audio output requested but ATC was not compiled with pa module"));
@@ -73,6 +79,14 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
          case Manager::File:
             *device = new QFile(filePath);
             break;
+#ifdef PORTAUDIO
+         case Manager::PortAudio:
+            *device = new PortAudioDevice(format,this);
+            break;
+#else
+         case Manager::PortAudio:
+            return false;
+#endif
     }
     if (!*device) return false;
 
@@ -138,6 +152,7 @@ void Manager::transfer() {
         return;
     }
     QByteArray data = devIn->readAll();
+
     bytesCount += data.size();
     //in case of no buffer usage we dont copy data to buffer (better performance)
     if (!config.bufferSize) {

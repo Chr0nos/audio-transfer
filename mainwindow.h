@@ -18,7 +18,6 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    QString wsize(const quint64 size);
     bool isValidIp(const QString host);
     void setUserControlState(const bool state);
     void configSave(Readini *ini);

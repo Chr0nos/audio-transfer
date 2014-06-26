@@ -5,10 +5,12 @@
 
 #include <pulse/simple.h>
 #include <pulse/channelmap.h>
+#include <pulse/pulseaudio.h>
 
 #include <QObject>
 #include <QIODevice>
 #include <QString>
+#include <QStringList>
 #include <QTimer>
 #include <QTime>
 #include <QByteArray>
@@ -22,6 +24,7 @@ public:
     ~PulseDevice();
     bool open(OpenMode mode);
     void close();
+    QStringList getDevicesNames(QIODevice::OpenMode mode);
 private:
     qint64 writeData(const char *data, qint64 len);
     qint64 readData(char *data, qint64 maxlen);
@@ -43,8 +46,11 @@ private:
     quint64 bytesWrite;
     quint64 bytesRead;
     QByteArray buffer;
+    bool prepare(QIODevice::OpenMode mode,pa_simple **pulse);
 private slots:
     void testSlot();
+signals:
+    void readyRead();
 };
 
 #endif // PULSE_H

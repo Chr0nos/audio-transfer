@@ -7,6 +7,8 @@
 QT       += core gui multimedia network
 CONFIG   += console c++11
 DEFINES += PULSE MULTIMEDIA DEBUG
+#LIBS += -lportaudio
+
 
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -18,7 +20,6 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     manager.cpp \
-    devices.cpp \
     comline.cpp \
     modules/tcpdevice.cpp \
     modules/udpdevice.cpp \
@@ -27,11 +28,12 @@ SOURCES += main.cpp\
     modules/nativeaudio.cpp \
     readini.cpp \
     audioformat.cpp \
-    tcpsink.cpp
+    size.cpp \
+    modules/portaudiodevice.cpp \
+    modules/pulsedeviceasync.cpp
 
 HEADERS  += mainwindow.h \
     manager.h \
-    devices.h \
     main.h \
     comline.h \
     readini.h \
@@ -41,7 +43,10 @@ HEADERS  += mainwindow.h \
     modules/nativeaudio.h \
     modules/udpdevices.h \
     audioformat.h \
-    tcpsink.h
+    tcpsink.h \
+    size.h \
+    modules/portaudiodevice.h \
+    modules/pulsedeviceasync.h
 
 FORMS    += mainwindow.ui
 

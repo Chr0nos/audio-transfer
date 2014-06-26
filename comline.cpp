@@ -3,12 +3,12 @@
 #include <QTextStream>
 #include <QAudioDeviceInfo>
 
-Comline::Comline(QObject *parent) :
+Comline::Comline(QString *args, QObject *parent) :
     QObject(parent)
 {
     out = new QTextStream(stdout);
     *out << "comline mode" << endl;
-
+    *out << "arguments: " << args;
 
     QAudioDeviceInfo info = QAudioDeviceInfo::availableDevices(QAudio::AudioInput).at(0);
     Manager::userConfig mc;

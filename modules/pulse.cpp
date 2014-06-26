@@ -46,8 +46,8 @@ PulseDevice::PulseDevice(const QString name, const QString target, AudioFormat *
     say("init : start");
     say("requested format: channels:" + QString::number(format->getChannelsCount()) + " sampleRate:" + QString::number(format->getSampleRate()) + " sampleSize:" + QString::number(format->getSampleSize()));
     //s is a pa_simple*
-    s = 0;
-    rec = 0;
+    s = NULL;
+    rec = NULL;
     this->format = format;
     this->target = target;
     this->name = name;
@@ -66,9 +66,8 @@ PulseDevice::PulseDevice(const QString name, const QString target, AudioFormat *
         return;
     }
 
-
     say("init : done");
-
+    //qDebug() << this->getDevicesNames(QIODevice::WriteOnly);
 
     emit(readyRead());
 }
@@ -78,18 +77,19 @@ PulseDevice::~PulseDevice() {
     if (this->timer) this->timer->deleteLater();
 }
 void PulseDevice::close() {
+    emit(aboutToClose());
     QIODevice::close();
     if (s) {
         say("closing playback");
         //deleting the unplayed buffer
         pa_simple_flush(s,NULL);
         pa_simple_free(s);
-        s = 0;
+        s = NULL;
     }
     if (rec) {
         say("closing record");
         pa_simple_free(rec);
-        rec = 0;
+        rec = NULL;
         latencyRec = -1;
     }
     timer->stop();
@@ -110,10 +110,11 @@ qint64 PulseDevice::writeData(const char *data, qint64 len) {
 qint64 PulseDevice::readData(char *data, qint64 maxlen) {
     //qDebug() << "read, request: " << maxlen;
     if (!rec) return -1;
-    if (!maxlen) return -1;
+    if (!maxlen) return 0;
     int error = 0;
     const int bytesRead = pa_simple_read(rec,data,maxlen,&error);
-    //qDebug() << "read: " << bytesRead;
+    //qDebug() << "read: " << bytesRead << pa_strerror(error);
+
     if (bytesRead < 0) {
         say("cannot read data: " + QString(pa_strerror(error)));
         return -1;
@@ -126,70 +127,68 @@ void PulseDevice::say(const QString message) {
 bool PulseDevice::open(OpenMode mode) {
     QIODevice::open(mode);
     say("opening device");
-    bool state = false;
-    pa_channel_map map;
-    if (!makeChannelMap(&map)) return false;
-    int errorCode = 0;
-    //server target
-    const char* serverData = this->target.toStdString().c_str();
-    if (this->target.isEmpty()) serverData = NULL;
 
-    if ((mode == WriteOnly) || (mode == ReadWrite)) {
-        say("create playback");
-
-        s = pa_simple_new(serverData,
-                          name.toStdString().data(),        // Our application's name.
-                          PA_STREAM_PLAYBACK,               // stream direction
-                          NULL,                             // Use the default device.
-                          "Audio-Transfer-Server Playback",          // Description of our stream.
-                          &ss,                              // Our sample format.
-                          &map,                             // Use default channel map
-                          NULL,                             // Use default buffering attributes.
-                          &errorCode                        // error code pointer (int).
-                          );
-        if (!s) {
-            qDebug() << "connection failed: " + QString::number(errorCode) << pa_strerror(errorCode);
-            qDebug() << "arguments: " << target;
-            say("connection playback failed: " + QString(pa_strerror(errorCode)));
-            return false;
-        }
-        errorCode = 0;
-        say("playback latency: " + QString::number(pa_simple_get_latency(s,&errorCode)));
-        if (errorCode) say("latency error: " + QString(pa_strerror(errorCode)));
-        state = true;
+    if (mode == QIODevice::ReadOnly) return this->prepare(mode,&rec);
+    else if (mode == QIODevice::WriteOnly) return this->prepare(mode,&s);
+    else if (mode == QIODevice::ReadWrite) {
+        if ((this->prepare(mode,&rec)) && (this->prepare(mode,&s))) return true;
     }
-    if ((mode == ReadOnly) || (mode == ReadWrite)) {
-        say("create record");
-        errorCode = 0;
-        rec = pa_simple_new(serverData,
-                          name.toStdString().data(),        // Our application's name.
-                          PA_STREAM_RECORD,               // stream direction
-                          NULL,                             // Use the default device.
-                          "Audio-Transfer-Server Record",          // Description of our stream.
-                          &ss,                              // Our sample format.
-                          &map,                             // Use default channel map
-                          NULL,                             // Use default buffering attributes.
-                          &errorCode                        // error code pointer (int).
-                          );
-        if (!rec) {
-            say("connection record failed: " + QString(pa_strerror(errorCode)));
-            return false;
-        }
-        latencyRec = (int) pa_simple_get_latency(rec,NULL);
-        say("current record latency: " + QString::number(latencyRec) + "usecs");
-        state = true;
-        emit(readyRead());
-        timer->start();
-        say("record timer started");
-    }
-    if (state) say("open state: ok");
-    else say("open state: failed");
-
-    return state;
+    return false;
 }
 quint64 PulseDevice::getBiteRate() {
     return format->getBitrate();
 }
+bool PulseDevice::prepare(OpenMode mode, pa_simple **pulse) {
+    QString name = "Audio-Trasnfer-Client";
+    const char* serverHost = this->target.toStdString().c_str();
+    if (this->target.isEmpty()) serverHost = NULL; //remove this line and you will make nightmares... (seriously!)
 
+    pa_channel_map map;
+    if (!makeChannelMap(&map)) {
+        say("unable to make channels map");
+        return false;
+    }
+
+    pa_stream_direction direction;
+    if (mode == QIODevice::WriteOnly) {
+        say("creating playback");
+        name.append(" playback");
+        direction = PA_STREAM_PLAYBACK;
+    }
+    else if (mode == QIODevice::ReadOnly) {
+        say("creating record");
+        name.append(" record");
+        direction = PA_STREAM_RECORD;
+    }
+
+    int errorCode = 0;
+    *pulse = pa_simple_new(serverHost,                  // target server
+                           "Audio-Transfer-Client",     // Our application's name.
+                           direction,                   // stream direction
+                           NULL,                        // Use the default device.
+                           name.toStdString().c_str(),  // Description of our stream.
+                           &ss,                         // Our sample format.
+                           &map,                        // Use default channel map
+                           NULL,                        // Use default buffering attributes.
+                           &errorCode);                 // error code pointer (int).
+    if (!*pulse) {
+        say("error: cannot create stream: " + QString(pa_strerror(errorCode)));
+        say("channels: " + QString::number(ss.channels));
+        say("samplerate " + QString::number(ss.rate));
+        say("target: " + QString(serverHost));
+        say("error code: " + QString::number(errorCode));
+        return false;
+    }
+
+    int latency = (int) pa_simple_get_latency(*pulse,NULL);
+    say("current latency: " + QString::number(latency) + "usecs");
+
+    if (mode == QIODevice::ReadOnly) {
+        say("starting record timer.");
+        timer->start();
+    }
+    say("open ok");
+    return true;
+}
 
 #endif

@@ -37,6 +37,7 @@ qint64 UdpDevice::readData(char *data, qint64 maxlen) {
     return maxlen;
 }
 void UdpDevice::sockClose() {
+    say("socket closed");
     this->close();
 }
 void UdpDevice::sockOpen() {

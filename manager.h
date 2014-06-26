@@ -5,6 +5,11 @@
 
 #ifdef PULSE
     #include "modules/pulse.h"
+    #include "modules/pulsedeviceasync.h"
+#endif
+
+#ifdef PORTAUDIO
+    #include "modules/portaudiodevice.h"
 #endif
 
 #include <QtMultimedia/QAudio>
@@ -23,7 +28,9 @@ public:
         None = 3,
         PulseAudio = 4,
         Zero = 5,
-        Udp = 6
+        Udp = 6,
+        PortAudio = 7,
+        PulseAudioAsync = 8
     };
     struct tcpConfig {
         QString host;

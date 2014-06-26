@@ -9,7 +9,7 @@ class Comline : public QObject
 {
     Q_OBJECT
 public:
-    explicit Comline(QObject *parent = 0);
+    explicit Comline(QString *args,QObject *parent = 0);
     void start();
 private:
     Manager* manager;
