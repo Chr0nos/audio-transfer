@@ -9,6 +9,13 @@
 
 //Todo: allow output to be selected as input (may not work but in some rares cases it does so...)
 
+/* how to use it
+ *  QIODevice *dev = new NativeAudio("test sample",&myFormat,this);
+ *  if (dev.open(QIODevice::WriteOnly)) {
+ *      //here you can write into dev
+ *  }
+ * */
+
 NativeAudio::NativeAudio(const QString name,AudioFormat *format, QObject *parent) :
     QIODevice(parent)
 {
@@ -36,7 +43,7 @@ bool NativeAudio::open(OpenMode mode) {
     qDebug() << mode;
     if ((mode == QIODevice::WriteOnly) || (mode == QIODevice::ReadWrite)) state = configureDevice(QAudio::AudioOutput,deviceIdOut);
     if ((mode == QIODevice::ReadOnly) || (mode == QIODevice::ReadWrite)) state = configureDevice(QAudio::AudioInput,deviceIdIn);
-    if (state) QIODevice::open(mode);
+    if (state) state = QIODevice::open(mode);
     return state;
 }
 bool NativeAudio::configureDevice(QAudio::Mode mode, const int deviceId) {

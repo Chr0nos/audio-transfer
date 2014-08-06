@@ -1,4 +1,4 @@
-#ifdef PULSE
+#ifdef PULSEASYNC
 
 #include "pulsedeviceasync.h"
 #include "audioformat.h"
@@ -13,12 +13,13 @@
  * /UNLESSE YOU WAN TO HELP ME TO MAKE IT USABLE...
  * */
 
-PulseDeviceASync::PulseDeviceASync(AudioFormat *format, QObject *parent) :
+PulseDeviceASync::PulseDeviceASync(AudioFormat *format,const QString serverHost,QObject *parent) :
     QIODevice(parent)
 {
     say("init start");
     this->name = "Audio-Transfer-Client";
     this->format = format;
+    this->serverHost = serverHost;
     //intialisating pointers to NULL value
     mainloop = NULL;
     mainloop_api = NULL;
@@ -34,18 +35,21 @@ PulseDeviceASync::PulseDeviceASync(AudioFormat *format, QObject *parent) :
 
     say("setting sample rate");
     ss.rate = format->getSampleRate();
+    if (!this->getDefaultSamplesRates().contains(ss.rate)) {
+        say("WARNING: the requested sample rate is not in the default sample rates list: " + QString::number(ss.rate));
+    }
 
     say("init ok");
 }
 
-//cette fonction est crade, mais je n'ai pas le choix et je commence à en avoir mare de me faire téraformer le trous du cul par l'api bordelique de pulseaudio !
-//futur moi: pardone moi.
-void getSourcesDevices_cb(pa_context *c,const pa_source_info *i,int eol,void *userdata) {
+//cette fonction est crade, mais je n'ai pas le choix et je commence à en avoir marre de me faire téraformer le trou du cul par l'api bordelique de pulseaudio !
+//futur moi: pardonne moi.
+void PulseDeviceASync::getSourcesDevices_cb(pa_context *c,const pa_source_info *i,int eol,void *userdata) {
     if (!c) return;
     QList<pa_source_info> *sources = (QList<pa_source_info>*) userdata;
     sources->append(*i);
 }
-void getSinkDevices_cb(pa_context *c,const pa_sink_info* i,int eol,void *userdata) {
+void PulseDeviceASync::getSinkDevices_cb(pa_context *c,const pa_sink_info* i,int eol,void *userdata) {
     if (!c) return;
     QList<pa_sink_info> *sinks = (QList<pa_sink_info>*) userdata;
     sinks->append(*i);
@@ -80,7 +84,6 @@ QList<pa_sink_info> PulseDeviceASync::getSinkDevices() {
     pa_context_get_sink_info_list(context,getSinkDevices_cb,&sinks);
     return sinks;
 }
-
 //ne surtout pas relire cette fonction: elle initialise tout un merdier pensé par les codeurs tordus de la lib de pulseaudio, *Dont touch: it's magic
 //TGCM / *i have no idea of what i'm doing....
 bool PulseDeviceASync::makeContext() {
@@ -95,6 +98,19 @@ bool PulseDeviceASync::makeContext() {
 
     //context = pa_context_new_with_proplist(mainloop_api,this->name.toStdString().c_str(),NULL);
     context = pa_context_new(mainloop_api,name.toUtf8().constData());
+
+    say("connecting context");
+    char *serverTarget = serverHost.toLocal8Bit().data();
+    say("server target: " + serverHost);
+
+    if (serverHost.isEmpty()) serverTarget = NULL;
+    int error = pa_context_connect(context,serverTarget,(pa_context_flags_t) 0,context_state_callback);
+    if (error < 0) {
+        say("unable to connect the context to server");
+        say("error is: " + QString(pa_strerror(error)));
+        return false;
+    }
+    say("context connected !");
 
     say("context ok");
     qDebug() << "context" << context;
@@ -118,6 +134,7 @@ bool PulseDeviceASync::open(OpenMode mode) {
     }
 
     say("context ok");
+    qDebug() << getDevicesNames(mode);
     if (mode == QIODevice::WriteOnly) {
 
         if (!makeChannelMap(&map)) {
@@ -135,15 +152,17 @@ bool PulseDeviceASync::open(OpenMode mode) {
         say("ok got a stream playback");
 
         say("connecting playback");
-        pa_stream_flags_t t;
         const int error = pa_stream_connect_playback(streamPlayback,  //stream pointer (pa_stream*)
-                                   NULL,            //name of the sink (NULL to default)
-                                   NULL,            //Buffering attributes, or NULL for default
-                                   t,               //flags	Additional flags, or 0 for default
-                                   NULL,            //volume Initial volume, or NULL for default
-                                   NULL);           //sync_stream Synchronize this stream with the specified one, or NULL for a standalone stream
+                                   name.toLocal8Bit().data(),         //name of the sink (NULL to default)
+                                   NULL,                              //Buffering attributes, or NULL for default
+                                   (pa_stream_flags_t) 0,             //flags	Additional flags, or 0 for default
+                                   NULL,                              //volume Initial volume, or NULL for default
+                                   NULL);                             //sync_stream Synchronize this stream with the specified one, or NULL for a standalone stream
         //here i got the -15 -> invalid argument.
-        say("return state: " + QString(pa_strerror(error)));
+        qDebug() << "stream playback pointer:" << streamPlayback;
+        qDebug() << "stream name:" <<  name.toLocal8Bit().data();
+
+        say("return state: " + QString(pa_strerror(error)) + " / error num: " + QString::number(error));
         if (error < 0) return false;
     }
     else if (mode == QIODevice::ReadOnly) {
@@ -185,7 +204,10 @@ void PulseDeviceASync::close() {
     say("closed");
 }
 void PulseDeviceASync::say(const QString message) {
+#ifdef DEBUG
     qDebug() << "PULSE ASYNC: " + message;
+#endif
+    emit(debug(message));
 }
 bool PulseDeviceASync::makeChannelMap(pa_channel_map* map) {
     if ((uint) format->getChannelsCount() > PA_CHANNELS_MAX) {
@@ -224,5 +246,25 @@ QList<int> PulseDeviceASync::getDefaultSamplesRates() {
           << 48000 << 64000 << 88200 << 96000 << 176400 << 192000 << 384000;
     return rates;
 }
+void PulseDeviceASync::context_state_callback(pa_context *c, void *userdata) {
+    if (!c) return;
 
+    switch (pa_context_get_state(c)) {
+        case PA_CONTEXT_CONNECTING:
+        case PA_CONTEXT_AUTHORIZING:
+        case PA_CONTEXT_SETTING_NAME:
+            break;
+
+        case PA_CONTEXT_READY: {
+                qDebug() << "Connection established";
+            }
+            break;
+        case PA_CONTEXT_TERMINATED:
+            break;
+
+        case PA_CONTEXT_FAILED:
+        default:
+            fprintf(stderr, "Context error: %s\n", pa_strerror(pa_context_errno(c)));
+    }
+}
 #endif

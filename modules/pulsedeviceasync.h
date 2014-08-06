@@ -1,4 +1,4 @@
-#ifdef PULSE
+#ifdef PULSEASYNC
 
 #ifndef PULSEDEVICEASYNC_H
 #define PULSEDEVICEASYNC_H
@@ -15,7 +15,7 @@ class PulseDeviceASync : public QIODevice
 {
     Q_OBJECT
 public:
-    explicit PulseDeviceASync(AudioFormat *format,QObject *parent = 0);
+    explicit PulseDeviceASync(AudioFormat *format, const QString serverHost, QObject *parent = 0);
     bool open(OpenMode mode);
     qint64 readData(char *data, qint64 maxlen);
     qint64 writeData(const char *data, qint64 len);
@@ -25,6 +25,9 @@ public:
     QList<pa_source_info> getSourcesDevices();
     QList<pa_sink_info> getSinkDevices();
     static QList<int> getDefaultSamplesRates();
+    static void getSourcesDevices_cb(pa_context *c,const pa_source_info *i,int eol,void *userdata);
+    static void getSinkDevices_cb(pa_context *c,const pa_sink_info* i,int eol,void *userdata);
+    static void context_state_callback(pa_context *c, void *userdata);
 private:
     pa_context *context;
     bool makeContext();
@@ -40,8 +43,9 @@ private:
     pa_sample_format getSampleFormat();
     pa_channel_map map;
     bool isValidSampleSepcs();
+    QString serverHost;
 signals:
-
+    void debug(const QString message);
 public slots:
 
 };

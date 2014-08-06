@@ -57,9 +57,15 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
         case Manager::PulseAudio:
             *device = new PulseDevice(name,config.pulseTarget,format,this);
             break;
+#ifdef PULSEASYNC
         case Manager::PulseAudioAsync:
-            *device = new PulseDeviceASync(format,this);
+            *device = new PulseDeviceASync(format,config.pulseTarget,this);
             break;
+#else
+        case Manager::PulseAudioAsync:
+            return false;
+            break;
+#endif
 #else
     case Manager::PulseAudioAsync:
             return false;

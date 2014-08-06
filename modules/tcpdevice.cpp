@@ -25,7 +25,7 @@ bool TcpDevice::open(OpenMode mode) {
     if (mode == QIODevice::WriteOnly) {
         sock->connectToHost(host,port,mode);
         sock->waitForConnected();
-        if (sock->isOpen()) {
+        if ((sock->isOpen()) && (sock->isWritable())) {
             QIODevice::open(mode);
             return true;
         }

@@ -16,7 +16,7 @@ QString Size::getWsize(const quint64 size) {
     return QString::number(isize,10,2) + keys.at(n);
 }
 quint64 Size::getRsize(const QString wsize) {
-    //this method convert an humain size to an bytes size
+    //this method convert an humain size to a bytes size
     QStringList keys = Size::getUnits();
     for (int p = keys.count() -1;p;p--) {
         const int len = keys.at(p).length();

@@ -12,7 +12,7 @@ class Readini : public QObject
     Q_OBJECT
 public:
     explicit Readini(const QString filePath,QObject *parent = 0);
-    void parseIni();
+    bool parseIni();
     QStringList getSections();
     QStringList getKeys(const QString section);
     QString getValue(const QString section,const QString key);
@@ -27,6 +27,10 @@ public:
     bool exists();
     bool isWritable();
     bool open(QIODevice::OpenModeFlag mode);
+    bool isValuesFor(QMap<QString,QString> targets);
+    bool isSections(QStringList keys);
+    QMap<QString,QMap<QString,QString> > getRawData();
+    void clear();
 
 private:
     QFile file;

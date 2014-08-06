@@ -22,9 +22,9 @@ qint64 ZeroDevice::writeData(const char *data, qint64 len) {
 qint64 ZeroDevice::readData(char *data, qint64 maxlen) {
     const int currentTime = QTime::currentTime().msec();
     const int elapsedTime = currentTime - lastReadTime;
-    int bytesToRead = (int) (bytesCountPs * elapsedTime / 500);
+    int bytesToRead = format->getBytesSizeForDuration(elapsedTime);
     if (bytesToRead > maxlen) bytesToRead = maxlen;
-    else if (bytesToRead < 0) bytesToRead = maxlen;
+    else if (bytesToRead < 0) return bytesToRead;
     memset(data,0,bytesToRead);
 
     lastReadTime = currentTime;

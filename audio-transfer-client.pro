@@ -9,8 +9,6 @@ CONFIG   += console c++11
 DEFINES += PULSE MULTIMEDIA DEBUG
 #LIBS += -lportaudio
 
-
-
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = audio-transfer-client
@@ -41,9 +39,8 @@ HEADERS  += mainwindow.h \
     modules/zerodevice.h \
     modules/tcpdevice.h \
     modules/nativeaudio.h \
-    modules/udpdevices.h \
+    modules/udpdevice.h \
     audioformat.h \
-    tcpsink.h \
     size.h \
     modules/portaudiodevice.h \
     modules/pulsedeviceasync.h

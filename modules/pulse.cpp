@@ -67,8 +67,6 @@ PulseDevice::PulseDevice(const QString name, const QString target, AudioFormat *
     }
 
     say("init : done");
-    //qDebug() << this->getDevicesNames(QIODevice::WriteOnly);
-
     emit(readyRead());
 }
 PulseDevice::~PulseDevice() {

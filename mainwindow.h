@@ -44,7 +44,7 @@ public slots:
     void debug(const QString message);
     void started();
     void refreshEstimatedBitrate();
-    QString getConfigFilePath();
+    static QString getConfigFilePath();
 private:
     Ui::MainWindow *ui;
     QTimer *timer;

@@ -5,6 +5,8 @@
 #include <QMap>
 
 //i prefer to use this class than QSettings: less code, memory usage and here: i know whats appens
+//todo: dont remove user commentary from the ini when load->flush
+//      allow adding of commentary with the class (maybe using the item name for this)
 
 Readini::Readini(const QString filePath, QObject *parent) :
     QObject(parent)
@@ -13,9 +15,9 @@ Readini::Readini(const QString filePath, QObject *parent) :
     file.setFileName(filePath);
     parseIni();
 }
-void Readini::parseIni() {
-    if (!file.exists()) return;
-    else if (!file.open(QIODevice::ReadOnly));
+bool Readini::parseIni() {
+    if (!file.exists()) return false;
+    else if (!file.open(QIODevice::ReadOnly)) return false;
     else {
         QString section;
         QStringList lines = QString(file.readAll()).split("\n");
@@ -41,7 +43,9 @@ void Readini::parseIni() {
             }
         }
         file.close();
+        return true;
     }
+    return false;
 }
 QStringList Readini::getSections() {
     if (iniContent.isEmpty()) return QStringList();
@@ -58,6 +62,14 @@ QString Readini::getValue(const QString section, const QString key) {
 bool Readini::isSection(const QString section) {
     return iniContent.contains(section);
 }
+bool Readini::isSections(QStringList keys) {
+    QStringList::iterator i;
+    for (i = keys.begin();i != keys.end();i++) {
+        if (!this->isSection(*i)) return false;
+    }
+    return true;
+}
+
 bool Readini::isKey(const QString section, const QString key) {
     if (!isSection(section)) return false;
     return iniContent[section].contains(key);
@@ -114,4 +126,17 @@ bool Readini::isWritable() {
 }
 bool Readini::open(QIODevice::OpenModeFlag mode) {
     return file.open(mode);
+}
+bool Readini::isValuesFor(QMap<QString, QString> targets) {
+    QMap<QString,QString>::iterator i;
+    for (i = targets.begin();i != targets.end();i++) {
+        if (!this->isKey(i.key(),i.value())) return false;
+    }
+    return true;
+}
+QMap<QString,QMap<QString,QString> > Readini::getRawData() {
+    return iniContent;
+}
+void Readini::clear() {
+    iniContent.clear();
 }

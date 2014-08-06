@@ -10,7 +10,7 @@ class Comline : public QObject
     Q_OBJECT
 public:
     explicit Comline(QString *args,QObject *parent = 0);
-    void start();
+    bool start();
 private:
     Manager* manager;
     QTextStream* out;
