@@ -25,6 +25,7 @@ NativeAudio::NativeAudio(const QString name,AudioFormat *format, QObject *parent
     this->format.setSampleSize(format->getSampleSize());
     this->format.setCodec(format->getCodec());
     this->format.setChannelCount(format->getChannelsCount());
+    this->format.setSampleType(QAudioFormat::SignedInt);
     this->name = name;
     in = 0;
     out = 0;
@@ -32,6 +33,7 @@ NativeAudio::NativeAudio(const QString name,AudioFormat *format, QObject *parent
     devOut = NULL;
     deviceIdIn = -1;
     deviceIdOut = -1;
+    say("init done");
 }
 NativeAudio::~NativeAudio() {
     say("deleted");
