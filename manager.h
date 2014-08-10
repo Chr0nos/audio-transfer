@@ -3,6 +3,12 @@
 
 #include "audioformat.h"
 
+
+#include "modules/nativeaudio.h"
+#include "modules/tcpdevice.h"
+#include "modules/udpdevice.h"
+#include "modules/zerodevice.h"
+
 #ifdef PULSE
     #include "modules/pulse.h"
     #include "modules/pulsedeviceasync.h"
@@ -37,6 +43,10 @@ public:
         int port;
         bool sendConfig;
     };
+    struct portAudioSpecs {
+        int deviceIdInput;
+        int deviceIdOutput;
+    };
 
     struct userConfig {
        Mode modeInput;
@@ -53,6 +63,7 @@ public:
        int bufferSize;
        int bufferMaxSize;
        QString pulseTarget;
+       portAudioSpecs portAudio;
     };
 
     explicit Manager(QObject *parent = 0);

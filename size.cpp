@@ -7,7 +7,7 @@ Size::Size()
 
 QString Size::getWsize(const quint64 size) {
     //this function convert a bytes size into an human readble size
-    if (size <= 0) return QString("nothink");
+    if (size <= 0) return QString("nothing");
     double isize = size;
     QStringList keys = Size::getUnits();
     int n;

@@ -27,8 +27,8 @@ NativeAudio::NativeAudio(const QString name,AudioFormat *format, QObject *parent
     this->format.setChannelCount(format->getChannelsCount());
     this->format.setSampleType(QAudioFormat::SignedInt);
     this->name = name;
-    in = 0;
-    out = 0;
+    in = NULL;
+    out = NULL;
     devIn = NULL;
     devOut = NULL;
     deviceIdIn = -1;
@@ -78,7 +78,10 @@ bool NativeAudio::configureDevice(QAudio::Mode mode, const int deviceId) {
         }
     }
     else if (mode == QAudio::AudioOutput) {
-        if (out) out->deleteLater();
+        if (out) {
+            out->deleteLater();
+            out = NULL;
+        }
         out = new QAudioOutput(info,format,this);
         if (!out) {
             say("cannot alocate memory for output");

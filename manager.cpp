@@ -1,10 +1,5 @@
 #include "manager.h"
 
-#include "modules/nativeaudio.h"
-#include "modules/tcpdevice.h"
-#include "modules/udpdevice.h"
-#include "modules/zerodevice.h"
-
 #include <QString>
 #include <QIODevice>
 #include <QtNetwork/QNetworkInterface>
@@ -44,6 +39,7 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
         case Manager::Device:
             NativeAudio *native;
             native = new NativeAudio(name,format,this);
+            connect(native,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
             if (!native->setDeviceId(mode,deviceId)) return false;
             *device = native;
             break;
@@ -87,7 +83,11 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
             break;
 #ifdef PORTAUDIO
          case Manager::PortAudio:
-            *device = new PortAudioDevice(format,this);
+            PortAudioDevice* api = new PortAudioDevice(format,this);
+            if (mode == QAudio::AudioInput) api->setDeviceId(config.portAudio.deviceIdInput,QIODevice::ReadOnly);
+            else if (mode == QAudio::AudioOutput) api->setDeviceId(config.portAudio.deviceIdOutput,QIODevice::WriteOnly);
+            connect(api,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+            *device = api;
             break;
 #else
          case Manager::PortAudio:
@@ -121,8 +121,12 @@ void Manager::stop() {
     if (devIn) {
         devIn->close();
         disconnect(devIn,SIGNAL(readyRead()),this,SLOT(transfer()));
+        devIn->deleteLater();
+        devIn = NULL;
     }
-    if (devOut) devOut->close();
+    if (devOut) {
+        devOut->close();
+    }
     emit(stoped());
 }
 

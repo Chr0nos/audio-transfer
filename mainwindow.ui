@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>552</width>
-    <height>553</height>
+    <width>576</width>
+    <height>605</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,25 +31,15 @@
            <string>Source</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0,0,0">
-           <item row="1" column="3">
-            <widget class="QPushButton" name="browseSourceFilePath">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>...</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QComboBox" name="sourcesList"/>
-           </item>
            <item row="1" column="1">
             <widget class="QLineEdit" name="sourceFilePath">
              <property name="enabled">
               <bool>false</bool>
              </property>
             </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="sourcesList"/>
            </item>
            <item row="1" column="0">
             <widget class="QRadioButton" name="sourceRadioFile">
@@ -78,6 +68,16 @@
              </property>
             </widget>
            </item>
+           <item row="1" column="3">
+            <widget class="QPushButton" name="browseSourceFilePath">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>...</string>
+             </property>
+            </widget>
+           </item>
            <item row="3" column="0">
             <widget class="QRadioButton" name="sourceRadioZeroDevice">
              <property name="text">
@@ -89,6 +89,23 @@
             <widget class="QRadioButton" name="sourceRadioPulseAudio">
              <property name="text">
               <string>PulseAudio</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QRadioButton" name="sourceRadioPortAudio">
+             <property name="text">
+              <string>PortAudio</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QComboBox" name="portAudioSourceList"/>
+           </item>
+           <item row="4" column="3">
+            <widget class="QPushButton" name="portAudioRefreshButton">
+             <property name="text">
+              <string>refresh</string>
              </property>
             </widget>
            </item>
@@ -188,6 +205,23 @@
            <string>Destination</string>
           </property>
           <layout class="QGridLayout" name="gridLayout" columnstretch="0,1,0">
+           <item row="2" column="0">
+            <widget class="QRadioButton" name="destinationRadioPulseAudio">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;using PuseAudio API&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>PulseAudio</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QRadioButton" name="destinationRadioZeroDevice">
+             <property name="text">
+              <string>Zero</string>
+             </property>
+            </widget>
+           </item>
            <item row="0" column="2">
             <widget class="QPushButton" name="destinationPathBrowse">
              <property name="enabled">
@@ -291,20 +325,20 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
-            <widget class="QRadioButton" name="destinationRadioPulseAudio">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;using PuseAudio API&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
+           <item row="5" column="0">
+            <widget class="QRadioButton" name="destinationRadioPortAudio">
              <property name="text">
-              <string>PulseAudio</string>
+              <string>PortAudio</string>
              </property>
             </widget>
            </item>
-           <item row="4" column="0">
-            <widget class="QRadioButton" name="destinationRadioZeroDevice">
+           <item row="5" column="1">
+            <widget class="QComboBox" name="destinationPortAudioList"/>
+           </item>
+           <item row="5" column="2">
+            <widget class="QPushButton" name="refreshPortAudioDestinationButton">
              <property name="text">
-              <string>Zero</string>
+              <string>refresh</string>
              </property>
             </widget>
            </item>

@@ -32,11 +32,13 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->sourceRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->sourceRadioZeroDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->sourceRadioPulseAudio,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
+    connect(ui->sourceRadioPortAudio,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->destinationDeviceRadio,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioPulseAudio,SIGNAL(clicked()),SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioZeroDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
+    connect(ui->destinationRadioPortAudio,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->checkboxSourceOutput,SIGNAL(clicked()),this,SLOT(on_refreshSources_clicked()));
 
     connect(manager,SIGNAL(errors(QString)),this,SLOT(errors(QString)));
@@ -52,6 +54,15 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->destinationPulseAudioLineEdit->deleteLater();
     ui->sourceRadioPulseAudio->setEnabled(false);
     ui->sourceRadioPulseAudio->deleteLater();
+#endif
+#ifndef PORTAUDIO
+    ui->sourceRadioPortAudio->setEnabled(false);
+    ui->sourceRadioPortAudio->hide();
+    ui->destinationRadioPortAudio->setEnabled(false);
+    ui->destinationRadioPortAudio->hide();
+    ui->portAudioSourceList->setEnabled(false);
+    ui->portAudioSourceList->hide();
+    ui->portAudioRefreshButton->hide();
 #endif
     debug("configuration path: " + getConfigFilePath());
 
@@ -109,6 +120,11 @@ void MainWindow::on_pushButton_clicked()
         mc.devices.output = ui->destinationDeviceCombo->currentIndex();
         mc.bufferSize = bitrate * ui->destinationTcpBufferDuration->value() / 1000 / 100;
         mc.bufferMaxSize = 2097152; //2Mb
+
+#ifdef PORTAUDIO
+        mc.portAudio.deviceIdOutput = ui->destinationPortAudioList->currentIndex();
+        mc.portAudio.deviceIdInput = ui->portAudioSourceList->currentIndex();
+#endif
         debug("buffer size: " + Size::getWsize(mc.bufferSize));
 
         //SOURCES
@@ -116,6 +132,7 @@ void MainWindow::on_pushButton_clicked()
         else if (ui->sourceRadioDevice->isChecked()) mc.modeInput = Manager::Device;
         else if (ui->sourceRadioZeroDevice->isChecked()) mc.modeInput = Manager::Zero;
         else if (ui->sourceRadioPulseAudio->isChecked()) mc.modeInput = Manager::PulseAudio;
+        else if (ui->sourceRadioPortAudio->isChecked()) mc.modeInput = Manager::PortAudio;
 
         //DESTINATIONS
         if (ui->destinationRadioFile->isChecked()) {
@@ -155,6 +172,7 @@ void MainWindow::on_pushButton_clicked()
 
         }
         else if (ui->destinationRadioZeroDevice->isChecked()) mc.modeOutput = Manager::Zero;
+        else if (ui->destinationRadioPortAudio->isChecked()) mc.modeOutput = Manager::PortAudio;
 
         manager->setUserConfig(mc);
         manager->start();
@@ -189,7 +207,6 @@ void MainWindow::on_sourcesList_currentTextChanged()
         ui->samplesRates->setCurrentIndex(ui->samplesRates->count() -1);
         ui->channelsCount->setValue(info.supportedChannelCounts().last());
     }
-    else ui->pushButton->setEnabled(false);
 }
 
 void MainWindow::on_browseSourceFilePath_clicked()
@@ -245,6 +262,9 @@ void MainWindow::refreshEnabledSources() {
     ui->refreshSources->setEnabled(false);
     ui->sourceFilePath->setEnabled(false);
     ui->sourcesList->setEnabled(false);
+    ui->portAudioSourceList->setEnabled(false);
+    ui->portAudioRefreshButton->setEnabled(false);
+
     ui->browseSourceFilePath->setEnabled(false);
     if (ui->sourceRadioDevice->isChecked()) {
         ui->sourcesList->setEnabled(true);
@@ -257,7 +277,16 @@ void MainWindow::refreshEnabledSources() {
         modeSource = Manager::File;
     }
     else if (ui->sourceRadioZeroDevice->isChecked()) modeSource = Manager::Zero;
+#ifdef PULSE
     else if (ui->sourceRadioPulseAudio->isChecked()) modeSource = Manager::PulseAudio;
+#endif
+#ifdef PORTAUDIO
+    else if (ui->sourceRadioPortAudio->isChecked()) {
+        modeSource = Manager::PortAudio;
+        ui->portAudioSourceList->setEnabled(true);
+        ui->portAudioRefreshButton->setEnabled(true);
+    }
+#endif
 }
 void MainWindow::refreshEnabledDestinations() {
     ui->destinationFilePath->setEnabled(false);
@@ -266,9 +295,14 @@ void MainWindow::refreshEnabledDestinations() {
     ui->destinationTcpSocket->setEnabled(false);
     ui->destinationDeviceCombo->setEnabled(false);
     ui->refreshOutputDevices->setEnabled(false);
+    //port audio
+    ui->destinationPortAudioList->setEnabled(false);
+    ui->refreshPortAudioDestinationButton->setEnabled(false);
+
 #ifdef PULSE
     ui->destinationPulseAudioLineEdit->setEnabled(false);
 #endif
+
     if (ui->destinationDeviceRadio->isChecked()) {
         ui->destinationDeviceCombo->setEnabled(true);
         ui->refreshOutputDevices->setEnabled(true);
@@ -291,6 +325,11 @@ void MainWindow::refreshEnabledDestinations() {
     }
 #endif
     else if (ui->destinationRadioZeroDevice->isChecked()) modeDest = Manager::Zero;
+    else if (ui->destinationRadioPortAudio->isChecked()) {
+        modeDest = Manager::PortAudio;
+        ui->destinationPortAudioList->setEnabled(true);
+        ui->refreshPortAudioDestinationButton->setEnabled(true);
+    }
 
 }
 void MainWindow::refreshReadedData() {
@@ -348,6 +387,9 @@ void MainWindow::setUserControlState(const bool state) {
     ui->destinationPulseAudioLineEdit->setEnabled(state);
     ui->sourceRadioPulseAudio->setEnabled(state);
 #endif
+#ifdef PORTAUDIO
+        ui->sourceRadioPortAudio->setEnabled(state);
+#endif
     ui->destinationRadioZeroDevice->setEnabled(state);
 
     ui->checkboxSourceOutput->setEnabled(state);
@@ -384,6 +426,11 @@ void MainWindow::configSave(Readini *ini) {
 #ifdef PULSE
     ini->setValue("target","pulse",ui->destinationPulseAudioLineEdit->text());
 #endif
+#ifdef PORTAUDIO
+    ini->setValue("target","portaudio",ui->destinationPortAudioList->currentText());
+    ini->setValue("source","portaudio",ui->portAudioSourceList->currentText());
+#endif
+
     ini->setValue("target","device",ui->destinationDeviceCombo->currentText());
     ini->setValue("options","sourceOutput",ui->checkboxSourceOutput->isChecked());
 
@@ -425,6 +472,10 @@ void MainWindow::configLoad(Readini *ini) {
 
 #ifdef PULSE
     ui->destinationPulseAudioLineEdit->setText(ini->getValue("target","pulse"));
+#endif
+#ifdef PORTAUDIO
+    ui->destinationPortAudioList->addItem(ini->getValue("target","portaudio"));
+    ui->destinationPortAudioList->setCurrentIndex(ui->destinationPortAudioList->count() -1);
 #endif
 
     ui->destinationFilePath->setText(ini->getValue("target","file"));
@@ -483,4 +534,36 @@ void MainWindow::moveToCenter() {
 bool MainWindow::intToBool(const int value) {
     if (value) return true;
     else return false;
+}
+
+void MainWindow::refreshPortAudioDevices(QComboBox *target) {
+#ifdef PORTAUDIO
+    PortAudioDevice api(NULL,this); //the NULL is ok here because we dont need an AudioFormat to get devices list
+    target->clear();
+    target->addItems(api.getDevicesNames());
+    target->setCurrentIndex(target->count() -1);
+#endif
+}
+
+void MainWindow::on_portAudioRefreshButton_clicked() {
+    refreshPortAudioDevices(ui->portAudioSourceList);
+}
+
+void MainWindow::on_refreshPortAudioDestinationButton_clicked()
+{
+    refreshPortAudioDevices(ui->destinationPortAudioList);
+}
+void MainWindow::setDefaultFormats() {
+    ui->codecList->clear();
+    ui->codecList->addItem("audio/pcm");
+
+    QStringList samplesRates;
+    samplesRates << "8000" << "11024" << "22025" << "44100" << "48000" << "96000" << "196000" << "320000";
+    ui->samplesRates->clear();
+    ui->samplesRates->addItems(samplesRates);
+
+    QStringList samplesSize;
+    samplesSize << "8" << "16" << "24" << "32";
+    ui->samplesSize->clear();
+    ui->samplesSize->addItems(samplesSize);
 }

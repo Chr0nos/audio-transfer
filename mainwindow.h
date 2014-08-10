@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QTimer>
 #include <QString>
+#include <QComboBox>
 #include "manager.h"
 #include "readini.h"
 
@@ -38,6 +39,8 @@ private slots:
     void refreshReadedData();
     void on_refreshOutputDevices_clicked();
     void on_configSave_clicked();
+    void on_portAudioRefreshButton_clicked();
+    void on_refreshPortAudioDestinationButton_clicked();
 
 public slots:
     void errors(const QString error);
@@ -53,6 +56,8 @@ private:
     Manager::Mode modeSource;
     Manager::Mode modeDest;
     Readini *ini;
+    void refreshPortAudioDevices(QComboBox* target);
+    void setDefaultFormats();
 };
 
 

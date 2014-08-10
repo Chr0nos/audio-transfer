@@ -54,6 +54,7 @@ PulseDevice::PulseDevice(const QString name, const QString target, AudioFormat *
     this->latencyRec = -1;
     this->timer = new QTimer(this);
     this->timer->setInterval(500);
+    this->timer->setObjectName("PulseAudio module timer");
     this->lastWritePos = 0;
     connect(this->timer,SIGNAL(timeout()),this,SIGNAL(readyRead()));
     //connect(this->timer,SIGNAL(timeout()),this,SLOT(testSlot()));
