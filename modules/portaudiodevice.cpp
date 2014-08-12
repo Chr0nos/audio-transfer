@@ -99,8 +99,8 @@ bool PortAudioDevice::open(OpenMode mode) {
                    format->getSampleRate(),
                    paFramesPerBufferUnspecified,
                    paNoFlag,                                    //flags that can be used to define dither, clip settings and more
-                   (void*)PortAudioDevice::PaStreamCallback,    //your callback function (NULL to use synchrone mode)
-                   (void *)this );                              //data to be passed to callback. In C++, it is frequently (void *)this
+                   PortAudioDevice::PaStreamCallback,    //your callback function (NULL to use synchrone mode)
+                   (void *)this); //data to be passed to callback. In C++, it is frequently (void *)this
     if (err != paNoError) {
         say("open error: " + QString::number(err) + " -> " + Pa_GetErrorText(err));
         say("input max channels: " + QString::number(getDeviceInfo(currentDeviceIdInput)->maxInputChannels));
@@ -120,7 +120,8 @@ bool PortAudioDevice::open(OpenMode mode) {
 
     QIODevice::open(mode);
     say("open ok");
-    timer->start();
+    //timer inutile en mode asynchrone
+    //timer->start();
     return true;
 }
 void PortAudioDevice::say(const QString message) {
@@ -144,14 +145,13 @@ qint64 PortAudioDevice::readData(char *data, qint64 maxlen) {
     if (err != paNoError) return -1;
     */
 
-    qint64 maxread = maxlen;
-    if (maxread > readBuffer.size()) maxread = readBuffer.length();
-    if (maxread) {
+    if (maxlen > readBuffer.size()) maxlen = readBuffer.length();
+    if (maxlen) {
         //memset(data,0,maxread);
-        memcpy(data,readBuffer.data(),maxread);
-        readBuffer.remove(0,maxread);
+        memcpy(data,readBuffer.data(),maxlen);
+        readBuffer.remove(0,maxlen);
     }
-    return maxread;
+    return maxlen;
 }
 qint64 PortAudioDevice::writeData(const char *data, qint64 len) {
     //ici la méthode pour "jouer" du son (output)
