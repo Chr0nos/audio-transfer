@@ -10,6 +10,7 @@
 TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,bool sendConfig,QObject *parent) :
     QIODevice(parent)
 {
+    (void) sendConfig;
     this->port = port;
     this->host = host;
     this->sock = new QTcpSocket(this);
@@ -33,6 +34,7 @@ bool TcpDevice::open(OpenMode mode) {
     return false;
 }
 qint64 TcpDevice::readData(char *data, qint64 maxlen) {
+    (void) data;
     if (sock->isReadable()) {
         data = sock->read(maxlen).data();
         return maxlen;
@@ -51,6 +53,7 @@ void TcpDevice::sendFormatSpecs() {
     sock->flush();
 }
 void TcpDevice::sockClose() {
+    say("socket closed");
     this->close();
 }
 void TcpDevice::sockOpen() {

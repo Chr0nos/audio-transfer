@@ -30,6 +30,7 @@ public:
     bool setDeviceId(const int deviceId, OpenModeFlag mode);
     static PaSampleFormat getSampleFormat(const int sampleSize);
     int getDeviceIdByName(const QString name);
+    bool setDeviceByName(const QString name,QIODevice::OpenModeFlag mode);
 private:
     void say(const QString message);
     void say(QStringList* list);
@@ -39,6 +40,8 @@ private:
     bool binit;
     int currentDeviceIdInput;
     int currentDeviceIdOutput;
+    QByteArray readBuffer;
+    void sendRdyRead();
 
 signals:
     void debug(const QString message);

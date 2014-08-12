@@ -9,7 +9,7 @@
  *  j'ignore moi même pourquoi j'ai codé ce module puisqu'il ne semble pas possible de faire du loopback avec portaudio, sans doute un de mes délires
  * de plus le module n'est pour l'heure pas fonctionel: le flux se créé bien aussi bien en lecture qu'en enregistrement, les périferiques se lisent tousa tousa c'est super
  * mais pas moyen de faire transiter des données par les flux, j'imagine qu'il faudra utiliser les callback mais... je n'ai aucune idée de ce que je fais...
- * futur moi: pardone moi pour mon ignorance.
+ * futur moi: pardone moi pour mon ignorance. Chr0nos
 */
 
 /* utilisation:
@@ -19,6 +19,10 @@
  * ...
  * output->close();
  * output->deleteLater();
+ *
+ * par convention les QIODevice::WriteOnly = sortie Audio (playback)
+ *                les QIODevice::ReadOnly  = entrée son (record)
+ *                les QIODevice::ReadWrite = les deux (affectera donc les deux précédents)
  * */
 
 PortAudioDevice::PortAudioDevice(AudioFormat *format, QObject *parent) :
@@ -87,15 +91,16 @@ bool PortAudioDevice::open(OpenMode mode) {
     }
 
     //stream is a PaStream* (stored in the object)
+    //void *callbackFunction = (void*)PortAudioDevice::PaStreamCallback;
     err =  Pa_OpenStream(
                    &stream,
                    inputParameters,
                    outputParameters,
                    format->getSampleRate(),
                    paFramesPerBufferUnspecified,
-                   paNoFlag, //flags that can be used to define dither, clip settings and more
-                   PortAudioDevice::PaStreamCallback, //your callback function
-                   (void *)this ); //data to be passed to callback. In C++, it is frequently (void *)this
+                   paNoFlag,                                    //flags that can be used to define dither, clip settings and more
+                   (void*)PortAudioDevice::PaStreamCallback,    //your callback function (NULL to use synchrone mode)
+                   (void *)this );                              //data to be passed to callback. In C++, it is frequently (void *)this
     if (err != paNoError) {
         say("open error: " + QString::number(err) + " -> " + Pa_GetErrorText(err));
         say("input max channels: " + QString::number(getDeviceInfo(currentDeviceIdInput)->maxInputChannels));
@@ -128,15 +133,25 @@ qint64 PortAudioDevice::readData(char *data, qint64 maxlen) {
     //ici la méthode pour enregistrer du son (record)
     if (!stream) return -1;
 
+    /*
     qint64 maxread = Pa_GetStreamReadAvailable(stream);
     //say("read data : " + QString::number((maxread)));
 
     if (maxread > maxlen) maxread = maxlen;
     else if (!maxread) return 0;
+
     PaError err = Pa_ReadStream(stream,data,(unsigned long) maxread);
     if (err != paNoError) return -1;
+    */
 
-    return maxlen;
+    qint64 maxread = maxlen;
+    if (maxread > readBuffer.size()) maxread = readBuffer.length();
+    if (maxread) {
+        //memset(data,0,maxread);
+        memcpy(data,readBuffer.data(),maxread);
+        readBuffer.remove(0,maxread);
+    }
+    return maxread;
 }
 qint64 PortAudioDevice::writeData(const char *data, qint64 len) {
     //ici la méthode pour "jouer" du son (output)
@@ -151,7 +166,23 @@ qint64 PortAudioDevice::writeData(const char *data, qint64 len) {
 }
 int PortAudioDevice::PaStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) {
     PortAudioDevice *obj = (PortAudioDevice*)userData;
-    qDebug() << "callback call: " << input << output << frameCount << statusFlags << userData << timeInfo << obj;
+    //qDebug() << "callback call: " << input << output << frameCount << statusFlags << userData << timeInfo << obj;
+
+    //prevent compilation warnings
+    (void) input;
+    (void) output;
+    (void) frameCount;
+    (void) timeInfo;
+    (void) statusFlags;
+
+    char *record = (char*) input;
+    (void) record;
+    qDebug() << strlen(record);
+
+
+    //ajout des données lues dans le buffer;
+    obj->readBuffer.append(record);
+    obj->sendRdyRead();
 
     //super la fonction de callback de lecture fonctione mais... je ne sais absolument quoi en faire :)
     //futur moi: arrete d'écrire des commentaires inutiles dans le code: personne ne les lis !
@@ -171,6 +202,7 @@ QList<PaDeviceInfo *> PortAudioDevice::getDevicesInfo() {
     return devices;
 }
 QStringList PortAudioDevice::getDevicesNames() {
+    //renvois un QStringList des noms des périferiques dispos
     QStringList devicesNames;
     QList<PaDeviceInfo*> devices = getDevicesInfo();
     QList<PaDeviceInfo*>::iterator i;
@@ -228,6 +260,20 @@ PaSampleFormat PortAudioDevice::getSampleFormat(const int sampleSize) {
 int PortAudioDevice::getDeviceIdByName(const QString name) {
     QStringList devices = getDevicesNames();
     return devices.indexOf(name);
+}
+bool PortAudioDevice::setDeviceByName(const QString name,QIODevice::OpenModeFlag mode) {
+    const int deviceId = getDeviceIdByName(name);
+    if (deviceId < 0) {
+        say("cannot set device to name: " + name + " -> no such device.");
+        return false;
+    }
+    if ((mode == QIODevice::WriteOnly) || (mode == QIODevice::ReadWrite)) currentDeviceIdOutput = deviceId;
+    if ((mode == QIODevice::ReadOnly) || (mode == QIODevice::ReadWrite)) currentDeviceIdInput = deviceId;
+    say("switched to device name: " + name + " id: " + QString::number(deviceId));
+    return true;
+}
+void PortAudioDevice::sendRdyRead() {
+    emit(readyRead());
 }
 
 #endif

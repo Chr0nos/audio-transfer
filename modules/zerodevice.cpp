@@ -17,6 +17,7 @@ ZeroDevice::ZeroDevice(AudioFormat* format,QObject *parent) :
     connect(timer,SIGNAL(timeout()),this,SIGNAL(readyRead()));
 }
 qint64 ZeroDevice::writeData(const char *data, qint64 len) {
+    (void) data;
     return len;
 }
 qint64 ZeroDevice::readData(char *data, qint64 maxlen) {

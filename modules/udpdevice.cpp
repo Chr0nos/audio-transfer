@@ -33,6 +33,7 @@ qint64 UdpDevice::writeData(const char *data, qint64 len) {
     return -1;
 }
 qint64 UdpDevice::readData(char *data, qint64 maxlen) {
+    (void) data;
     if (sock->isReadable()) data = sock->read(maxlen).data();
     return maxlen;
 }
