@@ -1,4 +1,5 @@
 /* this module will just be an output for playback over an other audio server (like a relay)
+ * Todo: test the read mode (the server has to send audio to the client (like a microphone return)
  */
 
 #include "tcpdevice.h"
@@ -23,13 +24,11 @@ TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,boo
     bSendConfig = true;
 }
 bool TcpDevice::open(OpenMode mode) {
-    if (mode == QIODevice::WriteOnly) {
-        sock->connectToHost(host,port,mode);
-        sock->waitForConnected();
-        if ((sock->isOpen()) && (sock->isWritable())) {
-            QIODevice::open(mode);
-            return true;
-        }
+    sock->connectToHost(host,port,mode);
+    sock->waitForConnected();
+    if ((sock->isOpen()) && (sock->isWritable())) {
+        QIODevice::open(mode);
+        return true;
     }
     return false;
 }
