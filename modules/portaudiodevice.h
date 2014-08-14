@@ -7,6 +7,7 @@
 #include <QString>
 #include <QTimer>
 #include <QList>
+#include <QMutex>
 #include <portaudio.h>
 
 #include "audioformat.h"
@@ -31,6 +32,7 @@ public:
     static PaSampleFormat getSampleFormat(const int sampleSize);
     int getDeviceIdByName(const QString name);
     bool setDeviceByName(const QString name,QIODevice::OpenModeFlag mode);
+    qint64 bytesAvailable();
 private:
     void say(const QString message);
     void say(QStringList* list);
@@ -42,6 +44,9 @@ private:
     int currentDeviceIdOutput;
     QByteArray readBuffer;
     void sendRdyRead();
+    bool modeAsync;
+    QMutex *mutexRead;
+    int framesPerBuffer;
 
 signals:
     void debug(const QString message);

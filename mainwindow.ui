@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>576</width>
-    <height>605</height>
+    <height>615</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,8 +17,14 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QTabWidget" name="tabWidget">
+      <property name="tabPosition">
+       <enum>QTabWidget::North</enum>
+      </property>
       <property name="currentIndex">
        <number>0</number>
+      </property>
+      <property name="usesScrollButtons">
+       <bool>true</bool>
       </property>
       <widget class="QWidget" name="general">
        <attribute name="title">
@@ -374,6 +380,11 @@
          <string>Enable output as source</string>
         </property>
        </widget>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Streams</string>
+       </attribute>
       </widget>
      </widget>
     </item>

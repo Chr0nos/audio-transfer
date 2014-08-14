@@ -85,6 +85,7 @@ void MainWindow::errors(const QString error) {
 }
 void MainWindow::debug(const QString message) {
     ui->debug->addItem(message);
+    ui->debug->scrollToBottom();
 }
 
 void MainWindow::on_refreshSources_clicked()
@@ -389,6 +390,10 @@ void MainWindow::setUserControlState(const bool state) {
 #endif
 #ifdef PORTAUDIO
         ui->sourceRadioPortAudio->setEnabled(state);
+        ui->destinationRadioPortAudio->setEnabled(state);
+        ui->portAudioRefreshButton->setEnabled(state);
+        ui->destinationPortAudioList->setEnabled(state);
+        ui->portAudioSourceList->setEnabled(state);
 #endif
     ui->destinationRadioZeroDevice->setEnabled(state);
 
