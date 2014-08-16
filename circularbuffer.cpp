@@ -1,4 +1,5 @@
 #include "circularbuffer.h"
+#include <QDebug>
 
 /* this class provide a circular buffer using a QByteArray inside it: not the most efficiant but should works, currently not used but will be used in the module portaudio
  * */
@@ -17,36 +18,39 @@ quint64 CircularBuffer::getSize() {
 }
 bool CircularBuffer::append(QByteArray newData) {
     int lenght = newData.size();
+    //Start contains the start position to read for newData
+    int start = 0;
 
     //in case of impossible add: just return false
     if (lenght > bsize) return false;
 
     //left space betewen current position and the end of buffer
-    const int left = positionWrite - bsize;
+    const int left = bsize - positionWrite -1;
 
     if (left < lenght) {
         data.insert(positionWrite,newData,left);
         lenght -= left;
         positionWrite = 0;
+        start = left;
     }
-    data.insert(positionWrite,newData);
+    data.insert(positionWrite,newData.mid(start,lenght),lenght);
     positionWrite += lenght;
     return true;
 }
-QByteArray CircularBuffer::getCurrentPosData(int lenght) {
+QByteArray CircularBuffer::getCurrentPosData(int length) {
     //if requested lenght is higher than the buffer himself: returning an empty qbytearray
-    if (lenght > bsize) return QByteArray();
+    if (length > bsize) return QByteArray();
 
     //left is the size between the end of the buffer and the current position
     const int left = bsize - positionRead;
     QByteArray result;
-    if (lenght > left) {
-        lenght -= left;
+    if (length > left) {
+        length -= left;
         result.append(data.mid(positionRead,left));
-        positionRead.store(0);
+        positionRead = 0;
     }
-    result.append(data.mid(positionRead,lenght));
-    positionRead += lenght;
+    result.append(data.mid(positionRead,length));
+    positionRead += length;
     return result;
 }
 QByteArray CircularBuffer::getData() {
