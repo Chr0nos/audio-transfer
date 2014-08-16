@@ -21,7 +21,7 @@ bool CircularBuffer::append(QByteArray newData) {
     if (max > bsize) return false;
 
     //here i insert each byte of newData one by one to control where i have to stop (this probably can be optimised but i dont know how to do)
-    for (int pos = 0 ; pos <= max ; pos++) {
+    for (int pos = -1 ; pos < max ; pos++) {
 
         //insert the currentByte and add 1 to position
         data.insert(positionWrite++,newData.at(pos));
