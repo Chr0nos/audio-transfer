@@ -16,19 +16,20 @@ quint64 CircularBuffer::getSize() {
     return bsize;
 }
 bool CircularBuffer::append(QByteArray newData) {
+    int lenght = newData.size();
+
     //in case of impossible add: just return false
-    const int max = newData.size();
-    if (max > bsize) return false;
+    if (lenght > bsize) return false;
 
-    //here i insert each byte of newData one by one to control where i have to stop (this probably can be optimised but i dont know how to do)
-    for (int pos = -1 ; pos < max ; pos++) {
+    //left space betewen current position and the end of buffer
+    const int left = positionWrite - bsize;
 
-        //insert the currentByte and add 1 to position
-        data.insert(positionWrite++,newData.at(pos));
-
-        //if current position is higher than buffer size: prepare new write to be done at buffer start
-        if (positionWrite > bsize) positionWrite = 0;
+    if (left < lenght) {
+        data.insert(positionWrite,newData,left);
+        lenght -= left;
     }
+    data.insert(positionWrite,newData);
+    positionWrite += lenght;
     return true;
 }
 QByteArray CircularBuffer::getCurrentPosData(int lenght) {
