@@ -27,6 +27,7 @@ bool CircularBuffer::append(QByteArray newData) {
     if (left < lenght) {
         data.insert(positionWrite,newData,left);
         lenght -= left;
+        positionWrite = 0;
     }
     data.insert(positionWrite,newData);
     positionWrite += lenght;
