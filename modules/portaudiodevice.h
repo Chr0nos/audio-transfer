@@ -7,10 +7,10 @@
 #include <QString>
 #include <QTimer>
 #include <QList>
-#include <QMutex>
 #include <portaudio.h>
 
 #include "audioformat.h"
+#include "circularbuffer.h"
 
 class PortAudioDevice : public QIODevice
 {
@@ -42,10 +42,9 @@ private:
     bool binit;
     int currentDeviceIdInput;
     int currentDeviceIdOutput;
-    QByteArray readBuffer;
+    CircularBuffer *readBuffer;
     void sendRdyRead();
     bool modeAsync;
-    QMutex *mutexRead;
     int framesPerBuffer;
 
 signals:

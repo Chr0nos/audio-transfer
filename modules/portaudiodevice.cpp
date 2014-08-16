@@ -31,11 +31,7 @@ PortAudioDevice::PortAudioDevice(AudioFormat *format, QObject *parent) :
 {
     say("init");
     say("api version: " + QString(Pa_GetVersionText()));
-    modeAsync = false;
-
-    //preparation du mutex pour le mode async
-    if (modeAsync) mutexRead = new QMutex();
-    else mutexRead = NULL;
+    modeAsync = true;
 
     binit = false;
     stream = NULL;
@@ -51,6 +47,13 @@ PortAudioDevice::PortAudioDevice(AudioFormat *format, QObject *parent) :
     this->timer = new QTimer(this);
     timer->setInterval(100);
     timer->setObjectName("PortAudio module timer");
+
+    //en cas de mode asynchrone
+    if (modeAsync) {
+        //allocation d'un buffer circulaire de lecture de 2Mo
+        this->readBuffer = new CircularBuffer(2097152,this);
+    }
+
     connect(timer,SIGNAL(timeout()),this,SIGNAL(readyRead()));
 
     say("devices count: " + QString::number(getDevicesCount()));
@@ -120,7 +123,7 @@ bool PortAudioDevice::open(OpenMode mode) {
                    format->getSampleRate(),
                    framesPerBuffer,
                    paNoFlag,                                     //flags that can be used to define dither, clip settings and more
-                   NULL,    //your callback function (NULL to use synchrone mode)
+                   PortAudioDevice::PaStreamCallback,    //your callback function (NULL to use synchrone mode)
                    (void *)this); //data to be passed to callback. In C++, it is frequently (void *)this
 
     if (err != paNoError) {
@@ -178,15 +181,8 @@ qint64 PortAudioDevice::readData(char *data, qint64 maxlen) {
         }
     }
     else {
-        //mode asynchrone
-        if (maxlen > readBuffer.size()) maxlen = readBuffer.length();
-        if (maxlen <= 0) return -1;
-        //l'usage du mutex est indispenssable sinon le callback écrit des données alors que des remove sont en cours, causant alors le crash du programe
-        //le callback est sur un thread séparé et geré par l'api portaudio
-        mutexRead->lock();
-        memcpy(data,readBuffer.data(),maxlen);
-        readBuffer.remove(0,maxlen);
-        mutexRead->unlock();
+        //mode asynchrone: lecture dans le buffer circulaire et renvoi des données
+        data = readBuffer->getCurrentPosData(maxlen).data();
     }
     return maxlen;
 }
@@ -212,13 +208,10 @@ int PortAudioDevice::PaStreamCallback(const void *input, void *output, unsigned 
     (void) timeInfo;
     (void) statusFlags;
 
-    char *record = (char*) input;
+    const int size = frameCount * obj->format->getChannelsCount();
 
     //ajout des données lues dans le buffer;
-    obj->mutexRead->lock();
-    obj->readBuffer.append(record,frameCount);
-    obj->mutexRead->unlock();
-    obj->sendRdyRead();
+    obj->readBuffer->append(QByteArray::fromRawData((char*) input,size));
 
     //super la fonction de callback de lecture fonctione mais... je ne sais absolument quoi en faire :)
     //futur moi: arrete d'écrire des commentaires inutiles dans le code: personne ne les lis !
@@ -312,7 +305,8 @@ void PortAudioDevice::sendRdyRead() {
     emit(readyRead());
 }
 qint64 PortAudioDevice::bytesAvailable() {
-    return readBuffer.size() + QIODevice::bytesAvailable();
+    if (!stream) return -1;
+    return Pa_GetStreamReadAvailable(stream);
 }
 
 #endif
