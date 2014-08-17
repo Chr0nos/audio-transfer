@@ -9,10 +9,10 @@ class CircularBuffer : public QObject
     Q_OBJECT
 public:
     explicit CircularBuffer(const uint bufferSize,QObject *parent = 0);
-    quint64 getSize();
+    int getSize();
     bool append(QByteArray newData);
     void clear();
-    QByteArray getCurrentPosData(int lenght);
+    QByteArray getCurrentPosData(int length);
     QByteArray getData();
 private:
     int bsize;

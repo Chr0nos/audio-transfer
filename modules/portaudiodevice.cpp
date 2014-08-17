@@ -212,6 +212,7 @@ int PortAudioDevice::PaStreamCallback(const void *input, void *output, unsigned 
 
     //ajout des données lues dans le buffer;
     obj->readBuffer->append(QByteArray::fromRawData((char*) input,size));
+    obj->sendRdyRead();
 
     //super la fonction de callback de lecture fonctione mais... je ne sais absolument quoi en faire :)
     //futur moi: arrete d'écrire des commentaires inutiles dans le code: personne ne les lis !

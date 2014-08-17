@@ -11,6 +11,7 @@
 TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,bool sendConfig,QObject *parent) :
     QIODevice(parent)
 {
+    say("init");
     (void) sendConfig;
     this->port = port;
     this->host = host;
@@ -22,14 +23,17 @@ TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,boo
     connect(sock,SIGNAL(readyRead()),this,SIGNAL(readyRead()));
     this->format = format;
     bSendConfig = true;
+    say("init done");
 }
 bool TcpDevice::open(OpenMode mode) {
+    say("opening device (connect)");
     sock->connectToHost(host,port,mode);
     sock->waitForConnected();
     if ((sock->isOpen()) && (sock->isWritable())) {
         QIODevice::open(mode);
         return true;
     }
+    say("connection timed out, check target ip and if server is runing");
     return false;
 }
 qint64 TcpDevice::readData(char *data, qint64 maxlen) {
@@ -48,6 +52,7 @@ qint64 TcpDevice::writeData(const char *data, qint64 len) {
     return -1;
 }
 void TcpDevice::sendFormatSpecs() {
+    say("sending format specs");
     sock->write(format->getFormatTextInfo().toLocal8Bit());
     sock->flush();
 }
@@ -56,6 +61,7 @@ void TcpDevice::sockClose() {
     this->close();
 }
 void TcpDevice::sockOpen() {
+   say("connected to remote server");
    if (bSendConfig) sendFormatSpecs();
 }
 void TcpDevice::say(const QString message) {

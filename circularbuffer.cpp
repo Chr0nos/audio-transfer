@@ -13,7 +13,7 @@ CircularBuffer::CircularBuffer(const uint bufferSize, QObject *parent) :
     positionWrite = 0;
 }
 
-quint64 CircularBuffer::getSize() {
+int CircularBuffer::getSize() {
     return bsize;
 }
 bool CircularBuffer::append(QByteArray newData) {
@@ -33,7 +33,7 @@ bool CircularBuffer::append(QByteArray newData) {
         positionWrite = 0;
         start = left;
     }
-    data.insert(positionWrite,newData.mid(start,lenght),lenght);
+    data.replace(positionWrite,lenght,newData.mid(start,lenght));
     positionWrite += lenght;
     return true;
 }
