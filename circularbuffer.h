@@ -14,6 +14,7 @@ public:
     void clear();
     QByteArray getCurrentPosData(int length);
     QByteArray getData();
+    bool isBufferFeeded();
 private:
     int bsize;
     QByteArray data;

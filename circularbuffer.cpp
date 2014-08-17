@@ -63,3 +63,8 @@ void CircularBuffer::clear() {
     positionRead = 0 ;
     positionWrite = 0;
 }
+bool CircularBuffer::isBufferFeeded() {
+    //if the buffer is under feeded: more read than writes, this method will return false, else true
+    if (positionRead > positionWrite) return false;
+    return true;
+}
