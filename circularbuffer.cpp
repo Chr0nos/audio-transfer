@@ -25,7 +25,7 @@ bool CircularBuffer::append(QByteArray newData) {
     if (lenght > bsize) return false;
 
     //left space betewen current position and the end of buffer
-    const int left = bsize - positionWrite -1;
+    const int left = bsize - positionWrite;
 
     if (left < lenght) {
         data.insert(positionWrite,newData,left);
@@ -37,6 +37,10 @@ bool CircularBuffer::append(QByteArray newData) {
     positionWrite += lenght;
     return true;
 }
+bool CircularBuffer::append(const QString text) {
+    return this->append(text.toLocal8Bit());
+}
+
 QByteArray CircularBuffer::getCurrentPosData(int length) {
     //if requested lenght is higher than the buffer himself: returning an empty qbytearray
     if (length > bsize) return QByteArray();
@@ -63,8 +67,40 @@ void CircularBuffer::clear() {
     positionRead = 0 ;
     positionWrite = 0;
 }
-bool CircularBuffer::isBufferFeeded() {
+bool CircularBuffer::isBufferUnderFeeded() {
     //if the buffer is under feeded: more read than writes, this method will return false, else true
     if (positionRead > positionWrite) return false;
     return true;
+}
+int CircularBuffer::getAvailableBytes() {
+    int available = 0;
+    const int lenght = positionWrite - positionRead;
+    if (lenght < 0) {
+
+    }
+
+    return available;
+}
+void CircularBuffer::runTest() {
+    //this method run a small test for the class and make sure it's still working
+
+    qDebug() << "circular buffer test start";
+    //create the buffer
+    CircularBuffer test(16);
+
+    //filling it with "." for all the buffer length
+    test.data.fill(46,16);
+
+    //putting every lettrer from A to Z in the buffer
+    for (int i = 65 ; i < 92 ; i++) {
+        //making a QChar from the current i value
+        QChar letter = QChar::fromLatin1((char) i);
+
+        //showing current buffer content
+        qDebug() << test.getCurrentPosData(16);
+
+        //adding new letter to buffer
+        test.append(QString(letter));
+    }
+    qDebug() << "circular buffer test done";
 }

@@ -11,10 +11,13 @@ public:
     explicit CircularBuffer(const uint bufferSize,QObject *parent = 0);
     int getSize();
     bool append(QByteArray newData);
+    bool append(const QString text);
     void clear();
     QByteArray getCurrentPosData(int length);
     QByteArray getData();
-    bool isBufferFeeded();
+    int getAvailableBytes();
+    bool isBufferUnderFeeded();
+    static void runTest();
 private:
     int bsize;
     QByteArray data;
