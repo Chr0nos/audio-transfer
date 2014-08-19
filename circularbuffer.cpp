@@ -72,11 +72,11 @@ bool CircularBuffer::isBufferUnderFeeded() {
     if (positionRead > positionWrite) return false;
     return true;
 }
-int CircularBuffer::getAvailableBytes() {
-    int available = 0;
+int CircularBuffer::getAvailableBytesCount() {
     const int lenght = positionWrite - positionRead;
-    if (lenght < 0) {
-
+    int available = lenght;
+    if (available < 0) {
+        available *= -1;
     }
 
     return available;
