@@ -2,6 +2,7 @@
 #include "manager.h"
 #include "readini.h"
 #include "mainwindow.h"
+#include "size.h"
 
 #include <QTextStream>
 #include <QAudioDeviceInfo>
@@ -9,6 +10,11 @@
 Comline::Comline(QString *args, QObject *parent) :
     QObject(parent)
 {
+    lastReadedValue = 0;
+    timer = new QTimer(this);
+    timer->setInterval(2000);
+    connect(timer,SIGNAL(timeout()),this,SLOT(showStats()));
+
     out = new QTextStream(stdout);
     *out << "comline mode" << endl;
     *out << "arguments: " << args;
@@ -42,12 +48,27 @@ bool Comline::start() {
     mc.tcpTarget.sendConfig = true;
 
     manager = new Manager(this);
+    connect(manager,SIGNAL(stoped()),this,SLOT(sockClose()));
     connect(manager,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
     connect(manager,SIGNAL(errors(QString)),this,SLOT(debug(QString)));
     manager->setUserConfig(mc);
 
-    return manager->start();
+    if (manager->start()) {
+        timer->start();
+        return true;
+    }
+    return false;
 }
 void Comline::debug(QString message) {
     *out << message << endl;
+}
+void Comline::showStats() {
+    quint64 size = manager->getTransferedSize();
+    int speed = size - lastReadedValue;
+    *out << "transfered data: " << Size::getWsize(size)  << " speed: " << Size::getWsize(speed) << endl;
+    lastReadedValue = size;
+}
+void Comline::sockClose() {
+    timer->stop();
+    debug("stoped");
 }

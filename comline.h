@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QTextStream>
+#include <QTimer>
 #include "manager.h"
 
 class Comline : public QObject
@@ -11,14 +12,19 @@ class Comline : public QObject
 public:
     explicit Comline(QString *args,QObject *parent = 0);
     bool start();
+public slots:
+    void showStats();
 private:
     Manager* manager;
     QTextStream* out;
+    quint64 lastReadedValue;
+    QTimer *timer;
 
 signals:
 
 public slots:
     void debug(QString message);
+    void sockClose();
 };
 
 #endif // COMLINE_H

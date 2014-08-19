@@ -82,25 +82,33 @@ int CircularBuffer::getAvailableBytes() {
     return available;
 }
 void CircularBuffer::runTest() {
+    const int patternSize = 2;
+    const int bufferLength = 16;
+    int tests = 1;
+    const bool quiet = false;
+
     //this method run a small test for the class and make sure it's still working
 
     qDebug() << "circular buffer test start";
     //create the buffer
-    CircularBuffer test(16);
+    CircularBuffer test(bufferLength);
 
     //filling it with "." for all the buffer length
-    test.data.fill(46,16);
+    test.data.fill(46,bufferLength);
 
-    //putting every lettrer from A to Z in the buffer
-    for (int i = 65 ; i < 92 ; i++) {
-        //making a QChar from the current i value
-        QChar letter = QChar::fromLatin1((char) i);
+    //lets do the amounth of tests requied
+    while (tests--) {
+        //putting every lettrer from A to Z in the buffer
+        for (int i = 65 ; i < 92 ; i++) {
+            //making a QChar from the current i value
+            char letter = (char) i;
 
-        //showing current buffer content
-        qDebug() << test.getCurrentPosData(16);
+            //showing current buffer content if quiet mode is not disabled
+            if (!quiet) qDebug() << test.getCurrentPosData(bufferLength);
 
-        //adding new letter to buffer
-        test.append(QString(letter));
+            //adding new letter to buffer
+            test.append(QString().fill(letter,patternSize));
+        }
     }
     qDebug() << "circular buffer test done";
 }

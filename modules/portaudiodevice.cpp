@@ -52,6 +52,8 @@ PortAudioDevice::PortAudioDevice(AudioFormat *format, QObject *parent) :
     if (modeAsync) {
         //allocation d'un buffer circulaire de lecture de 2Mo
         this->readBuffer = new CircularBuffer(2097152,this);
+        //definition d'un nom pour le debug (facilitra la lecture pour le cas de plusieurs CircularBuffer)
+        this->readBuffer->setObjectName("PortAudio module read buffer");
     }
 
     connect(timer,SIGNAL(timeout()),this,SIGNAL(readyRead()));
@@ -146,8 +148,8 @@ bool PortAudioDevice::open(OpenMode mode) {
 
     QIODevice::open(mode);
     say("open ok");
-    //timer inutile en mode asynchrone
-    if (!modeAsync) timer->start();
+
+    timer->start();
     return true;
 }
 void PortAudioDevice::say(const QString message) {
@@ -212,7 +214,7 @@ int PortAudioDevice::PaStreamCallback(const void *input, void *output, unsigned 
 
     //ajout des données lues dans le buffer;
     obj->readBuffer->append(QByteArray::fromRawData((char*) input,size));
-    obj->sendRdyRead();
+    //obj->sendRdyRead();
 
     //super la fonction de callback de lecture fonctione mais... je ne sais absolument quoi en faire :)
     //futur moi: arrete d'écrire des commentaires inutiles dans le code: personne ne les lis !
