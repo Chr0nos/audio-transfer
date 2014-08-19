@@ -184,6 +184,8 @@ qint64 PortAudioDevice::readData(char *data, qint64 maxlen) {
     }
     else {
         //mode asynchrone: lecture dans le buffer circulaire et renvoi des données
+        const int available = readBuffer->getAvailableBytesCount();
+        if (maxlen > available) maxlen = available;
         data = readBuffer->getCurrentPosData(maxlen).data();
     }
     return maxlen;
@@ -309,6 +311,7 @@ void PortAudioDevice::sendRdyRead() {
 }
 qint64 PortAudioDevice::bytesAvailable() {
     if (!stream) return -1;
+    if (modeAsync) return readBuffer->getAvailableBytesCount();
     return Pa_GetStreamReadAvailable(stream);
 }
 
