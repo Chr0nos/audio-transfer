@@ -15,7 +15,7 @@ public:
     void clear();
     QByteArray getCurrentPosData(int length);
     QByteArray getData();
-    int getAvailableBytes();
+    int getAvailableBytesCount();
     bool isBufferUnderFeeded();
     static void runTest();
 private:

@@ -73,13 +73,8 @@ bool CircularBuffer::isBufferUnderFeeded() {
     return true;
 }
 int CircularBuffer::getAvailableBytesCount() {
-    const int lenght = positionWrite - positionRead;
-    int available = lenght;
-    if (available < 0) {
-        available *= -1;
-    }
-
-    return available;
+    const int lenght = (bsize + positionWrite - positionRead) % bsize;
+    return lenght;
 }
 void CircularBuffer::runTest() {
     const int patternSize = 2;
@@ -104,7 +99,7 @@ void CircularBuffer::runTest() {
             char letter = (char) i;
 
             //showing current buffer content if quiet mode is not disabled
-            if (!quiet) qDebug() << test.getCurrentPosData(bufferLength);
+            if (!quiet) qDebug() << test.getCurrentPosData(bufferLength) << test.getAvailableBytesCount();
 
             //adding new letter to buffer
             test.append(QString().fill(letter,patternSize));

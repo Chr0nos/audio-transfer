@@ -149,7 +149,7 @@ bool PortAudioDevice::open(OpenMode mode) {
     QIODevice::open(mode);
     say("open ok");
 
-    timer->start();
+    if (!modeAsync) timer->start();
     return true;
 }
 void PortAudioDevice::say(const QString message) {
@@ -212,11 +212,11 @@ int PortAudioDevice::PaStreamCallback(const void *input, void *output, unsigned 
     (void) timeInfo;
     (void) statusFlags;
 
-    const int size = frameCount * obj->format->getChannelsCount();
+    const int size = frameCount * obj->format->getChannelsCount() * obj->format->getSampleSize() / 8;
 
     //ajout des données lues dans le buffer;
     obj->readBuffer->append(QByteArray::fromRawData((char*) input,size));
-    //obj->sendRdyRead();
+    obj->sendRdyRead();
 
     //super la fonction de callback de lecture fonctione mais... je ne sais absolument quoi en faire :)
     //futur moi: arrete d'écrire des commentaires inutiles dans le code: personne ne les lis !
