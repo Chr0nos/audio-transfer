@@ -48,6 +48,7 @@ public slots:
     void started();
     void refreshEstimatedBitrate();
     static QString getConfigFilePath();
+    void refreshGraphics();
 private:
     Ui::MainWindow *ui;
     QTimer *timer;
@@ -58,6 +59,7 @@ private:
     Readini *ini;
     void refreshPortAudioDevices(QComboBox* target);
     void setDefaultFormats();
+    QList<int> speeds;
 };
 
 

@@ -202,6 +202,8 @@ qint64 PortAudioDevice::writeData(const char *data, qint64 len) {
     return max;
 }
 int PortAudioDevice::PaStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) {
+    //cette fonction n'est utilisée QUE en mode asynchrone
+
     PortAudioDevice *obj = (PortAudioDevice*)userData;
     //qDebug() << "callback call: " << input << output << frameCount << statusFlags << userData << timeInfo << obj;
 
