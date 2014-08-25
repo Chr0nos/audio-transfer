@@ -10,7 +10,7 @@ QString Size::getWsize(const quint64 size) {
     double isize = size;
     QStringList keys = Size::getUnits();
     int n;
-    for (n = 0;isize >= 1024;n++) isize = isize / 1024;
+    for (n = 0;isize >= 1024;n++) isize /= 1024;
     if (n >= keys.count()) n = keys.count() -1;
     return QString::number(isize,10,2) + keys.at(n);
 }

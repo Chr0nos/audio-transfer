@@ -3,6 +3,7 @@
 #include "manager.h"
 #include "readini.h"
 #include "size.h"
+#include "graphicgenerator.h"
 
 #include <QtGui>
 #include <QString>
@@ -10,8 +11,7 @@
 #include <QFileDialog>
 #include <QTimer>
 #include <QDesktopWidget>
-#include <QPainter>
-#include <QPixmap>
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -582,103 +582,7 @@ void MainWindow::setDefaultFormats() {
 }
 
 void MainWindow::refreshGraphics() {
-    /* cette fonction créé un graphique en batons pour afficher la vitesse du débit des données (enregisré dans le QList<int> "speeds"
-     * la liste comprends 20 entrés, la fonction affiche les valeurs sur une échele de (minValue -10) à (maxValue +10)
-     * note: les écarts -10 et +10 ne sont pas encore geré faute de code qui fonctione correctement.
-     * */
-
-    if (speeds.count() < 2) return;
-    //qDebug() << speeds;
-
-    //on definis les valeurs de base qui ne changeront pas (taille du graphique, nombre de graduations, marges)
-    const int hauteur = 400;
-    const int largeur = 500;
-    const int margeBas = 0;
-    const int margeHaut = 5;
-    const int graduations = 20;
-
-    //on détermine les valeurs mini et maxi de la liste speeds
-    int maxValue = 0;
-    int minValue = 0;
-    QList<int>::iterator v;
-    for (v = speeds.begin() ; v != speeds.end() ; v++) {
-        if (maxValue < *v) maxValue = *v;
-        if (minValue > *v) minValue = *v;
-    }
-
-    //ceci contiens l'écart entre la valeur maximale et la valeur minimale
-    const int ecart = maxValue - minValue;
-
-    //si l'écart est nul on arrete tout et on n'affiche rien: la liste est probablement vide ou ne contiens qu'une donnée (deux mini)
-    if (!ecart) return;
-
-    //on détermine le pas en pixels entre chaque graduations
-    const int pasPx = hauteur / graduations;
-    //ici le pas en unitées
-    const int pasUnits = ecart / graduations;
-
-    QPixmap pix(largeur,hauteur);
-
-    QPainter p(&pix);
-    QFont f;
-    f.setFamily("Sans");
-    f.setPixelSize(10);
-    p.setFont(f);
-
-    //definition d'un fond unifié (en blanc)
-    QRect background;
-    background.setCoords(0,0,largeur,hauteur);
-    p.fillRect(background,Qt::white);
-
-    //tracage des graduations et des unitées de mesures
-    p.setPen(Qt::gray);
-    int count = 1;
-    for (int i = 0 ; i < maxValue ; i += pasUnits) {
-        //ici la valeur qui sera affiché sur la graduation, je passe par un pointeur histoire de clarifier un peu ce que contiens i
-        const int *valeurGraduation = &i;
-        const int positionY = hauteur - (pasPx * count++);
-
-        //on trace la ligne de démarcation..... ETTTTT C'ESSTTTT LE BUUTTT !!!! ... non je décone, j'aime pas le foot :/
-        p.drawLine(QPoint(10,positionY),QPoint(largeur,positionY));
-
-        //definition de l'échelle sur la ligne (en ko/s normalement, dépendra du format audio choisi, peut etre en mb/s)
-        p.drawText(QPoint(0,positionY),Size::getWsize(*valeurGraduation) + "/s");
-
-    }
-
-    //ici on affiche les rectagles des valeurs de speeds
-    p.setPen(Qt::gray);
-
-    //Valeur d'une unitée en pixels
-    const float unitPx = (float) hauteur / (float) ecart;
-
-    //on definis la position de la premiere colone à 50pixels sur la droite
-    int pos = 50;
-    for (v = speeds.begin() ; v != speeds.end() ; v++) {
-        const float coef = *v / ((float)ecart);
-        const int relativeValue = maxValue - *v;
-        const int valuePosition = unitPx * relativeValue;
-        const int oldPosition = coef * (hauteur - margeBas) + margeHaut;
-        qDebug() << *v << relativeValue << valuePosition << unitPx << oldPosition;
-
-        //création des coordonées du rectangle
-        //pos contiens la position horizontale, valuePosition la position verticale, pos+5 pour une largeur de colone de 5pixels
-        QRect r(QPoint(pos,valuePosition),QPoint(pos + 5,hauteur - margeBas));
-
-        //on remplis le rectangle en noir
-        p.fillRect(r,Qt::black);
-
-        //on trace le contour du rectangle (en gris)
-        p.drawRect(r);
-
-        //ici on modifie le déclage sur la droite (X) de 8 pixels
-        pos += 8;
-    }
-
-    //on dessine tout ce bazard
-    p.end();
-
-    //on affiche le tout
-    ui->graphicViewLabel->setPixmap(pix);
-    ui->graphicViewLabel->setScaledContents(true);
+    if (!ui->checkShowStreamSpeed->isChecked()) return;
+    GraphicGenerator g(&speeds,ui->graphicViewLabel,this);
+    g.refresh();
 }

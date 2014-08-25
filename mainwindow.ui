@@ -380,6 +380,19 @@
          <string>Enable output as source</string>
         </property>
        </widget>
+       <widget class="QCheckBox" name="checkShowStreamSpeed">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>40</y>
+          <width>181</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Show stream speed</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="tab_2">
        <attribute name="title">
