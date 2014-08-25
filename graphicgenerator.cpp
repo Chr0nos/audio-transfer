@@ -14,8 +14,7 @@ GraphicGenerator::GraphicGenerator(QList<int> *speeds, QLabel *label, QObject *p
 }
 void GraphicGenerator::refresh() {
     /* cette fonction créé un graphique en batons pour afficher la vitesse du débit des données (enregisré dans le QList<int> "speeds"
-     * la liste comprends 20 entrés, la fonction affiche les valeurs sur une échele de (minValue -10) à (maxValue +10)
-     * note: les écarts -10 et +10 ne sont pas encore geré faute de code qui fonctione correctement.
+     * 30% sont ajouté au maximal et 10 retiré au minimal pour améliorer la  lisibilitée
      * */
 
     if (speeds->count() < 2) return;
@@ -40,7 +39,7 @@ void GraphicGenerator::refresh() {
         average += *v;
     }
     average /= speeds->count();
-    minValue *= 1.1;
+    minValue *= 0.9;
     if (minValue < 0) minValue = 0;
     maxValue *= 1.3;
 
