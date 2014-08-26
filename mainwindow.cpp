@@ -9,6 +9,7 @@
 #include <QString>
 #include <QtMultimedia/QAudioOutput>
 #include <QFileDialog>
+#include <QDialog>
 #include <QTimer>
 #include <QDesktopWidget>
 
@@ -585,4 +586,34 @@ void MainWindow::refreshGraphics() {
     if (!ui->checkShowStreamSpeed->isChecked()) return;
     GraphicGenerator g(&speeds,ui->graphicViewLabel,this);
     g.refresh();
+
+}
+
+void MainWindow::on_buttonResetGraphic_clicked()
+{
+    this->speeds.clear();
+    refreshGraphics();
+}
+
+void MainWindow::on_buttonSaveGraphic_clicked()
+{
+    if (!ui->graphicViewLabel->pixmap()) {
+        debug("cannot save graphic: no data to save, use the checkbox in option and to a transfer before");
+        return;
+    }
+
+    QFileDialog d(this);
+    d.setAcceptMode(QFileDialog::AcceptSave);
+    d.setNameFilter("*.jpg");
+    d.exec();
+    d.show();
+    if (d.selectedFiles().isEmpty()) {
+        debug("no file selected: abording");
+        return;
+    }
+    QString fileName = d.selectedFiles().at(0);
+    if ((fileName.length() < 4) || (fileName.right(4) != ".jpg")) fileName.append(".jpg");
+
+    ui->graphicViewLabel->pixmap()->toImage().save(fileName);
+    debug("graphic saved to " + fileName);
 }

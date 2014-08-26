@@ -105,9 +105,11 @@ void GraphicGenerator::refresh() {
         pos += 8;
     }
 
-    //on affiche la vitesse moyene
+    //on affiche la vitesse moyene (texte en haut à droite du graphique)
     p.setPen(Qt::blue);
     p.drawText(QPoint(largeur - 110,10),"Average: " + Size::getWsize(average) + "/s");
+
+    //on trace une ligne bleu sur toute la largeur pour délimiter le niveau de la vitesse moyene
     const int yPos = hauteur - hauteur * (average - minValue) / ecart;
     p.drawLine(QPoint(0,yPos),QPoint(largeur,yPos));
 

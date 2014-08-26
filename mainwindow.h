@@ -42,6 +42,10 @@ private slots:
     void on_portAudioRefreshButton_clicked();
     void on_refreshPortAudioDestinationButton_clicked();
 
+    void on_buttonResetGraphic_clicked();
+
+    void on_buttonSaveGraphic_clicked();
+
 public slots:
     void errors(const QString error);
     void debug(const QString message);
