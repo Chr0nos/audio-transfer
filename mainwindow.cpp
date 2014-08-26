@@ -63,6 +63,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->sourceRadioPortAudio->hide();
     ui->destinationRadioPortAudio->setEnabled(false);
     ui->destinationRadioPortAudio->hide();
+    ui->destinationPortAudioList->hide();
+    ui->refreshPortAudioDestinationButton->hide();
     ui->portAudioSourceList->setEnabled(false);
     ui->portAudioSourceList->hide();
     ui->portAudioRefreshButton->hide();

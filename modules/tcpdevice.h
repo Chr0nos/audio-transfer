@@ -26,6 +26,7 @@ private:
     bool bSendConfig;
 
 signals:
+    void debug(const QString message);
 
 public slots:
     void sockClose();

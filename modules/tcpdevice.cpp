@@ -66,9 +66,11 @@ void TcpDevice::sockOpen() {
 }
 void TcpDevice::say(const QString message) {
     qDebug() << "TcpDevice: " + message;
+    emit(debug("TcpDevice: " + message));
 }
 void TcpDevice::close() {
     say("closing device");
     QIODevice::close();
     sock->close();
 }
+

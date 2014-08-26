@@ -36,27 +36,36 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
     else if (mode == QAudio::AudioOutput) { target = config.modeOutput; flag = QIODevice::WriteOnly; deviceId = config.devices.output; name.append(" playback"); }
 
     switch (target) {
-        case Manager::Device:
-            NativeAudio *native;
-            native = new NativeAudio(name,format,this);
+        case Manager::Device: {
+            NativeAudio *native = new NativeAudio(name,format,this);
             connect(native,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-            if (!native->setDeviceId(mode,deviceId)) return false;
+            if (!native->setDeviceId(mode,deviceId)) {
+                native->deleteLater();
+                return false;
+            }
             *device = native;
             break;
-        case Manager::Tcp:
-            *device = new TcpDevice(config.tcpTarget.host,config.tcpTarget.port,format,config.tcpTarget.sendConfig,this);
+        }
+        case Manager::Tcp: {
+            TcpDevice* tcpDevice = new TcpDevice(config.tcpTarget.host,config.tcpTarget.port,format,config.tcpTarget.sendConfig,this);
+            connect(tcpDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+            *device = tcpDevice;
             break;
-        case Manager::Udp:
+        }
+        case Manager::Udp: {
             *device = new UdpDevice(config.tcpTarget.host,config.tcpTarget.port,format,config.tcpTarget.sendConfig,this);
             break;
+        }
 #ifdef PULSE
-        case Manager::PulseAudio:
+        case Manager::PulseAudio: {
             *device = new PulseDevice(name,config.pulseTarget,format,this);
             break;
+        }
 #ifdef PULSEASYNC
-        case Manager::PulseAudioAsync:
+        case Manager::PulseAudioAsync: {
             *device = new PulseDeviceASync(format,config.pulseTarget,this);
             break;
+        }
 #else
         case Manager::PulseAudioAsync:
             return false;
@@ -82,13 +91,14 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
             *device = new QFile(filePath);
             break;
 #ifdef PORTAUDIO
-         case Manager::PortAudio:
+         case Manager::PortAudio: {
             PortAudioDevice* api = new PortAudioDevice(format,this);
             if (mode == QAudio::AudioInput) api->setDeviceId(config.portAudio.deviceIdInput,QIODevice::ReadOnly);
             else if (mode == QAudio::AudioOutput) api->setDeviceId(config.portAudio.deviceIdOutput,QIODevice::WriteOnly);
             connect(api,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
             *device = api;
             break;
+        }
 #else
          case Manager::PortAudio:
             return false;
@@ -140,9 +150,6 @@ void Manager::setUserConfig(userConfig cfg) {
     }
     config = cfg;
     format = cfg.format;
-}
-QString Manager::getAudioConfig() {
-    return "samplerate:" + QString::number(config.format->getSampleRate()) + " samplesize:" + QString::number(config.format->getSampleSize()) + " channels:" + QString::number(config.format->getChannelsCount());
 }
 
 void Manager::transfer() {

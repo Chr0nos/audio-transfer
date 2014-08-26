@@ -72,7 +72,6 @@ public:
     void stop();
     static QStringList getDevicesNames(QAudio::Mode mode);
     void setUserConfig(userConfig cfg);
-    QString getAudioConfig();
     quint64 getTransferedSize();
     bool isRecording();
     static QStringList intListToQStringList(QList<int> source);
