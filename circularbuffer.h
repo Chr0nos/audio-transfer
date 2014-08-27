@@ -21,8 +21,8 @@ public:
 private:
     int bsize;
     QByteArray data;
-    QAtomicInt positionRead;
-    QAtomicInt positionWrite;
+    int positionRead;
+    int positionWrite;
 
 signals:
 
