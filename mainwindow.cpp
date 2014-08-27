@@ -76,6 +76,8 @@ MainWindow::MainWindow(QWidget *parent) :
         configLoad(ini);
         if (ini->getValue("general","auto-start") == "1") on_pushButton_clicked();
     }
+    //set the window to the minimal height
+    this->resize(this->geometry().width(),1);
     speeds << 1 << 100 << 50;
     refreshGraphics();
 }
