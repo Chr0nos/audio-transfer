@@ -4,8 +4,6 @@
 #include <QPainter>
 #include <QPixmap>
 
-#include <QDebug>
-
 GraphicGenerator::GraphicGenerator(QList<int> *speeds, QLabel *label, QObject *parent) :
     QObject(parent)
 {
@@ -18,7 +16,6 @@ void GraphicGenerator::refresh() {
      * */
 
     if (speeds->count() < 2) return;
-    //qDebug() << speeds;
 
     //on definis les valeurs de base qui ne changeront pas (taille du graphique, nombre de graduations, marges)
     const int hauteur = 400;
@@ -87,9 +84,7 @@ void GraphicGenerator::refresh() {
     //on definis la position de la premiere colone à 50pixels sur la droite
     int pos = 62;
     for (v = speeds->begin() ; v != speeds->end() ; v++) {
-        //const int relativeValue = maxValue - *v;
         const int valuePosition =  hauteur - hauteur * (*v - minValue) / ecart;
-        //qDebug() << *v << relativeValue << valuePosition << unitPx;
 
         //création des coordonées du rectangle
         //pos contiens la position horizontale, valuePosition la position verticale, pos+5 pour une largeur de colone de 5pixels
@@ -97,9 +92,6 @@ void GraphicGenerator::refresh() {
 
         //on remplis le rectangle en noir
         p.fillRect(r,Qt::black);
-
-        //on trace le contour du rectangle (en gris)
-        //p.drawRect(r);
 
         //ici on modifie le déclage sur la droite (X) de 8 pixels
         pos += 8;
