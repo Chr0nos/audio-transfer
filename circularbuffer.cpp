@@ -57,6 +57,10 @@ QByteArray CircularBuffer::getCurrentPosData(int length) {
     positionRead += length;
     return result;
 }
+QByteArray CircularBuffer::getCurrentPosData() {
+    return getCurrentPosData(getAvailableBytesCount());
+}
+
 QByteArray CircularBuffer::getData() {
     //return the whole buffer pointer, this should not be used but who knows... it may be usefull
     return data;
@@ -106,4 +110,10 @@ void CircularBuffer::runTest() {
         }
     }
     qDebug() << "circular buffer test done";
+}
+void CircularBuffer::operator <<(QByteArray newData) {
+    append(newData);
+}
+QByteArray CircularBuffer::operator >>(const int lenght) {
+    return getCurrentPosData(lenght);
 }

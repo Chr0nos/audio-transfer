@@ -2,7 +2,6 @@
 #define CIRCULARBUFFER_H
 
 #include <QObject>
-#include <QAtomicInt>
 
 class CircularBuffer : public QObject
 {
@@ -14,10 +13,13 @@ public:
     bool append(const QString text);
     void clear();
     QByteArray getCurrentPosData(int length);
+    QByteArray getCurrentPosData();
     QByteArray getData();
     int getAvailableBytesCount();
     bool isBufferUnderFeeded();
     static void runTest();
+    void operator <<(QByteArray newData);
+    QByteArray operator >>(const int lenght);
 private:
     int bsize;
     QByteArray data;
