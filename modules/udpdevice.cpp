@@ -12,14 +12,20 @@ UdpDevice::UdpDevice(const QString host, const int port, AudioFormat *format, co
     bSendConfig = sendConfig;
 }
 bool UdpDevice::open(OpenMode mode) {
+    say("opening device...");
     if ((mode == QIODevice::WriteOnly || (mode == QIODevice::ReadWrite))) {
         sock->connectToHost(host,port,mode);
         sock->waitForConnected();
-        QIODevice::open(mode);
         if (sock->isWritable()) {
+            say("connected to remote host");
+            QIODevice::open(mode);
             sock->write(format->getFormatTextInfo().toLocal8Bit());
             sock->flush();
             return true;
+        }
+        else {
+            say("unable to connect to remote host: connect time out.");
+            return false;
         }
     }
     else say("unsuported mode");
