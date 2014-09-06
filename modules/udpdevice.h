@@ -24,7 +24,7 @@ private:
     AudioFormat *format;
     bool bSendConfig;
 signals:
-
+    void debug(QString message);
 public slots:
     void sockClose();
     void sockOpen();

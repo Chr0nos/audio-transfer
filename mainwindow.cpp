@@ -560,6 +560,9 @@ void MainWindow::refreshPortAudioDevices(QComboBox *target) {
     target->clear();
     target->addItems(api.getDevicesNames());
     target->setCurrentIndex(target->count() -1);
+#else
+    //prevent compilation warning
+    (void) target;
 #endif
 }
 

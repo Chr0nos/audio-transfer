@@ -53,7 +53,9 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
             break;
         }
         case Manager::Udp: {
-            *device = new UdpDevice(config.tcpTarget.host,config.tcpTarget.port,format,config.tcpTarget.sendConfig,this);
+            UdpDevice *udpDevice = new UdpDevice(config.tcpTarget.host,config.tcpTarget.port,format,config.tcpTarget.sendConfig,this);
+            connect(udpDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+            *device = udpDevice;
             break;
         }
 #ifdef PULSE

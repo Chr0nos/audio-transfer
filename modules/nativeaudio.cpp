@@ -89,10 +89,11 @@ bool NativeAudio::configureDevice(QAudio::Mode mode, const int deviceId) {
         }
         out->setObjectName(name);
         say("opening device...");
-        qDebug() << out << out->format() << out->error();
+        //qDebug() << out << out->format() << out->error() << out->state();
         devOut = out->start();
         say("device open");
         connect(devOut,SIGNAL(aboutToClose()),this,SIGNAL(aboutToClose()));
+        connect(out,SIGNAL(stateChanged(QAudio::State)),this,SLOT(stateChanged(QAudio::State)));
         if (devOut) {
             say("ok for playback");
             return true;
@@ -103,6 +104,7 @@ bool NativeAudio::configureDevice(QAudio::Mode mode, const int deviceId) {
 
 void NativeAudio::close() {
     QIODevice::close();
+    emit(aboutToClose());
     if (devOut) devOut->close();
     if (devIn) devIn->close();
     devOut = NULL;
@@ -140,5 +142,23 @@ QStringList NativeAudio::getDevicesNames(QAudio::Mode mode) {
     }
     return devicesNames;
 }
+
+void NativeAudio::stateChanged(QAudio::State state) {
+    switch (state) {
+        case QAudio::ActiveState:
+            say("channged state to active");
+            break;
+        case QAudio::SuspendedState:
+            say("changed state to suspended");
+            break;
+        case QAudio::StoppedState:
+            say("changed state to stoped");
+            break;
+        case QAudio::IdleState:
+            say("changed state to idle");
+            break;
+    }
+}
+
 
 #endif

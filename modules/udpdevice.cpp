@@ -59,4 +59,8 @@ void UdpDevice::close() {
 }
 void UdpDevice::say(const QString message) {
     qDebug() << "UdpDevice : " + message;
+    emit(debug("UdpDevice: " + message));
+}
+void UdpDevice::debug(QString message) {
+    (void) message;
 }

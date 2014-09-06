@@ -36,6 +36,7 @@ private:
     int deviceIdIn;
     int deviceIdOut;
     bool configureDevice(QAudio::Mode mode, const int deviceId);
+    void stateChanged(QAudio::State state);
 signals:
     void readyRead();
     void debug(const QString message);
