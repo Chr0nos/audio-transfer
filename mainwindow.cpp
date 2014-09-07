@@ -343,7 +343,7 @@ void MainWindow::refreshEnabledDestinations() {
 
 }
 void MainWindow::refreshReadedData() {
-    const quint64 size = manager->getTransferedSize();
+    const quint64 size = manager->getTransferedSize() / timer->interval() * 1000;
     const int speed = size - lastReadedValue;
     ui->statusBar->showMessage("Readed data: " + Size::getWsize(size) + " - speed: " + Size::getWsize(speed) + "/s");
 
