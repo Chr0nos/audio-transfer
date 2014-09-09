@@ -91,7 +91,6 @@ bool PortAudioDevice::open(OpenMode mode) {
     if ((mode == QIODevice::ReadOnly) || (mode == QIODevice::ReadWrite)) {
         say("configuring input");
         inputParameters = new PaStreamParameters();
-        bzero(inputParameters, sizeof(inputParameters)); //not necessary if you are filling in all the fields
         inputParameters->channelCount = format->getChannelsCount();
         inputParameters->sampleFormat = getSampleFormat(format->getSampleSize());
         inputParameters->device = currentDeviceIdInput;
@@ -103,7 +102,6 @@ bool PortAudioDevice::open(OpenMode mode) {
     if ((mode == QIODevice::WriteOnly) || (mode == QIODevice::ReadWrite)) {
         say("configuring output");
         outputParameters = new PaStreamParameters();
-        bzero(outputParameters, sizeof(outputParameters)); //not necessary if you are filling in all the fields
         outputParameters->channelCount = format->getChannelsCount();
         outputParameters->sampleFormat = getSampleFormat(format->getSampleSize());
         outputParameters->device = currentDeviceIdOutput;
