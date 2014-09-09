@@ -148,34 +148,38 @@ bool PulseDevice::prepare(OpenMode mode, pa_simple **pulse) {
         return false;
     }
 
-    pa_stream_direction direction;
+    pa_stream_direction *direction;
+    direction = new pa_stream_direction;
+
     if (mode == QIODevice::WriteOnly) {
         say("creating playback");
         name.append(" playback");
-        direction = PA_STREAM_PLAYBACK;
+        *direction = PA_STREAM_PLAYBACK;
     }
     else if (mode == QIODevice::ReadOnly) {
         say("creating record");
         name.append(" record");
-        direction = PA_STREAM_RECORD;
+        *direction = PA_STREAM_RECORD;
     }
 
-    int errorCode = 0;
+    int *errorCode = new int;
+    *errorCode = 0;
     *pulse = pa_simple_new(serverHost,                  // target server
                            "Audio-Transfer-Client",     // Our application's name.
-                           direction,                   // stream direction
+                           *direction,                   // stream direction
                            NULL,                        // Use the default device.
                            name.toStdString().c_str(),  // Description of our stream.
                            &ss,                         // Our sample format.
                            &map,                        // Use default channel map
                            NULL,                        // Use default buffering attributes.
-                           &errorCode);                 // error code pointer (int).
+                           errorCode);                 // error code pointer (int).
     if (!*pulse) {
-        say("error: cannot create stream: " + QString(pa_strerror(errorCode)));
+        say("error: cannot create stream: " + QString(pa_strerror(*errorCode)));
         say("channels: " + QString::number(ss.channels));
         say("samplerate " + QString::number(ss.rate));
         say("target: " + QString(serverHost));
-        say("error code: " + QString::number(errorCode));
+        say("error code: " + QString::number(*errorCode));
+        delete(errorCode);
         return false;
     }
 
@@ -187,6 +191,8 @@ bool PulseDevice::prepare(OpenMode mode, pa_simple **pulse) {
         timer->start();
     }
     say("open ok");
+    delete(errorCode);
+    delete(direction);
     return true;
 }
 
