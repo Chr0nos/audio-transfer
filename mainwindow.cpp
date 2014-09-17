@@ -53,10 +53,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(timer,SIGNAL(timeout()),this,SLOT(refreshReadedData()));
 #ifndef PULSE
     ui->destinationRadioPulseAudio->setEnabled(false);
-    ui->destinationRadioPulseAudio->deleteLater();
-    ui->destinationPulseAudioLineEdit->deleteLater();
+    ui->destinationRadioPulseAudio->hide();
+    ui->destinationPulseAudioLineEdit->hide();
     ui->sourceRadioPulseAudio->setEnabled(false);
-    ui->sourceRadioPulseAudio->deleteLater();
+    ui->sourceRadioPulseAudio->hide();
 #endif
 #ifndef PORTAUDIO
     ui->sourceRadioPortAudio->setEnabled(false);

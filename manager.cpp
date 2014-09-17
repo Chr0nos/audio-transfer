@@ -28,12 +28,24 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
     if ((*device)) (**device).deleteLater();
     *device = NULL;
     QString name = "Audio-Transfer-Client";
-    QString filePath;
+    QString* filePath;
     Manager::Mode target = Manager::None;
     QIODevice::OpenModeFlag flag;
     int deviceId;
-    if (mode == QAudio::AudioInput) { target = config.modeInput; flag = QIODevice::ReadOnly; deviceId = config.devices.input; name.append(" capture"); }
-    else if (mode == QAudio::AudioOutput) { target = config.modeOutput; flag = QIODevice::WriteOnly; deviceId = config.devices.output; name.append(" playback"); }
+    if (mode == QAudio::AudioInput) {
+        target = config.modeInput;
+        flag = QIODevice::ReadOnly;
+        deviceId = config.devices.input;
+        name.append(" capture");
+        filePath = &config.filePathInput;
+    }
+    else if (mode == QAudio::AudioOutput) {
+        target = config.modeOutput;
+        flag = QIODevice::WriteOnly;
+        deviceId = config.devices.output;
+        name.append(" playback");
+        filePath = &config.filePathOutput;
+    }
 
     switch (target) {
         case Manager::Device: {
@@ -90,7 +102,7 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
             *device = NULL;
             break;
          case Manager::File:
-            *device = new QFile(filePath);
+            *device = new QFile(*filePath);
             break;
 #ifdef PORTAUDIO
          case Manager::PortAudio: {
