@@ -1,5 +1,6 @@
 #include "circularbuffer.h"
 #include <QDebug>
+#include <QMutexLocker>
 
 /* this class provide a circular buffer using a QByteArray inside it: not the most efficiant but should works, currently not used but will be used in the module portaudio
  * */
@@ -13,9 +14,12 @@ CircularBuffer::CircularBuffer(const uint bufferSize, QObject *parent) :
     positionWrite = 0;
 }
 int CircularBuffer::getSize() {
+    //return the actual buffer size (not the availableBytes sizes)
     return bsize;
 }
 bool CircularBuffer::append(QByteArray newData) {
+    QMutexLocker lock(&mutex);
+
     int lenght = newData.size();
     //Start contains the start position to read for newData
     int start = 0;
@@ -52,6 +56,8 @@ bool CircularBuffer::append(const QString text) {
 }
 
 QByteArray CircularBuffer::getCurrentPosData(int length) {
+    QMutexLocker lock(&mutex);
+
     //if requested lenght is higher than the buffer himself: returning an empty qbytearray
     if (length > bsize) return QByteArray();
 
