@@ -22,13 +22,12 @@ public:
     static void runTest();
     void operator <<(QByteArray newData);
     QByteArray operator >>(const int lenght);
-    void setMutexEnabled(const bool enableMutex);
 private:
     int bsize;
     QByteArray data;
     int positionRead;
     int positionWrite;
-    QMutex *mutex;
+    QMutex mutex;
 
 signals:
     void readyRead(const int size);

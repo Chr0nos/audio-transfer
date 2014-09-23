@@ -52,8 +52,6 @@ PortAudioDevice::PortAudioDevice(AudioFormat *format, QObject *parent) :
     if (modeAsync) {
         //allocation d'un buffer circulaire de lecture de 2Mo
         this->readBuffer = new CircularBuffer(2097152,this);
-        //enable the mutex mode to prevent bugs
-        this->readBuffer->setMutexEnabled(true);
         //definition d'un nom pour le debug (facilitra la lecture pour le cas de plusieurs CircularBuffer)
         this->readBuffer->setObjectName("PortAudio module read buffer");
     }
