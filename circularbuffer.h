@@ -11,6 +11,7 @@ public:
     int getSize();
     bool append(QByteArray newData);
     bool append(const QString text);
+    bool append(const char* newData,const int size);
     void clear();
     QByteArray getCurrentPosData(int length);
     QByteArray getCurrentPosData();
@@ -27,7 +28,7 @@ private:
     int positionWrite;
 
 signals:
-
+    void readyRead(const int size);
 public slots:
 
 };

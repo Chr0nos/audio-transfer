@@ -33,10 +33,17 @@ bool CircularBuffer::append(QByteArray newData) {
         positionWrite = 0;
         start = left;
     }
+    //replace the old data with new ones
     data.replace(positionWrite,lenght,newData.mid(start,lenght));
+    //Appending lenght to the current write position
     positionWrite += lenght;
+    emit(readyRead(lenght));
     return true;
 }
+bool CircularBuffer::append(const char *newData, const int size) {
+    return append(QByteArray::fromRawData(newData,size));
+}
+
 bool CircularBuffer::append(const QString text) {
     return this->append(text.toLocal8Bit());
 }
