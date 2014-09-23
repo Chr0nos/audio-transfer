@@ -2,6 +2,7 @@
 #define CIRCULARBUFFER_H
 
 #include <QObject>
+#include <QMutex>
 
 class CircularBuffer : public QObject
 {
@@ -21,11 +22,13 @@ public:
     static void runTest();
     void operator <<(QByteArray newData);
     QByteArray operator >>(const int lenght);
+    void setMutexEnabled(const bool enableMutex);
 private:
     int bsize;
     QByteArray data;
     int positionRead;
     int positionWrite;
+    QMutex *mutex;
 
 signals:
     void readyRead(const int size);

@@ -11,12 +11,25 @@ CircularBuffer::CircularBuffer(const uint bufferSize, QObject *parent) :
     data.reserve(bufferSize);
     positionRead = 0;
     positionWrite = 0;
+    mutex = NULL;
+    mutex = new QMutex;
+}
+void CircularBuffer::setMutexEnabled(const bool enableMutex) {
+    if (enableMutex) {
+        if (mutex) return;
+        mutex = new QMutex;
+    }
+    else if (mutex) {
+        delete(mutex);
+        mutex = NULL;
+    }
 }
 
 int CircularBuffer::getSize() {
     return bsize;
 }
 bool CircularBuffer::append(QByteArray newData) {
+    if (mutex) mutex->lock();
     int lenght = newData.size();
     //Start contains the start position to read for newData
     int start = 0;
@@ -28,7 +41,7 @@ bool CircularBuffer::append(QByteArray newData) {
     const int left = bsize - positionWrite;
 
     if (left < lenght) {
-        data.insert(positionWrite,newData,left);
+        data.replace(positionWrite,left,newData.mid(start,left));
         lenght -= left;
         positionWrite = 0;
         start = left;
@@ -38,6 +51,7 @@ bool CircularBuffer::append(QByteArray newData) {
     //Appending lenght to the current write position
     positionWrite += lenght;
     emit(readyRead(lenght));
+    if (mutex) mutex->unlock();
     return true;
 }
 bool CircularBuffer::append(const char *newData, const int size) {
@@ -49,6 +63,7 @@ bool CircularBuffer::append(const QString text) {
 }
 
 QByteArray CircularBuffer::getCurrentPosData(int length) {
+    if (mutex) mutex->lock();
     //if requested lenght is higher than the buffer himself: returning an empty qbytearray
     if (length > bsize) return QByteArray();
 
@@ -62,6 +77,7 @@ QByteArray CircularBuffer::getCurrentPosData(int length) {
     }
     result.append(data.mid(positionRead,length));
     positionRead += length;
+    if (mutex) mutex->unlock();
     return result;
 }
 QByteArray CircularBuffer::getCurrentPosData() {

@@ -52,6 +52,8 @@ PortAudioDevice::PortAudioDevice(AudioFormat *format, QObject *parent) :
     if (modeAsync) {
         //allocation d'un buffer circulaire de lecture de 2Mo
         this->readBuffer = new CircularBuffer(2097152,this);
+        //enable the mutex mode to prevent bugs
+        this->readBuffer->setMutexEnabled(true);
         //definition d'un nom pour le debug (facilitra la lecture pour le cas de plusieurs CircularBuffer)
         this->readBuffer->setObjectName("PortAudio module read buffer");
     }
@@ -217,7 +219,7 @@ int PortAudioDevice::PaStreamCallback(const void *input, void *output, unsigned 
     //input = 0x0 in output mode and output = 0x0 in input mode
     if (input) {
         //ajout des données lues dans le buffer;
-        obj->readBuffer->append(QByteArray::fromRawData((char*) input,size));
+        obj->readBuffer->append((char*) input,size);
         //obj->sendRdyRead();
     }
     //super la fonction de callback de lecture fonctione mais... je ne sais absolument quoi en faire :)
