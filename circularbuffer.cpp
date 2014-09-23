@@ -12,7 +12,6 @@ CircularBuffer::CircularBuffer(const uint bufferSize, QObject *parent) :
     positionRead = 0;
     positionWrite = 0;
     mutex = NULL;
-    mutex = new QMutex;
 }
 void CircularBuffer::setMutexEnabled(const bool enableMutex) {
     if (enableMutex) {
@@ -29,13 +28,15 @@ int CircularBuffer::getSize() {
     return bsize;
 }
 bool CircularBuffer::append(QByteArray newData) {
-    if (mutex) mutex->lock();
     int lenght = newData.size();
     //Start contains the start position to read for newData
     int start = 0;
 
     //in case of impossible add: just return false
     if (lenght > bsize) return false;
+
+    //doing the mutex lock
+    if (mutex) mutex->lock();
 
     //left space betewen current position and the end of buffer
     const int left = bsize - positionWrite;
@@ -63,10 +64,10 @@ bool CircularBuffer::append(const QString text) {
 }
 
 QByteArray CircularBuffer::getCurrentPosData(int length) {
-    if (mutex) mutex->lock();
     //if requested lenght is higher than the buffer himself: returning an empty qbytearray
     if (length > bsize) return QByteArray();
 
+    if (mutex) mutex->lock();
     //left is the size between the end of the buffer and the current position
     const int left = bsize - positionRead;
     QByteArray result;
@@ -90,9 +91,11 @@ QByteArray CircularBuffer::getData() {
 }
 
 void CircularBuffer::clear() {
+    mutex->lock();
     data.clear();
     positionRead = 0 ;
     positionWrite = 0;
+    mutex->unlock();
 }
 bool CircularBuffer::isBufferUnderFeeded() {
     //if the buffer is under feeded: more read than writes, this method will return false, else true
