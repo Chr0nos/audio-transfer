@@ -27,9 +27,6 @@ bool CircularBuffer::append(QByteArray newData) {
     //in case of impossible add: just return false
     if (lenght > bsize) return false;
 
-    //doing the mutex lock
-    mutex.lock();
-
     //left space betewen current position and the end of buffer
     const int left = bsize - positionWrite;
 
@@ -44,7 +41,6 @@ bool CircularBuffer::append(QByteArray newData) {
     //Appending lenght to the current write position
     positionWrite += lenght;
     emit(readyRead(lenght));
-    mutex.unlock();
     return true;
 }
 bool CircularBuffer::append(const char *newData, const int size) {
@@ -72,7 +68,6 @@ QByteArray CircularBuffer::getCurrentPosData(int length) {
     }
     result.append(data.mid(positionRead,length));
     positionRead += length;
-    mutex.unlock();
     return result;
 }
 QByteArray CircularBuffer::getCurrentPosData() {
@@ -85,11 +80,10 @@ QByteArray CircularBuffer::getData() {
 }
 
 void CircularBuffer::clear() {
-    mutex.lock();
+    QMutexLocker lock(&mutex);
     data.clear();
     positionRead = 0 ;
     positionWrite = 0;
-    mutex.unlock();
 }
 bool CircularBuffer::isBufferUnderFeeded() {
     //if the buffer is under feeded: more read than writes, this method will return false, else true
