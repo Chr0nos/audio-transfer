@@ -19,6 +19,12 @@ int CircularBuffer::getSize() {
 }
 bool CircularBuffer::append(QByteArray newData) {
     QMutexLocker lock(&mutex);
+    const int freeSpace = bsize - getAvailableBytesCount();
+    if (!freeSpace) {
+        //hum how to handle this... appending data to the buffer and make it size even higher (i'd prefer to dont)
+        //or wait and take the risk to loose audio
+        qDebug() << "buffer overflow !";
+    }
 
     int lenght = newData.size();
     //Start contains the start position to read for newData
@@ -57,7 +63,6 @@ QByteArray CircularBuffer::getCurrentPosData(int length) {
     //if requested lenght is higher than the buffer himself: returning an empty qbytearray
     if (length > bsize) return QByteArray();
 
-    mutex.lock();
     //left is the size between the end of the buffer and the current position
     const int left = bsize - positionRead;
     QByteArray result;
@@ -85,13 +90,8 @@ void CircularBuffer::clear() {
     positionRead = 0 ;
     positionWrite = 0;
 }
-bool CircularBuffer::isBufferUnderFeeded() {
-    //if the buffer is under feeded: more read than writes, this method will return false, else true
-    if (positionRead > positionWrite) return false;
-    return true;
-}
-int CircularBuffer::getAvailableBytesCount() {
-    const int lenght = (bsize + positionWrite - positionRead) % bsize;
+size_t CircularBuffer::getAvailableBytesCount() {
+    const size_t lenght = (bsize + positionWrite - positionRead) % bsize;
     return lenght;
 }
 void CircularBuffer::runTest() {
