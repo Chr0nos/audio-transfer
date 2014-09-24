@@ -24,7 +24,7 @@ int AudioFormat::getSampleSize() {
     return sampleSize;
 }
 quint64 AudioFormat::getBitrate() {
-    return sampleRate * sampleSize / 8 * channelsCount;
+    return sampleRate * sampleSize * channelsCount / 8;
 }
 void AudioFormat::setCodec(const QString codec) {
     this->codec = codec;
@@ -36,8 +36,7 @@ QString AudioFormat::getCodec() {
     return codec;
 }
 quint64 AudioFormat::getBytesSizeForDuration(const int msecs) {
-    //if duration == 0 i return the size of a trame
-    if (!msecs) return sampleSize * channelsCount;
+    if (msecs <= 0) return 0;
     return this->getBitrate() / 1000 * msecs;
 }
 const QString AudioFormat::getFormatTextInfo() {
