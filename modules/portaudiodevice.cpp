@@ -51,9 +51,8 @@ PortAudioDevice::PortAudioDevice(AudioFormat *format, QObject *parent) :
     //en cas de mode asynchrone
     if (modeAsync) {
         //allocation d'un buffer circulaire de lecture de 2Mo
-        this->readBuffer = new CircularBuffer(2097152,this);
-        //definition d'un nom pour le debug (facilitra la lecture pour le cas de plusieurs CircularBuffer)
-        this->readBuffer->setObjectName("PortAudio module read buffer");
+        this->readBuffer = new CircularBuffer(2097152,"PortAudio read buffer",this);
+        connect(readBuffer,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
     }
 
     connect(timer,SIGNAL(timeout()),this,SIGNAL(readyRead()));
@@ -212,7 +211,7 @@ int PortAudioDevice::PaStreamCallback(const void *input, void *output, unsigned 
     (void) timeInfo;
     (void) statusFlags;
 
-    const int size = frameCount * obj->format->getChannelsCount() * obj->format->getSampleSize() / 8;
+    const int size = frameCount * obj->format->getChannelsCount() * obj->format->getSampleSize() /8;
 
     //input = 0x0 in output mode and output = 0x0 in input mode
     if (input) {
