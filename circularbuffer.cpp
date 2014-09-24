@@ -30,6 +30,7 @@ bool CircularBuffer::append(QByteArray newData) {
     //Start contains the start position to read for newData
     int start = 0;
 
+    //taking care about the case of the lenght to write is higher than the freeSpace (to prevent data drop for example)
     if (freeSpace < lenght) {
         //in normal situation this should NEVER appens but, it the data are not readed fast enoth it will, so use the readyRead signal emited by the class to prevent this
         say("buffer overflow !");
@@ -42,6 +43,9 @@ bool CircularBuffer::append(QByteArray newData) {
 
                 //writing possible data to left space
                 data.replace(positionWrite,freeSpace,newData.mid(start,freeSpace));
+
+                //here i move the positionRead to the amount of size that i will hadd just few lines below
+                if (positionRead > positionWrite) positionRead += missingSpace;
 
                 //decaling the position writePos after the data just replaced
                 positionWrite += freeSpace;
