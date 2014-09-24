@@ -2,16 +2,19 @@
 #include <QDebug>
 #include <QMutexLocker>
 
-/* this class provide a circular buffer using a QByteArray inside it: not the most efficiant but should works, currently not used but will be used in the module portaudio
- * */
+/* this class provide a circular buffer using a QByteArray inside it
+ */
 
-CircularBuffer::CircularBuffer(const uint bufferSize, QObject *parent) :
+CircularBuffer::CircularBuffer(const uint bufferSize, const QString bufferName, QObject *parent) :
     QObject(parent)
 {
     bsize = bufferSize;
     data.reserve(bufferSize);
     positionRead = 0;
     positionWrite = 0;
+    policy = Drop;
+    this->setObjectName(bufferName);
+    say("bufer initialized");
 }
 int CircularBuffer::getSize() {
     //return the actual buffer size (not the availableBytes sizes)
@@ -19,16 +22,47 @@ int CircularBuffer::getSize() {
 }
 bool CircularBuffer::append(QByteArray newData) {
     QMutexLocker lock(&mutex);
-    const int freeSpace = bsize - getAvailableBytesCount();
-    if (!freeSpace) {
-        //hum how to handle this... appending data to the buffer and make it size even higher (i'd prefer to dont)
-        //or wait and take the risk to loose audio
-        qDebug() << "buffer overflow !";
-    }
-
     int lenght = newData.size();
+
+
+    const int freeSpace = bsize - getAvailableBytesCount();
+
     //Start contains the start position to read for newData
     int start = 0;
+
+    if (freeSpace < lenght) {
+        //in normal situation this should NEVER appens but, it the data are not readed fast enoth it will, so use the readyRead signal emited by the class to prevent this
+        say("buffer overflow !");
+        switch (policy) {
+            case Expand: {
+                //hum how to handle this... appending data to the buffer and make it size even higher (i'd prefer to dont)
+                //warning: use this code could be DANGEREOUS: it can let the class consume all the available memory
+
+                const int missingSpace = lenght - freeSpace;
+
+                //writing possible data to left space
+                data.replace(positionWrite,freeSpace,newData.mid(start,freeSpace));
+
+                //decaling the position writePos after the data just replaced
+                positionWrite += freeSpace;
+
+                //and inserting the missing left data
+                data.insert(positionWrite,newData.mid(freeSpace,missingSpace));
+
+                //ajusting the new buffer size:
+                bsize += missingSpace;
+
+                say("expanded buffer size by: " + QString::number(missingSpace));
+                emit(readyRead(lenght));
+                return true;
+            }
+            case Drop: {
+                //or drop audio
+                say("new data has been drop");
+                return false;
+            }
+        }
+    }
 
     //in case of impossible add: just return false
     if (lenght > bsize) return false;
@@ -130,4 +164,12 @@ void CircularBuffer::operator <<(QByteArray newData) {
 }
 QByteArray CircularBuffer::operator >>(const int lenght) {
     return getCurrentPosData(lenght);
+}
+void CircularBuffer::setOverflowPolicy(const OverflowPolicy newPolicy) {
+    policy = newPolicy;
+    emit(overflowPolicyChanged(policy));
+}
+void CircularBuffer::say(const QString message) {
+    qDebug() << "CircularBuffer: " + this->objectName() + ": " + message;
+    emit(debug(message));
 }
