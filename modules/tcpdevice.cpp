@@ -28,8 +28,8 @@ TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,boo
 bool TcpDevice::open(OpenMode mode) {
     say("opening device (connect)");
     sock->connectToHost(host,port,mode);
-    sock->waitForConnected();
-    if ((sock->isOpen()) && (sock->isWritable())) {
+    if (sock->waitForConnected()) {
+        say("socket open");
         QIODevice::open(mode);
         return true;
     }
@@ -64,8 +64,7 @@ void TcpDevice::sockOpen() {
    say("connected to remote server");
    if (bSendConfig) sendFormatSpecs();
 }
-void TcpDevice::say(const QString message) {
-    qDebug() << "TcpDevice: " + message;
+void TcpDevice::say(const QString message) {    
     emit(debug("TcpDevice: " + message));
 }
 void TcpDevice::close() {
