@@ -9,13 +9,18 @@ CircularBuffer::CircularBuffer(const uint bufferSize, const QString bufferName, 
     QObject(parent)
 {
     bsize = bufferSize;
+    originalSize = bsize;
     data.reserve(bufferSize);
     positionRead = 0;
     positionWrite = 0;
-    policy = Drop;
+    policy = Replace;
     this->setObjectName(bufferName);
-    say("bufer initialized");
+    say("buffer initialized");
 }
+CircularBuffer::~CircularBuffer() {
+    say("deleting buffer");
+}
+
 int CircularBuffer::getSize() {
     //return the actual buffer size (not the availableBytes sizes)
     return bsize;
@@ -23,8 +28,6 @@ int CircularBuffer::getSize() {
 bool CircularBuffer::append(QByteArray newData) {
     QMutexLocker lock(&mutex);
     int lenght = newData.size();
-
-
     const int freeSpace = bsize - getAvailableBytesCount();
 
     //Start contains the start position to read for newData
@@ -65,11 +68,18 @@ bool CircularBuffer::append(QByteArray newData) {
                 say("new data has been drop");
                 return false;
             }
+            case Replace: {
+                //relace the older data by new ones
+                say("replacing old data by new on (loosing data)");
+                //using fallback to do it so no code here but no return^
+            }
         }
     }
-
     //in case of impossible add: just return false
-    if (lenght > bsize) return false;
+    if (lenght > bsize) {
+        say("impossible append detected: data size is higher than buffer size");
+        return false;
+    }
 
     //left space betewen current position and the end of buffer
     const int left = bsize - positionWrite;
@@ -174,6 +184,8 @@ void CircularBuffer::setOverflowPolicy(const OverflowPolicy newPolicy) {
     emit(overflowPolicyChanged(policy));
 }
 void CircularBuffer::say(const QString message) {
+#ifdef DEBUG
     qDebug() << "CircularBuffer: " + this->objectName() + ": " + message;
+#endif
     emit(debug(message));
 }
