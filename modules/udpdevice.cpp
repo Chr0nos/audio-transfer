@@ -15,8 +15,7 @@ bool UdpDevice::open(OpenMode mode) {
     say("opening device...");
     if ((mode == QIODevice::WriteOnly || (mode == QIODevice::ReadWrite))) {
         sock->connectToHost(host,port,mode);
-        sock->waitForConnected();
-        if (sock->isWritable()) {
+        if (sock->waitForConnected()) {
             say("connected to remote host");
             QIODevice::open(mode);
             sock->write(format->getFormatTextInfo().toLocal8Bit());
