@@ -27,10 +27,10 @@ private:
 
 signals:
     void debug(const QString message);
-
 public slots:
     void sockClose();
     void sockOpen();
+    void stateChanged(QAbstractSocket::SocketState state);
 };
 
 #endif // TCPDEVICE_H

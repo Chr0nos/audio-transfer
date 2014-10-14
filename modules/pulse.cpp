@@ -42,7 +42,6 @@ void PulseDevice::testSlot() {
 
 PulseDevice::PulseDevice(const QString name, const QString target, AudioFormat *format, QObject *parent) {
     this->parent = parent;
-    this->debugMode = true;
     say("init : start");
     say("requested format: channels:" + QString::number(format->getChannelsCount()) + " sampleRate:" + QString::number(format->getSampleRate()) + " sampleSize:" + QString::number(format->getSampleSize()));
     //s is a pa_simple*
@@ -121,7 +120,11 @@ qint64 PulseDevice::readData(char *data, qint64 maxlen) {
     return bytesRead;
 }
 void PulseDevice::say(const QString message) {
-    if (this->debugMode) qDebug() << "PULSE" << message;
+#ifdef DEBUG
+    qDebug() << "PULSE" << message;
+#endif
+    emit(debug("Pulse: " + message));
+
 }
 bool PulseDevice::open(OpenMode mode) {
     QIODevice::open(mode);

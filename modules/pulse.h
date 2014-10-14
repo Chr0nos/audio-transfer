@@ -39,7 +39,6 @@ private:
     void say(const QString message);
     QString target;
     QString name;
-    bool debugMode;
     QTimer* timer;
     int latencyRec;
     quint64 lastWritePos;
@@ -51,6 +50,7 @@ private slots:
     void testSlot();
 signals:
     void readyRead();
+    void debug(const QString message);
 };
 
 #endif // PULSE_H

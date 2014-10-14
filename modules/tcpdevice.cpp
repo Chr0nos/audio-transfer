@@ -12,7 +12,6 @@ TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,boo
     QIODevice(parent)
 {
     say("init");
-    (void) sendConfig;
     this->port = port;
     this->host = host;
     this->sock = new QTcpSocket(this);
@@ -21,8 +20,9 @@ TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,boo
     connect(sock,SIGNAL(disconnected()),this,SIGNAL(aboutToClose()));
     connect(sock,SIGNAL(connected()),this,SLOT(sockOpen()));
     connect(sock,SIGNAL(readyRead()),this,SIGNAL(readyRead()));
+    connect(sock,SIGNAL(stateChanged(QAbstractSocket::SocketState)),this,SLOT(stateChanged(QAbstractSocket::SocketState)));
     this->format = format;
-    bSendConfig = true;
+    bSendConfig = sendConfig;
     say("init done");
 }
 bool TcpDevice::open(OpenMode mode) {
@@ -72,4 +72,28 @@ void TcpDevice::close() {
     QIODevice::close();
     sock->close();
 }
-
+void TcpDevice::stateChanged(QAbstractSocket::SocketState state) {
+    switch (state) {
+        case QAbstractSocket::UnconnectedState:
+            say("not connected");
+            break;
+        case QAbstractSocket::HostLookupState:
+            say("looking for target host");
+            break;
+        case QAbstractSocket::ConnectingState:
+            say("connecting");
+            break;
+        case QAbstractSocket::BoundState:
+            say("bound state");
+            break;
+        case QAbstractSocket::ListeningState:
+            say("listening");
+            break;
+        case QAbstractSocket::ConnectedState:
+            say("connected");
+            break;
+        case QAbstractSocket::ClosingState:
+            say("closing");
+            break;
+    }
+}

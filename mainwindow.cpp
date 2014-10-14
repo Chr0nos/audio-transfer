@@ -95,6 +95,7 @@ void MainWindow::errors(const QString error) {
 void MainWindow::debug(const QString message) {
     ui->debug->addItem(message);
     ui->debug->scrollToBottom();
+    qDebug() << message;
 }
 
 void MainWindow::on_refreshSources_clicked()

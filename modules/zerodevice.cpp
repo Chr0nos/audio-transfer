@@ -4,7 +4,8 @@
 #include <QTime>
 #include "audioformat.h"
 
-//this class is just to be an equivalent to QFile("/dev/zero");
+//this class is just to an equivalent to QFile("/dev/zero");
+//but cross platform and with the good bitrate
 
 ZeroDevice::ZeroDevice(AudioFormat* format,QObject *parent) :
     QIODevice(parent)
