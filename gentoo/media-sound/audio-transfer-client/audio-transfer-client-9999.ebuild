@@ -18,6 +18,7 @@ RDEPEND="qt5? ( dev-qt/qtgui:5
                 dev-qt/qtcore:5
                 dev-qt/qtnetwork:5
                 dev-qt/qtmultimedia:5
+		dev-qt/qtwidgets:5
 	)
         qt4? ( dev-qt/qtgui:4
                 dev-qt/qtcore:4
