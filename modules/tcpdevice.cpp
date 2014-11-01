@@ -15,6 +15,7 @@ TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,boo
     this->port = port;
     this->host = host;
     this->sock = new QTcpSocket(this);
+    sock->setObjectName("TcpDevice module");
     sock->setSocketOption(QAbstractSocket::LowDelayOption,0);
     connect(sock,SIGNAL(disconnected()),this,SLOT(sockClose()));
     connect(sock,SIGNAL(disconnected()),this,SIGNAL(aboutToClose()));
@@ -33,7 +34,9 @@ bool TcpDevice::open(OpenMode mode) {
         QIODevice::open(mode);
         return true;
     }
-    say("connection timed out, check target ip and if server is runing");
+    //say("connection timed out, check target ip and if server is runing");
+    say("connection error: " + sock->errorString());
+    emit(sockClose());
     return false;
 }
 qint64 TcpDevice::readData(char *data, qint64 maxlen) {
@@ -46,8 +49,7 @@ qint64 TcpDevice::readData(char *data, qint64 maxlen) {
 }
 qint64 TcpDevice::writeData(const char *data, qint64 len) {
     if (sock->isWritable()) {
-        sock->write(data,len);
-        return len;
+        return sock->write(data,len);
     }
     return -1;
 }

@@ -16,6 +16,7 @@ ZeroDevice::ZeroDevice(AudioFormat* format,QObject *parent) :
     timer = new QTimer(this);
     timer->setInterval(10);
     connect(timer,SIGNAL(timeout()),this,SIGNAL(readyRead()));
+
 }
 qint64 ZeroDevice::writeData(const char *data, qint64 len) {
     (void) data;
@@ -37,6 +38,7 @@ qint64 ZeroDevice::readData(char *data, qint64 maxlen) {
 
     return bytesToRead;
 }
+
 bool ZeroDevice::open(OpenMode mode) {
     QIODevice::open(mode);
     if ((mode == QIODevice::ReadOnly) || (mode == QIODevice::ReadWrite)) {
@@ -46,3 +48,4 @@ bool ZeroDevice::open(OpenMode mode) {
     }
     return true;
 }
+
