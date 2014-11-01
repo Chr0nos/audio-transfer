@@ -5,13 +5,15 @@
 #include <QTextStream>
 #include <QTimer>
 #include "manager.h"
+#include "readini.h"
 
 class Comline : public QObject
 {
     Q_OBJECT
 public:
-    explicit Comline(QString *args,QObject *parent = 0);
+    explicit Comline(QStringList *argList, QObject *parent = 0);
     bool start();
+    static void circularTest();
 public slots:
     void showStats();
 private:
@@ -19,12 +21,18 @@ private:
     QTextStream* out;
     quint64 lastReadedValue;
     QTimer *timer;
+    void parse(QStringList *argList);
+    Manager::userConfig mc;
+    Readini* ini;
+    bool initConfig();
+    bool initResult;
 
 signals:
-
+    void quit();
 public slots:
-    void debug(QString message);
     void sockClose();
+    void debug(QString message);
+
 };
 
 #endif // COMLINE_H
