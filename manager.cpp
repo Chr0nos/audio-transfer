@@ -127,8 +127,14 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
 bool Manager::start() {
     debug("Starting manager...");
 
-    if (!prepare(QAudio::AudioOutput,&devOut)) emit(errors("failed to  start output"));
-    else if (!prepare(QAudio::AudioInput,&devIn)) emit(errors("failed to start input"));
+    if (!prepare(QAudio::AudioOutput,&devOut)) {
+        emit(errors("failed to  start output"));
+        emit(stoped());
+    }
+    else if (!prepare(QAudio::AudioInput,&devIn)) {
+        emit(errors("failed to start input"));
+        emit(stoped());
+    }
     else {
         emit(debug("devices ok"));
         qDebug() << "started";
