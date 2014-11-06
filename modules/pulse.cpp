@@ -107,11 +107,14 @@ qint64 PulseDevice::writeData(const char *data, qint64 len) {
 }
 qint64 PulseDevice::readData(char *data, qint64 maxlen) {
     //qDebug() << "read, request: " << maxlen;
-    if (!rec) return -1;
+    if (!rec) {
+        say("read requested but record stream is not open");
+        return -1;
+    }
     if (!maxlen) return 0;
     int error = 0;
     const int bytesRead = pa_simple_read(rec,data,maxlen,&error);
-    //qDebug() << "read: " << bytesRead << pa_strerror(error);
+    //qDebug() << "read: " << bytesRead << pa_strerror(error) << "max: " << maxlen;
 
     if (bytesRead < 0) {
         say("cannot read data: " + QString(pa_strerror(error)));

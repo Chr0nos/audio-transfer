@@ -24,7 +24,6 @@ MainWindow::MainWindow(QWidget *parent) :
     modeDest = Manager::Tcp;
 
     manager = new Manager(this);
-
     timer = new QTimer(this);
     timer->setInterval(300);
     connect(manager,SIGNAL(stoped()),this,SLOT(recStoped()));

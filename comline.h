@@ -12,6 +12,7 @@ class Comline : public QObject
     Q_OBJECT
 public:
     explicit Comline(QStringList *argList, QObject *parent = 0);
+    ~Comline();
     bool start();
     static void circularTest();
 public slots:
@@ -26,6 +27,12 @@ private:
     Readini* ini;
     bool initConfig();
     bool initResult;
+    Manager::Mode stringToMode(const QString* name);
+    void say(const QString message);
+    bool bDebug;
+    bool quiet;
+    QString iniPath;
+    void loadIni();
 
 signals:
     void quit();

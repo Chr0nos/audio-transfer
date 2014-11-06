@@ -42,7 +42,6 @@ NativeAudio::~NativeAudio() {
 bool NativeAudio::open(OpenMode mode) {
     say("opening");
     bool state = false;
-    qDebug() << mode;
     if ((mode == QIODevice::WriteOnly) || (mode == QIODevice::ReadWrite)) state = configureDevice(QAudio::AudioOutput,deviceIdOut);
     if ((mode == QIODevice::ReadOnly) || (mode == QIODevice::ReadWrite)) state = configureDevice(QAudio::AudioInput,deviceIdIn);
     if (state) state = QIODevice::open(mode);
@@ -55,9 +54,7 @@ bool NativeAudio::configureDevice(QAudio::Mode mode, const int deviceId) {
         if (mode == QAudio::AudioInput) info = QAudioDeviceInfo::defaultInputDevice();
         else if (mode == QAudio::AudioOutput) info = QAudioDeviceInfo::defaultOutputDevice();
     }
-    else {
-        info = QAudioDeviceInfo::availableDevices(mode).at(deviceId);
-    }
+    else info = QAudioDeviceInfo::availableDevices(mode).at(deviceId);
     say("requested device: " + QString("[") + QString::number(deviceId) + QString("] ") + info.deviceName());
 
     if (!info.isFormatSupported(format)) {
@@ -79,9 +76,11 @@ bool NativeAudio::configureDevice(QAudio::Mode mode, const int deviceId) {
     }
     else if (mode == QAudio::AudioOutput) {
         if (out) {
-            out->deleteLater();
+            out->stop();
+            delete(out);
             out = NULL;
         }
+        say("making audio object");
         out = new QAudioOutput(info,format,this);
         if (!out) {
             say("cannot alocate memory for output");

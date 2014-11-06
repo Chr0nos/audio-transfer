@@ -22,10 +22,8 @@ bool UdpDevice::open(OpenMode mode) {
             sock->flush();
             return true;
         }
-        else {
-            say("unable to connect to remote host: connect time out.");
-            return false;
-        }
+        say("connection error: " + sock->errorString());
+        return false;
     }
     else say("unsuported mode");
     return false;

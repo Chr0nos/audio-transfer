@@ -10,20 +10,17 @@
 # - DEBUG : enable the debug mode
 
 QT       += core gui network
-CONFIG   += console c++11
-DEFINES += MULTIMEDIA PULSE PORTAUDIO
-
+CONFIG   += c++11
+DEFINES += MULTIMEDIA PULSE PORTAUDIO COMLINE
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = audio-transfer-client
 TEMPLATE = app
 
-
 SOURCES += main.cpp\
         mainwindow.cpp \
     manager.cpp \
-    comline.cpp \
     modules/tcpdevice.cpp \
     modules/udpdevice.cpp \
     modules/pulse.cpp \
@@ -35,12 +32,12 @@ SOURCES += main.cpp\
     modules/portaudiodevice.cpp \
     modules/pulsedeviceasync.cpp \
     circularbuffer.cpp \
-    graphicgenerator.cpp
+    graphicgenerator.cpp \
+    modules/pipedevice.cpp
 
 HEADERS  += mainwindow.h \
     manager.h \
     main.h \
-    comline.h \
     readini.h \
     modules/pulse.h \
     modules/zerodevice.h \
@@ -52,9 +49,17 @@ HEADERS  += mainwindow.h \
     modules/portaudiodevice.h \
     modules/pulsedeviceasync.h \
     circularbuffer.h \
-    graphicgenerator.h
+    graphicgenerator.h \
+    modules/pipedevice.h
 
 FORMS    += mainwindow.ui
+
+contains(DEFINES,COMLINE) {
+    CONFIG += console
+    SOURCES += comline.cpp
+    HEADERS += comline.h
+}
+
 
 #comment thoses lines to disable pulseaudio , for windows it disabled because: pulseaudio is a **** bullshit on windows:
 #the windows port is version 1.1 and make audio-transfer crash: go thanks the PA developers who absolutly dont care about win32...

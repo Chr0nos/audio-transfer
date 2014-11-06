@@ -2,16 +2,28 @@
 #define PIPEDEVICE_H
 
 #include <QIODevice>
+#include <QString>
+#include <QFile>
+#include <QTimer>
 
 class PipeDevice : public QIODevice
 {
     Q_OBJECT
 public:
-    explicit PipeDevice(QObject *parent = 0);
+    explicit PipeDevice(const QString name, QObject *parent = 0);
+    ~PipeDevice();
+    qint64 readData(char *data, qint64 maxlen);
+    qint64 writeData(const char *data, qint64 len);
+    bool open(OpenMode mode);
+    void say(const QString message);
+private:
+    QFile *file;
+    QTimer *timer;
 
 signals:
-
+    void debug(const QString message);
 public slots:
+    void stop();
 
 };
 

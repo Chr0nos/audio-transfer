@@ -63,6 +63,8 @@ PortAudioDevice::PortAudioDevice(AudioFormat *format, QObject *parent) :
 PortAudioDevice::~PortAudioDevice() {
     //femeture de l'api portaudio
     Pa_Terminate();
+    //if (stream) delete(stream);
+    if (timer) delete(timer);
     say("deleted");
 }
 void PortAudioDevice::close() {
@@ -172,8 +174,9 @@ qint64 PortAudioDevice::readData(char *data, qint64 maxlen) {
         say("available size: " + Size::getWsize(availablesBytes));
         say("requested size: " + Size::getWsize(maxlen));
 
+        qDebug() << stream << &data << maxlen << framesPerBuffer;
         //ligne de code enigmatique causant un crash qui me rends dingue...
-        PaError err = Pa_ReadStream(stream,data,maxlen);
+        PaError err = Pa_ReadStream(stream,data,framesPerBuffer);
         if (err != paNoError) {
             say("read error: " + QString(Pa_GetErrorText(err)));
             return -1;

@@ -16,10 +16,10 @@ Manager::Manager(QObject *parent) :
     bytesCount = 0;
     format = new AudioFormat();
     bisRecording = false;
-    qDebug() << "manager ready";
+    say("manager ready");
 }
 Manager::~Manager() {
-    qDebug() << "deleting manager";
+    say("deleting manager");
     if (devIn) devIn->deleteLater();
     if (devOut) devOut->deleteLater();
     delete(format);
@@ -52,7 +52,7 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
             NativeAudio *native = new NativeAudio(name,format,this);
             connect(native,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
             if (!native->setDeviceId(mode,deviceId)) {
-                native->deleteLater();
+                delete(native);
                 return false;
             }
             *device = native;
@@ -72,7 +72,9 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
         }
 #ifdef PULSE
         case Manager::PulseAudio: {
-            *device = new PulseDevice(name,config.pulseTarget,format,this);
+            PulseDevice *pulseDevice = new PulseDevice(name,config.pulseTarget,format,this);
+            connect(pulseDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+            *device = pulseDevice;
             break;
         }
 #ifdef PULSEASYNC
@@ -104,6 +106,12 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
          case Manager::File:
             *device = new QFile(*filePath);
             break;
+         case Manager::Pipe: {
+            PipeDevice *pipeDevice = new PipeDevice(name + "PipeDevice socket",this);
+            connect(pipeDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+            *device = pipeDevice;
+            break;
+         }
 #ifdef PORTAUDIO
          case Manager::PortAudio: {
             PortAudioDevice* api = new PortAudioDevice(format,this);
@@ -125,7 +133,7 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
 }
 
 bool Manager::start() {
-    debug("Starting manager...");
+    say("Starting manager...");
 
     if (!prepare(QAudio::AudioOutput,&devOut)) {
         emit(errors("failed to  start output"));
@@ -136,7 +144,7 @@ bool Manager::start() {
         emit(stoped());
     }
     else {
-        emit(debug("devices ok"));
+        emit(say("devices ok"));
         qDebug() << "started";
         bisRecording = true;
         bytesCount = 0;
@@ -151,11 +159,13 @@ void Manager::stop() {
     if (devIn) {
         devIn->close();
         disconnect(devIn,SIGNAL(readyRead()),this,SLOT(transfer()));
-        devIn->deleteLater();
+        delete(devIn);
         devIn = NULL;
     }
     if (devOut) {
         devOut->close();
+        delete(devOut);
+        devOut = NULL;
     }
     emit(stoped());
 }
@@ -175,16 +185,16 @@ void Manager::setUserConfig(userConfig cfg) {
 void Manager::transfer() {
     //qDebug() << "transfer!" << devIn << devIn->isOpen();
     if ((!devOut) || (!devIn) || (!devIn->isOpen()) || (!devOut->isOpen())) {
-        qDebug() << "manager: transfer: stoping";
+        say("manager: transfer: stoping");
         qDebug() << "devOut: " << devOut;
-        if (!devOut) qDebug() << "manager: transfer: devOut is null";
-        else if (!devOut->isOpen()) qDebug() << "manager: transfer: devOut is closed";
+        if (!devOut) say("manager: transfer: devOut is null");
+        else if (!devOut->isOpen()) say("manager: transfer: devOut is closed");
 
         qDebug() << "devIn: " << devIn;
-        if (!devIn) qDebug() << "manager: transfer: devIn is null";
-        else if (!devIn->isOpen()) qDebug() << "manager: transfer: devIn is closed";
+        if (!devIn) say("manager: transfer: devIn is null");
+        else if (!devIn->isOpen()) say("manager: transfer: devIn is closed");
 
-        debug("manager: stoping record");
+        say("manager: stoping record");
         stop();
         return;
     }
@@ -220,6 +230,8 @@ QStringList Manager::intListToQStringList(QList<int> source) {
     }
     return result;
 }
+/*
+ * Comment for removal in the future... (or move in the TcpDevice class)
 QStringList Manager::getLocalIps(const bool ignoreLocal) {
     QStringList ips;
     QStringList localhost;
@@ -235,6 +247,7 @@ QStringList Manager::getLocalIps(const bool ignoreLocal) {
     }
     return ips;
 }
+*/
 void Manager::debugList(const QStringList list) {
     int count = 0;
     foreach (QString x,list) {
@@ -242,10 +255,13 @@ void Manager::debugList(const QStringList list) {
     }
 }
 void Manager::devOutClose() {
-    debug("output closed");
+    say("output closed");
     stop();
 }
 void Manager::devInClose() {
-    debug("input closed");
+    say("input closed");
     stop();
+}
+void Manager::say(const QString message) {
+    emit(debug("Manager: " + message));
 }

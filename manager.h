@@ -8,6 +8,7 @@
 #include "modules/tcpdevice.h"
 #include "modules/udpdevice.h"
 #include "modules/zerodevice.h"
+#include "modules/pipedevice.h"
 
 #ifdef PULSE
     #include "modules/pulse.h"
@@ -36,7 +37,8 @@ public:
         Zero = 5,
         Udp = 6,
         PortAudio = 7,
-        PulseAudioAsync = 8
+        PulseAudioAsync = 8,
+        Pipe = 9
     };
     struct tcpConfig {
         QString host;
@@ -89,6 +91,7 @@ private:
     bool bisRecording;
     void debugList(const QStringList list);
     bool prepare(QAudio::Mode mode, QIODevice **device);
+    void say(const QString message);
 
 signals:
     void errors(const QString error);
