@@ -31,6 +31,7 @@ public:
     bool isSections(QStringList keys);
     QMap<QString,QMap<QString,QString> > getRawData();
     void clear();
+    QString getFilePath();
 
 private:
     QFile file;

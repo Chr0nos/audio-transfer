@@ -140,3 +140,6 @@ QMap<QString,QMap<QString,QString> > Readini::getRawData() {
 void Readini::clear() {
     iniContent.clear();
 }
+QString Readini::getFilePath() {
+    return filePath;
+}
