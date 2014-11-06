@@ -28,6 +28,7 @@ TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,boo
 }
 bool TcpDevice::open(OpenMode mode) {
     say("opening device (connect)");
+    say("connecting to: " + host + " on port: " + QString::number(port));
     sock->connectToHost(host,port,mode);
     if (sock->waitForConnected()) {
         say("socket open");
