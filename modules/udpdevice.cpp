@@ -1,5 +1,7 @@
 #include "udpdevice.h"
 
+//this module can work in WriteOnly mode but no others: Udp dont use a connection, it just send data over the network and... thats all
+
 UdpDevice::UdpDevice(const QString host, const int port, AudioFormat *format, const bool sendConfig, QObject *parent) :
     QIODevice(parent)
 {

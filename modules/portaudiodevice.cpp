@@ -316,7 +316,7 @@ void PortAudioDevice::sendRdyRead() {
 qint64 PortAudioDevice::bytesAvailable() {
     if (!stream) return -1;
     if (modeAsync) return readBuffer->getAvailableBytesCount();
-    return Pa_GetStreamReadAvailable(stream);
+    return Pa_GetStreamReadAvailable(stream) + QIODevice::bytesAvailable();
 }
 
 #endif

@@ -19,8 +19,6 @@ public:
     explicit PortAudioDevice(AudioFormat *format,QObject *parent = 0);
     ~PortAudioDevice();
     bool open(OpenMode mode);
-    qint64 readData(char *data, qint64 maxlen);
-    qint64 writeData(const char *data, qint64 len);
     static int PaStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData);
     void close();
     int getDevicesCount();
@@ -34,6 +32,8 @@ public:
     bool setDeviceByName(const QString name,QIODevice::OpenModeFlag mode);
     qint64 bytesAvailable();
 private:
+    qint64 readData(char *data, qint64 maxlen);
+    qint64 writeData(const char *data, qint64 len);
     void say(const QString message);
     void say(QStringList* list);
     PaStream *stream;

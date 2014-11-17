@@ -47,6 +47,7 @@ PulseDevice::PulseDevice(const QString name, const QString target, AudioFormat *
     //s is a pa_simple*
     s = NULL;
     rec = NULL;
+    this->setObjectName("Audio-Transfer");
     this->format = format;
     this->target = target;
     this->name = name;
@@ -171,7 +172,8 @@ bool PulseDevice::prepare(OpenMode mode, pa_simple **pulse) {
     int *errorCode = new int;
     *errorCode = 0;
     *pulse = pa_simple_new(serverHost,                  // target server
-                           "Audio-Transfer-Client",     // Our application's name.
+                           this->objectName().toLocal8Bit().data(),
+                           // Our application's name.
                            *direction,                   // stream direction
                            NULL,                        // Use the default device.
                            name.toStdString().c_str(),  // Description of our stream.
@@ -200,6 +202,10 @@ bool PulseDevice::prepare(OpenMode mode, pa_simple **pulse) {
     delete(errorCode);
     delete(direction);
     return true;
+}
+qint64 PulseDevice::bytesAvailable() {
+    //Todo: find how to get the good size
+    return QIODevice::bytesAvailable();
 }
 
 #endif

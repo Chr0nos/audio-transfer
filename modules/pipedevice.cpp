@@ -19,7 +19,7 @@ PipeDevice::~PipeDevice() {
 }
 bool PipeDevice::open(OpenMode mode) {
     say("opening device");
-    file = new QFile();
+    file = new QFile(this);
     connect(file,SIGNAL(aboutToClose()),this,SLOT(stop()));
     bool state;
     switch (mode) {

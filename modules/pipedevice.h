@@ -12,13 +12,13 @@ class PipeDevice : public QIODevice
 public:
     explicit PipeDevice(const QString name, QObject *parent = 0);
     ~PipeDevice();
-    qint64 readData(char *data, qint64 maxlen);
-    qint64 writeData(const char *data, qint64 len);
     bool open(OpenMode mode);
     void say(const QString message);
 private:
     QFile *file;
     QTimer *timer;
+    qint64 readData(char *data, qint64 maxlen);
+    qint64 writeData(const char *data, qint64 len);
 
 signals:
     void debug(const QString message);

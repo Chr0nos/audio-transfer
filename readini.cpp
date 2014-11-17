@@ -59,6 +59,7 @@ QString Readini::getValue(const QString section, const QString key) {
     if (!isKey(section,key)) return QString();
     else return iniContent[section][key];
 }
+
 bool Readini::isSection(const QString section) {
     return iniContent.contains(section);
 }

@@ -130,6 +130,7 @@ void MainWindow::on_pushButton_clicked()
         mc.devices.output = ui->destinationDeviceCombo->currentIndex();
         mc.bufferSize = bitrate * ui->destinationTcpBufferDuration->value() / 1000 / 100;
         mc.bufferMaxSize = 2097152; //2Mb
+        mc.devIn = NULL;
 
 #ifdef PORTAUDIO
         mc.portAudio.deviceIdOutput = ui->destinationPortAudioList->currentIndex();

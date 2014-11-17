@@ -2,7 +2,7 @@
 #include <QDebug>
 #include <QMutexLocker>
 
-/* this class provide a circular buffer using a QByteArray inside it
+/* this class provide a circular/ring buffer using a QByteArray inside it
  */
 
 CircularBuffer::CircularBuffer(const uint bufferSize, const QString bufferName, QObject *parent) :
@@ -94,6 +94,7 @@ bool CircularBuffer::append(QByteArray newData) {
     data.replace(positionWrite,lenght,newData.mid(start,lenght));
     //Appending lenght to the current write position
     positionWrite += lenght;
+    lock.unlock();
     emit(readyRead(lenght));
     return true;
 }
@@ -106,6 +107,7 @@ bool CircularBuffer::append(const QString text) {
 }
 
 QByteArray CircularBuffer::getCurrentPosData(int length) {
+    if (!length) return QByteArray();
     QMutexLocker lock(&mutex);
 
     //if requested lenght is higher than the buffer himself: returning an empty qbytearray
@@ -139,6 +141,7 @@ void CircularBuffer::clear() {
     positionWrite = 0;
 }
 size_t CircularBuffer::getAvailableBytesCount() {
+    if (!bsize) return 0;
     const size_t lenght = (bsize + positionWrite - positionRead) % bsize;
     return lenght;
 }

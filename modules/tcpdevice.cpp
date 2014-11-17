@@ -100,3 +100,7 @@ void TcpDevice::stateChanged(QAbstractSocket::SocketState state) {
             break;
     }
 }
+qint64 TcpDevice::bytesAvailable() {
+    if (!sock) return 0;
+    return sock->bytesAvailable() + QIODevice::bytesAvailable();
+}

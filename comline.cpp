@@ -4,6 +4,9 @@
 #include "mainwindow.h"
 #include "size.h"
 #include "circularbuffer.h"
+#ifdef SERVER
+#include "server/serversocket.h"
+#endif
 
 #include <QTextStream>
 #include <QAudioDeviceInfo>
@@ -54,6 +57,7 @@ void Comline::debug(QString message) {
     if (bDebug) say(message);
 }
 void Comline::showStats() {
+    if (!manager) return;
     quint64 size = manager->getTransferedSize();
     int speed = (size - lastReadedValue) / timer->interval() * 1000;
     *out << "transfered data: " << Size::getWsize(size)  << " speed: " << Size::getWsize(speed) << "/s needed average: " << Size::getWsize(mc.format->getBytesSizeForDuration(1000)) << "/s" << endl;
@@ -96,10 +100,13 @@ bool Comline::initConfig() {
 #else
     mc.modeInput = Manager::Device;
 #endif
+    mc.devIn = NULL;
+    mc.devOut = NULL;
     return true;
 }
 
 void Comline::parse(QStringList *argList) {
+    bool serverMode = false;
     if ((argList->contains("--help")) || (argList->contains("-h"))) {
         *out << "availables arguments:" << endl
                 << "-c <x> : x is the number of channels to send" << endl
@@ -125,6 +132,10 @@ void Comline::parse(QStringList *argList) {
                 << "-n <filePath> : load the specified ini config file path" << endl
                 << "-f <freq> : set the 'freq' as format frequency (default: 44100)" << endl
                 << "-d : turn on debug mode" << endl
+                << "-h : show this help" << endl
+           #ifdef SERVER
+                << "--server : run in server mode (input will be ignored)" << endl
+           #endif
                 << "end of help" << endl;
         exit(0);
     }
@@ -152,6 +163,46 @@ void Comline::parse(QStringList *argList) {
             say("debug mode turned on !");
             bDebug = true;
         }
+#ifdef SERVER
+        else if (arg == "--server") {
+            //this thing is the server mode, it's currently in developement, the idea is to re-use the current Manager class and other stuffs
+            /* this will handle:
+             * - Tcp incoming connection (and handle)
+             * - Udp incoming datagram
+             * - Format attribution
+             * - Manager initialisation for each client (one Manager object Per client) (inside a user class i guess)
+             * - TimeOut detection
+             *
+            */
+            serverMode = true;
+            const QString serverConfigFilePath = QDir::home().path() + "/.audio-transfer-server.ini";
+
+            srv = new ServerMain(serverConfigFilePath,this);
+            connect(srv,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
+
+        }
+        else if (arg == "--test-device") {
+            CircularDevice* circular = new CircularDevice(2048,this);
+            connect(circular,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
+
+            QIODevice* dev = circular;
+            //connect(dev,SIGNAL(readyRead()),this,SLOT(debugTrigger()));
+
+            dev->open(QIODevice::ReadWrite);
+            qDebug() << "write: " << dev->write(QString("test data").toLocal8Bit());
+
+            const size_t bytes = dev->bytesAvailable();
+            qDebug() << "availables bytes:" << bytes;
+
+            QByteArray data = dev->readAll();
+            qDebug() << "data pointer: " << &data;
+            qDebug() << "data value: " << data;
+
+            dev->close();
+            dev->deleteLater();
+            exit(0);
+        }
+#endif
         //over this line: the option NEED an argument.
         else if (i++ < m) {
             QString value = argList->at(i);
@@ -224,12 +275,14 @@ void Comline::parse(QStringList *argList) {
                 }
                 mc.format->setSampleRate(value.toInt());
             }
+
             else say("unknow argument: " + arg);
         }
         else say("option " + arg + " passed but argument is missing !");
 
     }
-    start();
+    if (!serverMode) start();
+    else srv->listen(ServerSocket::Tcp);
 }
 Manager::Mode Comline::stringToMode(const QString *name) {
 #ifdef MULTIMEDIA
@@ -266,4 +319,7 @@ void Comline::loadIni() {
         mc.format->setChannelCount(ini->getValue("format","channels").toInt());
     }
 
+}
+void Comline::debugTrigger() {
+    qDebug() << "debug trigger was called by" << sender() << qobject_cast<CircularDevice*>(sender())->bytesAvailable();
 }

@@ -23,20 +23,16 @@ qint64 ZeroDevice::writeData(const char *data, qint64 len) {
     return len;
 }
 qint64 ZeroDevice::readData(char *data, qint64 maxlen) {
-    const int currentTime = QTime::currentTime().msec();
-    const int elapsedTime = currentTime - lastReadTime;
-    int bytesToRead = format->getBytesSizeForDuration(elapsedTime);
+    int bytesToRead = bytesAvailable();
 
-    lastReadTime = currentTime;
-    if (bytesToRead < 0) return -1;
-    else if (!elapsedTime) return 0;
+    if (maxlen < 0) return -1;
     else if (!bytesToRead) return 0;
-    else if (bytesToRead > maxlen) bytesToRead = maxlen;
+    else if (bytesToRead < maxlen) maxlen = bytesToRead;
     //qDebug() << "time: " << elapsedTime << " bytes: " << bytesToRead;
 
-    memset(data,0,bytesToRead);
+    memset(data,0,maxlen);
 
-    return bytesToRead;
+    return maxlen;
 }
 
 bool ZeroDevice::open(OpenMode mode) {
@@ -48,4 +44,9 @@ bool ZeroDevice::open(OpenMode mode) {
     }
     return true;
 }
-
+qint64 ZeroDevice::bytesAvailable() {
+    const int currentTime = QTime::currentTime().msec();
+    const int elapsedTime = currentTime - lastReadTime;
+    if (!elapsedTime) return 0;
+    return format->getBytesSizeForDuration(elapsedTime) + QIODevice::bytesAvailable();
+}

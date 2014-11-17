@@ -11,7 +11,7 @@
 
 QT       += core gui network
 CONFIG   += c++11
-DEFINES += MULTIMEDIA PULSE PORTAUDIO COMLINE
+DEFINES += MULTIMEDIA PULSE PORTAUDIO COMLINE SERVER
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -26,6 +26,7 @@ SOURCES += main.cpp\
     modules/pulse.cpp \
     modules/zerodevice.cpp \
     modules/nativeaudio.cpp \
+    modules/pipedevice.cpp \
     readini.cpp \
     audioformat.cpp \
     size.cpp \
@@ -33,7 +34,9 @@ SOURCES += main.cpp\
     modules/pulsedeviceasync.cpp \
     circularbuffer.cpp \
     graphicgenerator.cpp \
-    modules/pipedevice.cpp
+    modules/circulardevice.cpp \
+    server/afkkiller.cpp
+
 
 HEADERS  += mainwindow.h \
     manager.h \
@@ -44,13 +47,16 @@ HEADERS  += mainwindow.h \
     modules/tcpdevice.h \
     modules/nativeaudio.h \
     modules/udpdevice.h \
+    modules/pipedevice.h \
     audioformat.h \
     size.h \
     modules/portaudiodevice.h \
     modules/pulsedeviceasync.h \
     circularbuffer.h \
     graphicgenerator.h \
-    modules/pipedevice.h
+    modules/circulardevice.h \
+    server/afkkiller.h
+
 
 FORMS    += mainwindow.ui
 
@@ -58,6 +64,19 @@ contains(DEFINES,COMLINE) {
     CONFIG += console
     SOURCES += comline.cpp
     HEADERS += comline.h
+
+    contains(DEFINES,SERVER) {
+	SOURCES += server/serversocket.cpp \
+	server/servermain.cpp \
+	server/userhandler.cpp \
+	server/user.cpp
+
+	HEADERS +=    server/serversocket.h \
+	server/servermain.h \
+	server/userhandler.h \
+	server/user.h
+    }
+
 }
 
 

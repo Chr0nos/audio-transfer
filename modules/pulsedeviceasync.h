@@ -17,8 +17,6 @@ class PulseDeviceASync : public QIODevice
 public:
     explicit PulseDeviceASync(AudioFormat *format, const QString serverHost, QObject *parent = 0);
     bool open(OpenMode mode);
-    qint64 readData(char *data, qint64 maxlen);
-    qint64 writeData(const char *data, qint64 len);
     void close();
     QStringList getDevicesNames(QIODevice::OpenMode mode);
     QList<int> getValidSamplesSize();
@@ -29,6 +27,8 @@ public:
     static void getSinkDevices_cb(pa_context *c,const pa_sink_info* i,int eol,void *userdata);
     static void context_state_callback(pa_context *c, void *userdata);
 private:
+    qint64 readData(char *data, qint64 maxlen);
+    qint64 writeData(const char *data, qint64 len);
     pa_context *context;
     bool makeContext();
     QString name;

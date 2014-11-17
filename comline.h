@@ -6,6 +6,9 @@
 #include <QTimer>
 #include "manager.h"
 #include "readini.h"
+#ifdef SERVER
+#include "server/servermain.h"
+#endif
 
 class Comline : public QObject
 {
@@ -33,12 +36,16 @@ private:
     bool quiet;
     QString iniPath;
     void loadIni();
+#ifdef SERVER
+    ServerMain* srv;
+#endif
 
 signals:
     void quit();
 public slots:
     void sockClose();
     void debug(QString message);
+    void debugTrigger();
 
 };
 

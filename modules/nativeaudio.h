@@ -19,13 +19,14 @@ class NativeAudio : public QIODevice
 public:
     explicit NativeAudio(const QString name, AudioFormat *format, QObject *parent = 0);
     ~NativeAudio();
-    qint64 readData(char *data, qint64 maxlen);
-    qint64 writeData(const char *data, qint64 len);
     bool open(OpenMode mode);
     void close();
     bool setDeviceId(QAudio::Mode mode,const int id);
     static QStringList getDevicesNames(QAudio::Mode mode);
+    qint64 bytesAvailable();
 private:
+    qint64 readData(char *data, qint64 maxlen);
+    qint64 writeData(const char *data, qint64 len);
     QIODevice *devIn;
     QIODevice *devOut;
     QAudioFormat format;

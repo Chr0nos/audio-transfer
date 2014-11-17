@@ -13,8 +13,6 @@ class UdpDevice : public QIODevice
 public:
     explicit UdpDevice(const QString host,const int port,AudioFormat *format,const bool sendConfig = true,QObject *parent = 0);
     bool open(OpenMode mode);
-    qint64 readData(char *data, qint64 maxlen);
-    qint64 writeData(const char *data, qint64 len);
     void close();
 private:
     QUdpSocket *sock;
@@ -23,6 +21,9 @@ private:
     void say(const QString message);
     AudioFormat *format;
     bool bSendConfig;
+    qint64 readData(char *data, qint64 maxlen);
+    qint64 writeData(const char *data, qint64 len);
+
 signals:
     void debug(const QString message);
 public slots:

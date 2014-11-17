@@ -12,10 +12,9 @@ class TcpDevice : public QIODevice
     Q_OBJECT
 public:
     explicit TcpDevice(const QString host, const int port,AudioFormat *format,bool sendConfig = true,QObject *parent = 0);
-    qint64 readData(char *data, qint64 maxlen);
-    qint64 writeData(const char *data, qint64 len);
     bool open(OpenMode mode);
     void close();
+    qint64 bytesAvailable();
 private:
     QTcpSocket *sock;
     QString host;
@@ -24,6 +23,8 @@ private:
     void sendFormatSpecs();
     void say(const QString message);
     bool bSendConfig;
+    qint64 readData(char *data, qint64 maxlen);
+    qint64 writeData(const char *data, qint64 len);
 
 signals:
     void debug(const QString message);

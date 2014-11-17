@@ -11,6 +11,7 @@ class ZeroDevice : public QIODevice
 public:
     explicit ZeroDevice(AudioFormat *format, QObject *parent = 0);
     bool open(OpenMode mode);
+    qint64 bytesAvailable();
 private:
     qint64 writeData(const char *data, qint64 len);
     qint64 readData(char *data, qint64 maxlen);

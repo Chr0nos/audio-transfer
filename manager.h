@@ -28,6 +28,8 @@ class Manager : public QObject
 {
     Q_OBJECT
 public:
+
+
     enum Mode {
         File = 0,
         Device = 1,
@@ -38,7 +40,8 @@ public:
         Udp = 6,
         PortAudio = 7,
         PulseAudioAsync = 8,
-        Pipe = 9
+        Pipe = 9,
+        Raw = 10
     };
     struct tcpConfig {
         QString host;
@@ -66,6 +69,13 @@ public:
        int bufferMaxSize;
        QString pulseTarget;
        portAudioSpecs portAudio;
+       QIODevice* devIn;
+       QIODevice* devOut;
+       struct Name {
+           QString input;
+           QString output;
+       };
+       Name devicesNames;
     };
 
     explicit Manager(QObject *parent = 0);

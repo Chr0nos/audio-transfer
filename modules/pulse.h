@@ -24,6 +24,7 @@ public:
     ~PulseDevice();
     bool open(OpenMode mode);
     void close();
+    qint64 bytesAvailable();
     QStringList getDevicesNames(QIODevice::OpenMode mode);
 private:
     qint64 writeData(const char *data, qint64 len);

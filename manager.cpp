@@ -31,6 +31,7 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
     QString* filePath;
     Manager::Mode target = Manager::None;
     QIODevice::OpenModeFlag flag;
+    QIODevice *rawDev;
     int deviceId;
     if (mode == QAudio::AudioInput) {
         target = config.modeInput;
@@ -38,6 +39,8 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
         deviceId = config.devices.input;
         name.append(" capture");
         filePath = &config.filePathInput;
+        rawDev = config.devIn;
+        if (!config.devicesNames.input.isEmpty()) name = config.devicesNames.input;
     }
     else if (mode == QAudio::AudioOutput) {
         target = config.modeOutput;
@@ -45,6 +48,8 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
         deviceId = config.devices.output;
         name.append(" playback");
         filePath = &config.filePathOutput;
+        rawDev = config.devOut;
+        if (!config.devicesNames.output.isEmpty()) name = config.devicesNames.output;
     }
 
     switch (target) {
@@ -125,10 +130,17 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
          case Manager::PortAudio:
             return false;
 #endif
+         case Manager::Raw:
+            *device = rawDev;
+            break;
     }
     if (!*device) return false;
 
     if (mode == QAudio::AudioInput) connect(*device,SIGNAL(readyRead()),this,SLOT(transfer()));
+    (**device).setObjectName(name);
+
+    //in raw mode: we just dont open the device
+    if (target == Manager::Raw) return true;
     return (**device).open(flag);
 }
 
@@ -199,6 +211,7 @@ void Manager::transfer() {
         return;
     }
     QByteArray data = devIn->readAll();
+    //QByteArray data = devIn->read(devIn->bytesAvailable());
 
     bytesCount += data.size();
     //in case of no buffer usage we dont copy data to buffer (better performance)
@@ -265,3 +278,4 @@ void Manager::devInClose() {
 void Manager::say(const QString message) {
     emit(debug("Manager: " + message));
 }
+
