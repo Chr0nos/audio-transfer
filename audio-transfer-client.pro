@@ -34,9 +34,7 @@ SOURCES += main.cpp\
     modules/pulsedeviceasync.cpp \
     circularbuffer.cpp \
     graphicgenerator.cpp \
-    modules/circulardevice.cpp \
-    server/afkkiller.cpp
-
+    modules/circulardevice.cpp
 
 HEADERS  += mainwindow.h \
     manager.h \
@@ -54,8 +52,7 @@ HEADERS  += mainwindow.h \
     modules/pulsedeviceasync.h \
     circularbuffer.h \
     graphicgenerator.h \
-    modules/circulardevice.h \
-    server/afkkiller.h
+    modules/circulardevice.h
 
 
 FORMS    += mainwindow.ui
@@ -69,12 +66,20 @@ contains(DEFINES,COMLINE) {
 	SOURCES += server/serversocket.cpp \
 	server/servermain.cpp \
 	server/userhandler.cpp \
-	server/user.cpp
+	server/user.cpp \
+	server/afkkiller.cpp
 
 	HEADERS +=    server/serversocket.h \
 	server/servermain.h \
 	server/userhandler.h \
-	server/user.h
+	server/user.h \
+	server/afkkiller.h
+
+
+	config.files = server/audio-transfer-server.ini
+	config.path = ${DESTDIR}/etc/
+	INSTALLS += config
+
     }
 
 }
@@ -96,9 +101,6 @@ contains(DEFINES,PULSE) {
 contains(DEFINES,MULTIMEDIA) {
     QT += multimedia
 }
-config.files = server/audio-transfer-server.ini
-config.path = ${DESTDIR}/etc/
-INSTALLS += config
 
 
 contains(DEFINES,DEBUG) {
