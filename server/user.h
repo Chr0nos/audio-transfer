@@ -33,6 +33,7 @@ private:
     QIODevice* inputDevice;
     AfkKiller *afk;
     qint64 connectionTime;
+    QString peerAddress;
 
 signals:
     void debug(const QString message);

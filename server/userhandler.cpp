@@ -1,5 +1,6 @@
 #include "userhandler.h"
 #include "size.h"
+#include "server/servermain.h"
 
 UserHandler::UserHandler(QObject *parent) :
     QObject(parent)
@@ -77,4 +78,7 @@ void UserHandler::bytesNewRead(int size) {
 void UserHandler::kicked() {
     User* user = (User*) sender();
     sockClose(user);
+}
+Readini* UserHandler::getIni() {
+    return qobject_cast<ServerMain*>(this->parent())->getIni();
 }

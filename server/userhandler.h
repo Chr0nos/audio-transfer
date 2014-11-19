@@ -18,6 +18,7 @@ public:
     int indexOf(const QObject* socket);
     User* at(const int pos);
     quint64 getBytesRead();
+    Readini* getIni();
 private:
     QList<User*> users;
     Manager::userConfig defaultConfig;

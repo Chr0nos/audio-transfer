@@ -157,7 +157,7 @@ bool Manager::start() {
     }
     else {
         emit(say("devices ok"));
-        qDebug() << "started";
+        say("started");
         bisRecording = true;
         bytesCount = 0;
         emit(started());

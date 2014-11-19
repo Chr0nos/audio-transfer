@@ -17,10 +17,9 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
         this->setObjectName(tcp->peerAddress().toString());
 
     }
-    //else if (type == ServerSocket::Udp) {
-        //QUdpSocket* udp = (QUdpSocket*) this->sock;
-        //this->setObjectName(udp->peerAddress().toString());
-    //}
+
+    //at this point, the object name IS the peer address
+    this->peerAddress = this->objectName();
 
     //Creating the anti afk class
     this->afk = new AfkKiller(2000,this);
@@ -30,7 +29,7 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
 
     //creating the manager, this class will manage the output using the CircularDevice
     this->manager = new Manager(this);
-    connect(this->manager,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+    //connect(this->manager,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
 
     AudioFormat* format = new AudioFormat();
 
@@ -118,6 +117,7 @@ void User::sockRead() {
     const quint64 size = data.size();
     if (!bytesRead) {
         readUserConfig(&data);
+        mc.devicesNames.output = this->objectName();
         manager->setUserConfig(mc);
         manager->start();
         bytesRead += size;
@@ -134,6 +134,7 @@ void User::sockRead(const QByteArray* data) {
     const int size = data->size();
     if (!bytesRead) {
         readUserConfig(data);
+        mc.devicesNames.output = this->objectName();
         manager->setUserConfig(mc);
         manager->start();
         bytesRead += size;
