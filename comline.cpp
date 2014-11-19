@@ -18,6 +18,8 @@ Comline::Comline(QStringList *argList, QObject *parent) :
     quiet = false;
     lastReadedValue = 0;
     ini = new Readini(MainWindow::getConfigFilePath(),this);
+
+    //this is the transfer stats refresh timer
     timer = new QTimer(this);
     timer->setInterval(5000);
     connect(timer,SIGNAL(timeout()),this,SLOT(showStats()));

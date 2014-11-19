@@ -6,6 +6,7 @@ AfkKiller::AfkKiller(const int checkInterval, QObject *parent) :
     QObject(parent)
 {
     this->checkCount = 0;
+    this->lastBytesCount = 0;
     timer = new QTimer(this);
     timer->setInterval(checkInterval);
     connect(timer,SIGNAL(timeout()),this,SLOT(checkAfk()));
@@ -24,7 +25,9 @@ void AfkKiller::checkAfk() {
 
     //if no new data where readed: lets just kick the afk user
     if ((lastBytesCount == bytesRead) && (checkCount > 0)) {
+        timer->stop();
         user->kill("afk");
+        return;
     }
 
     //updating readed data

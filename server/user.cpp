@@ -17,10 +17,10 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
         this->setObjectName(tcp->peerAddress().toString());
 
     }
-    else if (type == ServerSocket::Udp) {
-        QUdpSocket* udp = (QUdpSocket*) this->sock;
-        this->setObjectName(udp->peerAddress().toString());
-    }
+    //else if (type == ServerSocket::Udp) {
+        //QUdpSocket* udp = (QUdpSocket*) this->sock;
+        //this->setObjectName(udp->peerAddress().toString());
+    //}
 
     //Creating the anti afk class
     this->afk = new AfkKiller(2000,this);
@@ -42,6 +42,7 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     mc.format->setSampleRate(96000);
     mc.format->setSampleSize(16);
 
+    //creating a 2Mb ring buffer device
     this->inputDevice = new CircularDevice(2097152,this);
     //this->inputDevice = new QBuffer(this);
 
@@ -64,11 +65,13 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
 }
 User::~User() {
     say("deleting object");
-    if (!sockType == ServerSocket::Tcp) {
+    if (sockType == ServerSocket::Tcp) {
         QTcpSocket* sock = (QTcpSocket*) this->sock;
         sock->close();
         sock->deleteLater();
     }
+    //in udp you MUST dont close the socket.
+
     afk->deleteLater();
     manager->deleteLater();
     //we dont delete 'format' here because the manager will do this :)
@@ -142,7 +145,6 @@ void User::sockRead(const QByteArray* data) {
 }
 void User::stop() {
     emit(sockClose(this));
-    this->deleteLater();
 }
 
 bool User::readUserConfig(const QByteArray *data) {
@@ -196,8 +198,10 @@ void User::send(const QByteArray data) {
 }
 void User::kill(const QString reason) {
     send(QString("you where kicked: reason: " + reason).toLocal8Bit());
-    QTcpSocket* sock = (QTcpSocket*) this->sock;
-    sock->close();
+    if (sockType == ServerSocket::Tcp) {
+        QTcpSocket* sock = (QTcpSocket*) this->sock;
+        sock->close();
+    }
     emit(kicked());
 }
 const QObject* User::getSocketPointer() {

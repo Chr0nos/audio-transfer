@@ -19,11 +19,12 @@ void UserHandler::say(const QString message) {
     emit(debug("UserHandler: " + message));
 }
 void UserHandler::sockClose(User *user) {
-    if (!users.contains(user)) return;
-    say("deleting user: " + user->getUserName());
     const int pos = users.indexOf(user);
-    users.at(pos)->deleteLater();
+    if (pos < 0) return;
+    say("deleting user: " + user->objectName());
+    delete(users.at(pos));
     users.removeAt(pos);
+    showUsersOnline();
 }
 void UserHandler::showUsersOnline() {
     say("current online users:");
@@ -34,7 +35,8 @@ void UserHandler::showUsersOnline() {
         say(QString::number(count++) + ": " + x->objectName() + QString(" -> readed: ") + Size::getWsize(x->getBytesCount()));
     }
     say("total readed data: " + Size::getWsize(bytesRead));
-    say("end of list");
+    if (!count) say("no user(s) online.");
+    else say("end of list");
 }
 void UserHandler::killAll(const QString reason) {
     QList<User*>::Iterator i;
