@@ -10,7 +10,7 @@ EGIT_REPO_URI="https://code.google.com/p/audio-transfer-client/"
 LICENSE="LGPL-3"
 SLOT="0"
 KEYWORDS=""
-IUSE="+qt4 qt5 pulseaudio debug portaudio"
+IUSE="+qt4 qt5 pulseaudio debug portaudio +comline +server"
 REQUIRED_USE="^^ ( qt4 qt5 )"
 append-cppflags "-DMULTIMEDIA"
 
@@ -34,10 +34,12 @@ RDEPEND="qt5? ( dev-qt/qtgui:5
 DEPEND="${RDEPEND}"
 
 src_configure() {
+	use comline && append-cppflags "-DCOMLINE"
 	use pulseaudio && append-cppflags "-DPULSEAUDIO"
 	use portaudio && append-cppflags "-DPORTAUDIO"
 	use debug && append-cppflags "-DDEBUG"
-	
+	use server && append-cppflags "-DSERVER"
+
 	#here i'm still looking for a way to pass DEFINES...
 	#dont works if i put this in a src_compile() section
 	use qt5 && eqmake5
