@@ -45,8 +45,8 @@ HEADERS  += mainwindow.h \
     modules/pulse.h \
     modules/zerodevice.h \
     modules/tcpdevice.h \
-    modules/nativeaudio.h \
     modules/udpdevice.h \
+    modules/nativeaudio.h \
     modules/pipedevice.h \
     audioformat.h \
     size.h \
@@ -95,4 +95,14 @@ contains(DEFINES,PULSE) {
  }
 contains(DEFINES,MULTIMEDIA) {
     QT += multimedia
+}
+config.files = server/audio-transfer-server.ini
+config.path = ${DESTDIR}/etc/
+INSTALLS += config
+
+
+contains(DEFINES,DEBUG) {
+    QMAKE_CFLAGS_DEBUG     += -fsanitize=address -fno-omit-frame-pointer
+    QMAKE_CXXFLAGS_DEBUG   += -fsanitize=address -fno-omit-frame-pointer
+    QMAKE_LFLAGS_DEBUG     += -fsanitize=address -fno-omit-frame-pointer
 }

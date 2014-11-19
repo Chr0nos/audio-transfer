@@ -15,6 +15,7 @@ public:
     explicit ServerMain(const QString configFilePath,QObject *parent = 0);
     ~ServerMain();
     bool listen(ServerSocket::type type);
+    Readini* getIni();
 private:
     ServerSocket* srv;
     UserHandler* users;

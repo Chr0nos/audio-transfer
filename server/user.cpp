@@ -1,6 +1,7 @@
 #include "user.h"
 #include "server/servermain.h"
 #include <QTime>
+#include <QRegExp>
 
 User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     QObject(parent)
@@ -17,11 +18,17 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
 
     }
     else if (type == ServerSocket::Udp) {
-        this->sock = (QUdpSocket*) socket;
+        QUdpSocket* udp = (QUdpSocket*) this->sock;
+        this->setObjectName(udp->peerAddress().toString());
     }
+
+    //Creating the anti afk class
     this->afk = new AfkKiller(2000,this);
+
+    //Starting the anti afk class
     this->afk->start();
 
+    //creating the manager, this class will manage the output using the CircularDevice
     this->manager = new Manager(this);
     connect(this->manager,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
 
@@ -64,6 +71,7 @@ User::~User() {
     }
     afk->deleteLater();
     manager->deleteLater();
+    //we dont delete 'format' here because the manager will do this :)
 }
 
 void User::sockStateChanged(QAbstractSocket::SocketState state) {
@@ -116,6 +124,7 @@ void User::sockRead() {
     bytesRead += size;
 }
 void User::sockRead(const QByteArray* data) {
+    //this is a Udp sockread
     QUdpSocket* sock = (QUdpSocket*) this->sock;
     (void) sock;
 
@@ -129,6 +138,11 @@ void User::sockRead(const QByteArray* data) {
     }
     inputDevice->write(data->data(),size);
     bytesRead += size;
+    emit(readedNewBytes(size));
+}
+void User::stop() {
+    emit(sockClose(this));
+    this->deleteLater();
 }
 
 bool User::readUserConfig(const QByteArray *data) {
@@ -176,6 +190,7 @@ void User::send(const QByteArray data) {
     }
     else {
         QUdpSocket* sock = (QUdpSocket*) this->sock;
+        if (!sock->isOpen()) return;
         sock->write(data + (char) 10);
     }
 }
@@ -183,10 +198,17 @@ void User::kill(const QString reason) {
     send(QString("you where kicked: reason: " + reason).toLocal8Bit());
     QTcpSocket* sock = (QTcpSocket*) this->sock;
     sock->close();
+    emit(kicked());
 }
 const QObject* User::getSocketPointer() {
     return this->sock;
 }
 quint64 User::getBytesCount() {
     return bytesRead;
+}
+QHostAddress User::getHostAddress() {
+    QHostAddress address;
+    if (sockType == ServerSocket::Udp) address.setAddress(qobject_cast<QUdpSocket*>(this->sock)->peerAddress().toIPv4Address());
+    else if (sockType == ServerSocket::Tcp) address.setAddress(qobject_cast<QTcpSocket*>(this->sock)->peerAddress().toIPv4Address());
+    return address;
 }

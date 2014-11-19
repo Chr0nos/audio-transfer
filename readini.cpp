@@ -102,6 +102,7 @@ bool Readini::removeSection(const QString section) {
 }
 bool Readini::flush() {
     //this method overwrite the current ini file with the actual content in memory
+    //todo: prevent comments to be deleted in the file
     QFile file(filePath);
     if (file.exists()) file.remove();
     if (!file.open(QIODevice::WriteOnly)) return false;

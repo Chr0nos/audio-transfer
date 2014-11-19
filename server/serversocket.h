@@ -17,6 +17,7 @@ public:
     };
     bool startServer(ServerSocket::type type,int port);
     QUdpSocket* getUdpSocket();
+    type getServerType();
 private:
     QObject *srv;
     type currentType;

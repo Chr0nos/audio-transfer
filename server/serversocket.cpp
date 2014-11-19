@@ -71,3 +71,6 @@ QUdpSocket* ServerSocket::getUdpSocket() {
     if (currentType == Tcp) return 0;
     return (QUdpSocket*) this->srv;
 }
+ServerSocket::type ServerSocket::getServerType() {
+    return currentType;
+}

@@ -21,6 +21,8 @@ public:
     const QObject* getSocketPointer();
     void send(const QByteArray data);
     quint64 getBytesCount();
+    void stop();
+    QHostAddress getHostAddress();
 private:
     QObject* sock;
     Manager* manager;
@@ -35,6 +37,8 @@ private:
 signals:
     void debug(const QString message);
     void sockClose(User* sender);
+    void readedNewBytes(int size);
+    void kicked();
 private slots:
     void sockStateChanged(QAbstractSocket::SocketState state);
     void say(const QString message);

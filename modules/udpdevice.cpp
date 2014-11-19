@@ -1,4 +1,5 @@
 #include "udpdevice.h"
+#include <QtNetwork/QHostInfo>
 
 //this module can work in WriteOnly mode but no others: Udp dont use a connection, it just send data over the network and... thats all
 
@@ -9,8 +10,6 @@ UdpDevice::UdpDevice(const QString host, const int port, AudioFormat *format, co
     this->port = port;
     this->format = format;
     sock = new QUdpSocket(this);
-    connect(sock,SIGNAL(disconnected()),this,SLOT(sockClose()));
-    connect(sock,SIGNAL(connected()),this,SLOT(sockOpen()));
     bSendConfig = sendConfig;
 }
 bool UdpDevice::open(OpenMode mode) {
@@ -19,8 +18,13 @@ bool UdpDevice::open(OpenMode mode) {
         sock->connectToHost(host,port,mode);
         if (sock->waitForConnected()) {
             say("connected to remote host");
+            QString name = this->objectName();
+            if (name.isEmpty()) name = QHostInfo::localHostName();
+
             QIODevice::open(mode);
-            sock->write(format->getFormatTextInfo().toLocal8Bit());
+            QByteArray specs = format->getFormatTextInfo().toLocal8Bit();
+            specs.append(" name:" + name);
+            sock->write(specs);
             sock->flush();
             return true;
         }
@@ -42,15 +46,6 @@ qint64 UdpDevice::readData(char *data, qint64 maxlen) {
     if (sock->isReadable()) data = sock->read(maxlen).data();
     return maxlen;
 }
-void UdpDevice::sockClose() {
-    say("socket closed");
-    this->close();
-}
-void UdpDevice::sockOpen() {
-    say("connected to target");
-    if (bSendConfig) sock->write(format->getFormatTextInfo().toLocal8Bit());
-}
-
 void UdpDevice::close() {
     QIODevice::close();
     if (sock->isOpen()) sock->close();
@@ -62,6 +57,4 @@ void UdpDevice::say(const QString message) {
 #endif
     emit(debug("UdpDevice: " + message));
 }
-void UdpDevice::debug(QString message) {
-    (void) message;
-}
+

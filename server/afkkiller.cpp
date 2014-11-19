@@ -20,7 +20,7 @@ void AfkKiller::start() {
 void AfkKiller::checkAfk() {
     User* user = qobject_cast<User*>(this->parent());
     const quint64 bytesRead = user->getBytesCount();
-
+    //qDebug() << "afkcheck: " << Size::getWsize(lastBytesCount) << " -> " << Size::getWsize(bytesRead);
 
     //if no new data where readed: lets just kick the afk user
     if ((lastBytesCount == bytesRead) && (checkCount > 0)) {

@@ -6,6 +6,7 @@
 #include "audioformat.h"
 #include <QString>
 #include <QIODevice>
+#include <QtNetwork/QHostInfo>
 #include <QDebug>
 
 TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,bool sendConfig,QObject *parent) :
@@ -56,7 +57,12 @@ qint64 TcpDevice::writeData(const char *data, qint64 len) {
 }
 void TcpDevice::sendFormatSpecs() {
     say("sending format specs");
-    sock->write(format->getFormatTextInfo().toLocal8Bit());
+    QString name = this->objectName();
+    if (name.isEmpty()) name = QHostInfo::localHostName();
+    QByteArray specs = format->getFormatTextInfo().toLocal8Bit();
+    specs.append(" name:" + name);
+
+    sock->write(specs);
     sock->flush();
 }
 void TcpDevice::sockClose() {

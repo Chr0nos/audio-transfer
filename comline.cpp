@@ -107,6 +107,7 @@ bool Comline::initConfig() {
 
 void Comline::parse(QStringList *argList) {
     bool serverMode = false;
+    ServerSocket::type serverType = ServerSocket::Tcp;
     if ((argList->contains("--help")) || (argList->contains("-h"))) {
         *out << "availables arguments:" << endl
                 << "-c <x> : x is the number of channels to send" << endl
@@ -135,6 +136,7 @@ void Comline::parse(QStringList *argList) {
                 << "-h : show this help" << endl
            #ifdef SERVER
                 << "--server : run in server mode (input will be ignored)" << endl
+                << "--server-type <type> : set type of incoming connection must be (tcp or udp) (tcp is by default)" << endl
            #endif
                 << "end of help" << endl;
         exit(0);
@@ -182,7 +184,7 @@ void Comline::parse(QStringList *argList) {
 
         }
         else if (arg == "--test-device") {
-            CircularDevice* circular = new CircularDevice(2048,this);
+            CircularDevice* circular = new CircularDevice(512,this);
             connect(circular,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
 
             QIODevice* dev = circular;
@@ -275,6 +277,16 @@ void Comline::parse(QStringList *argList) {
                 }
                 mc.format->setSampleRate(value.toInt());
             }
+#ifdef SERVER
+            else if (arg == "--server-type") {
+                if (value == "tcp") serverType = ServerSocket::Tcp;
+                else if (value == "udp") serverType = ServerSocket::Udp;
+                else {
+                    say("unknow server type parameter: " + value);
+                    exit(0);
+                }
+            }
+#endif
 
             else say("unknow argument: " + arg);
         }
@@ -282,7 +294,7 @@ void Comline::parse(QStringList *argList) {
 
     }
     if (!serverMode) start();
-    else srv->listen(ServerSocket::Tcp);
+    else srv->listen(serverType);
 }
 Manager::Mode Comline::stringToMode(const QString *name) {
 #ifdef MULTIMEDIA

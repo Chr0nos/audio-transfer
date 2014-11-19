@@ -1,4 +1,5 @@
 #include "userhandler.h"
+#include "size.h"
 
 UserHandler::UserHandler(QObject *parent) :
     QObject(parent)
@@ -7,8 +8,11 @@ UserHandler::UserHandler(QObject *parent) :
 bool UserHandler::append(User *user) {
 
     this->users.append(user);
+    this->bytesRead = 0;
     connect(user,SIGNAL(sockClose(User*)),this,SLOT(sockClose(User*)));
     connect(user,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+    connect(user,SIGNAL(readedNewBytes(int)),this,SLOT(bytesNewRead(int)));
+    connect(user,SIGNAL(kicked()),this,SLOT(kicked()));
     return true;
 }
 void UserHandler::say(const QString message) {
@@ -27,8 +31,9 @@ void UserHandler::showUsersOnline() {
     QList<User*>::Iterator i;
     for (i = users.begin() ; i != users.end() ; i++) {
         User* x = (User*) *i;
-        say(QString::number(count++) + ": " + x->objectName());
+        say(QString::number(count++) + ": " + x->objectName() + QString(" -> readed: ") + Size::getWsize(x->getBytesCount()));
     }
+    say("total readed data: " + Size::getWsize(bytesRead));
     say("end of list");
 }
 void UserHandler::killAll(const QString reason) {
@@ -61,11 +66,13 @@ User* UserHandler::at(const int pos) {
     return users.at(pos);
 }
 quint64 UserHandler::getBytesRead() {
-    quint64 bytesRead = 0;
-    QList<User*>::Iterator i;
-    for (i = users.begin() ; i != users.end() ; i++) {
-        User* x = (User*) *i;
-        bytesRead += x->getBytesCount();
-    }
     return bytesRead;
+}
+void UserHandler::bytesNewRead(int size) {
+    bytesRead += size;
+}
+
+void UserHandler::kicked() {
+    User* user = (User*) sender();
+    sockClose(user);
 }

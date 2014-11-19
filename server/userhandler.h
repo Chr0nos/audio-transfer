@@ -21,12 +21,15 @@ public:
 private:
     QList<User*> users;
     Manager::userConfig defaultConfig;
+    quint64 bytesRead;
 signals:
     void debug(const QString message);
 public slots:
 private slots:
     void say(const QString message);
     void sockClose(User* user);
+    void bytesNewRead(int size);
+    void kicked();
 };
 
 #endif // USERHANDLER_H

@@ -9,7 +9,7 @@
 
 class UdpDevice : public QIODevice
 {
-    //Q_OBJECT
+    Q_OBJECT
 public:
     explicit UdpDevice(const QString host,const int port,AudioFormat *format,const bool sendConfig = true,QObject *parent = 0);
     bool open(OpenMode mode);
@@ -27,8 +27,7 @@ private:
 signals:
     void debug(const QString message);
 public slots:
-    void sockClose();
-    void sockOpen();
+
 };
 
 #endif // UDPDEVICE_H

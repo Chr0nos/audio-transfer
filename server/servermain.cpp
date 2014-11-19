@@ -87,3 +87,6 @@ void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const
     }
     user->sockRead(data);
 }
+Readini* ServerMain::getIni() {
+    return ini;
+}
