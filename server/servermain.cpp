@@ -1,15 +1,17 @@
 #include "servermain.h"
 #include "audioformat.h"
 #include "server/serversocket.h"
+#include "server/serversecurity.h"
 
 ServerMain::ServerMain(const QString configFilePath, QObject *parent) :
     QObject(parent)
 {
     this->srv = NULL;
+    this->ini = NULL;
     this->users = new UserHandler(this);
+    this->security = new ServerSecurity(this);
     connect(users,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
     this->formatDefault = NULL;
-    this->ini = NULL;
     this->configFilePath = configFilePath;
 
 }
@@ -72,10 +74,15 @@ void ServerMain::sockOpen(QTcpSocket *newSock) {
 
 
 void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const QByteArray *data, QUdpSocket *udp) {
+    if (data->isEmpty()) return;
     (void) senderPort;
     User* user = NULL;
     const int pos = users->indexOf(udp);
     if (pos < 0) {
+        if (!security->isAuthorisedHost(sender)) {
+            //say("rejected data from: " + sender->toString());
+            return;
+        }
         say("adding udp user: " + sender->toString());
         user = new User(udp,ServerSocket::Udp,this);
         user->setObjectName(sender->toString());

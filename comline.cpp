@@ -79,8 +79,14 @@ bool Comline::initConfig() {
     mc.format->setSampleRate(44100);
     mc.format->setSampleSize(16);
     mc.format->setChannelCount(2);
-
-    QAudioDeviceInfo info = QAudioDeviceInfo::availableDevices(QAudio::AudioInput).at(0);
+/*
+    QList<QAudioDeviceInfo> devices = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
+    if (devices.isEmpty()) {
+        say("no devices availables, sorry");
+        exit(0);
+    }
+    QAudioDeviceInfo info = devices.first();
+  */
     mc.bufferSize = 0;
     mc.bufferMaxSize = 2*1024*1024; //2Mb
 
@@ -138,7 +144,7 @@ void Comline::parse(QStringList *argList) {
                 << "-h : show this help" << endl
            #ifdef SERVER
                 << "--server : run in server mode (input will be ignored)" << endl
-                << "--server-type <type> : set type of incoming connection must be (tcp or udp) (tcp is by default)" << endl
+                << "--server-type <type> : set type of incoming connection must be (tcp or udp) (tcp is default)" << endl
            #endif
                 << "end of help" << endl;
         exit(0);
@@ -179,9 +185,22 @@ void Comline::parse(QStringList *argList) {
              *
             */
             serverMode = true;
-            const QString serverConfigFilePath = QDir::home().path() + "/.audio-transfer-server.ini";
+            QStringList configPath;
+            configPath << QDir::home().path() + "/.audio-transfer/server.ini";
+            configPath << QDir::home().path() + "/.audio-transfer-server.ini";
+            configPath << "/etc/audio-transfer/server.ini";
+            QString goodConfigFilePath;
+            foreach (QString filePath,configPath) {
+                if (QFile::exists(filePath)) {
+                    goodConfigFilePath = filePath;
+                    break;
+                }
+            }
+            if (goodConfigFilePath.isEmpty()) {
+                say("warning: no configuration file found !");
+            }
 
-            srv = new ServerMain(serverConfigFilePath,this);
+            srv = new ServerMain(goodConfigFilePath,this);
             connect(srv,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
 
         }
@@ -249,6 +268,9 @@ void Comline::parse(QStringList *argList) {
 
                         //if there is a second argument, we assume it's the port number
                         if ((raw.count() > 1) && (mc.tcpTarget.port = raw.at(1).toInt())) mc.tcpTarget.port = raw.at(1).toInt();
+
+                        //allowing user to specify a sender name with: -o tcp:<address>:<port>:<senderName>
+                        if (raw.count() >= 3) mc.devicesNames.output = raw.at(2);
                     }
                 }
                 else mc.modeInput = mode;

@@ -1,6 +1,8 @@
 #include "serversocket.h"
 #include <QtNetwork/QTcpServer>
 #include <QtNetwork/QUdpSocket>
+#include "server/serversecurity.h"
+#include "server/servermain.h"
 
 ServerSocket::ServerSocket(QObject *parent) :
     QObject(parent)
@@ -41,7 +43,18 @@ bool ServerSocket::startServer(ServerSocket::type type, const int port) {
 void ServerSocket::newConnection() {
     if (currentType == Tcp) {
         say("sockopen.");
-        emit(sockOpen(sockOpenTcp()));
+        QTcpSocket* sock = sockOpenTcp();
+        ServerSecurity* security = qobject_cast<ServerMain*>(this->parent())->security;
+        QHostAddress peer(sock->peerAddress());
+
+        if (!security->isAuthorisedHost(&peer)) {
+            const QString host = sock->peerAddress().toString();
+            sock->close();
+            sock->deleteLater();
+            say("refused tcp incoming connection from " + host);
+            return;
+        }
+        emit(sockOpen(sock));
     }
     else sockOpenUdp();
 

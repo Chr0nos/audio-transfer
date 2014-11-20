@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 
         //i use this to debug the app, ignore it
         //argList.clear();
-        //argList << "--test-device";
+        //argList << "--server" << "--server-type" << "udp";
 
         if (!argList.isEmpty()) {
             Comline* com = new Comline(&argList);

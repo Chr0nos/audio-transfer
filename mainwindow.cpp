@@ -131,6 +131,7 @@ void MainWindow::on_pushButton_clicked()
         mc.bufferSize = bitrate * ui->destinationTcpBufferDuration->value() / 1000 / 100;
         mc.bufferMaxSize = 2097152; //2Mb
         mc.devIn = NULL;
+        if (ui->clientName->isChecked()) mc.devicesNames.output = ui->clientNameEdit->text();
 
 #ifdef PORTAUDIO
         mc.portAudio.deviceIdOutput = ui->destinationPortAudioList->currentIndex();
@@ -415,7 +416,18 @@ void MainWindow::setUserControlState(const bool state) {
 }
 
 QString MainWindow::getConfigFilePath() {
-    return QDir::homePath() + "/.audio-transfer-client.ini";
+    QStringList paths;
+    paths << QDir::homePath() + "/.audio-transfer/client.ini";
+    paths << QDir::homePath() + "/.audio-transfer-client.ini";
+    paths << "/etc/audio-transfer/client.ini";
+
+    foreach (QString path,paths) {
+        if (QFile::exists(path)) return path;
+    }
+    QString dirPath = QDir::homePath() + "/.audio-transfer/";
+    QDir dir(dirPath);
+    if (!dir.exists()) dir.mkpath(dirPath);
+    return paths.first();
 }
 
 void MainWindow::on_configSave_clicked()

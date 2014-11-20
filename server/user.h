@@ -34,6 +34,7 @@ private:
     AfkKiller *afk;
     qint64 connectionTime;
     QString peerAddress;
+    bool managerStarted;
 
 signals:
     void debug(const QString message);

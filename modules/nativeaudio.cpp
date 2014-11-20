@@ -49,12 +49,15 @@ bool NativeAudio::open(OpenMode mode) {
 }
 bool NativeAudio::configureDevice(QAudio::Mode mode, const int deviceId) {
     QAudioDeviceInfo info;
+    QList<QAudioDeviceInfo> devices = QAudioDeviceInfo::availableDevices(mode);
+    if (devices.isEmpty()) return false;
     //if the device is = to -1 (or less) : i will select the default device.
     if (deviceId < 0) {
         if (mode == QAudio::AudioInput) info = QAudioDeviceInfo::defaultInputDevice();
         else if (mode == QAudio::AudioOutput) info = QAudioDeviceInfo::defaultOutputDevice();
     }
-    else info = QAudioDeviceInfo::availableDevices(mode).at(deviceId);
+    else if (deviceId >= devices.count()) return false;
+    else info = devices.at(deviceId);
     say("requested device: " + QString("[") + QString::number(deviceId) + QString("] ") + info.deviceName());
 
     if (!info.isFormatSupported(format)) {

@@ -8,6 +8,8 @@
 # - PULSE : enable pulseaudio (unix systems only)
 # - PORTAUDIO : enable portaudio support
 # - DEBUG : enable the debug mode
+# - SERVER : enable the built in server (require COMLINE)
+# - COMLINE : enable the command line mode
 
 QT       += core gui network
 CONFIG   += c++11
@@ -34,7 +36,8 @@ SOURCES += main.cpp\
     modules/pulsedeviceasync.cpp \
     circularbuffer.cpp \
     graphicgenerator.cpp \
-    modules/circulardevice.cpp
+    modules/circulardevice.cpp \
+    server/serversecurity.cpp
 
 HEADERS  += mainwindow.h \
     manager.h \
@@ -52,7 +55,8 @@ HEADERS  += mainwindow.h \
     modules/pulsedeviceasync.h \
     circularbuffer.h \
     graphicgenerator.h \
-    modules/circulardevice.h
+    modules/circulardevice.h \
+    server/serversecurity.h
 
 
 FORMS    += mainwindow.ui
@@ -76,12 +80,10 @@ contains(DEFINES,COMLINE) {
 	server/afkkiller.h
 
 
-	config.files = server/audio-transfer-server.ini
-	config.path = ${DESTDIR}/etc/
+	config.files = server/server.ini
+	config.path = ${DESTDIR}/etc/audio-transfer/
 	INSTALLS += config
-
     }
-
 }
 
 

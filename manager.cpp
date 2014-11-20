@@ -25,9 +25,9 @@ Manager::~Manager() {
     delete(format);
 }
 bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
-    if ((*device)) (**device).deleteLater();
+    if ((device) && ((*device))) (**device).deleteLater();
     *device = NULL;
-    QString name = "Audio-Transfer-Client";
+    QString name;
     QString* filePath;
     Manager::Mode target = Manager::None;
     QIODevice::OpenModeFlag flag;
@@ -37,7 +37,6 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
         target = config.modeInput;
         flag = QIODevice::ReadOnly;
         deviceId = config.devices.input;
-        name.append(" capture");
         filePath = &config.filePathInput;
         rawDev = config.devIn;
         if (!config.devicesNames.input.isEmpty()) name = config.devicesNames.input;
@@ -46,7 +45,6 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
         target = config.modeOutput;
         flag = QIODevice::WriteOnly;
         deviceId = config.devices.output;
-        name.append(" playback");
         filePath = &config.filePathOutput;
         rawDev = config.devOut;
         if (!config.devicesNames.output.isEmpty()) name = config.devicesNames.output;
@@ -137,7 +135,9 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
     if (!*device) return false;
 
     if (mode == QAudio::AudioInput) connect(*device,SIGNAL(readyRead()),this,SLOT(transfer()));
-    (**device).setObjectName(name);
+
+    //if a name is available lets assign it to the new device
+    if (!name.isEmpty()) (**device).setObjectName(name);
 
     //in raw mode: we just dont open the device
     if (target == Manager::Raw) return true;

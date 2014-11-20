@@ -7,6 +7,7 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     QObject(parent)
 {
     bytesRead = 0;
+    this->managerStarted = false;
     this->connectionTime = QTime::currentTime().msec();
     this->sockType = type;
     this->sock = socket;
@@ -31,11 +32,11 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     this->manager = new Manager(this);
     //connect(this->manager,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
 
-    AudioFormat* format = new AudioFormat();
-
 
     mc.bufferSize = 0;
-    mc.format = format;
+
+    //creating the default audio format
+    mc.format = new AudioFormat();
     mc.format->setChannelCount(2);
     mc.format->setCodec("audio/pcm");
     mc.format->setSampleRate(96000);
@@ -45,10 +46,11 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     this->inputDevice = new CircularDevice(2097152,this);
     //this->inputDevice = new QBuffer(this);
 
+    //opening the buffer and defining it for the manager
     this->inputDevice->open(QIODevice::ReadWrite);
-
     mc.devIn = this->inputDevice;
     mc.modeInput = Manager::Raw;
+
     mc.modeOutput = Manager::Device;
 #ifdef PULSE
     mc.modeOutput = Manager::PulseAudio;
@@ -103,10 +105,10 @@ void User::sockStateChanged(QAbstractSocket::SocketState state) {
     }
 }
 void User::say(const QString message) {
-    emit(debug("User: " + this->objectName() + ": " + message));
+    emit(debug("User: " + this->getUserName() + ": " + message));
 }
 QString User::getUserName() {
-    return this->sock->objectName();
+    return this->objectName();
 }
 void User::sockRead() {
     //this is the Tcp sockread, the udp data DONT cant this method
@@ -115,11 +117,11 @@ void User::sockRead() {
     QByteArray data = sock->readAll();
 
     const quint64 size = data.size();
-    if (!bytesRead) {
+    if ((!bytesRead) && (!managerStarted)) {
         readUserConfig(&data);
         mc.devicesNames.output = this->objectName();
         manager->setUserConfig(mc);
-        manager->start();
+        managerStarted = manager->start();
         bytesRead += size;
         return;
     }
@@ -132,12 +134,12 @@ void User::sockRead(const QByteArray* data) {
     (void) sock;
 
     const int size = data->size();
-    if (!bytesRead) {
+    if ((!bytesRead) && (!managerStarted)) {
         readUserConfig(data);
+        bytesRead += size;
         mc.devicesNames.output = this->objectName();
         manager->setUserConfig(mc);
-        manager->start();
-        bytesRead += size;
+        managerStarted = manager->start();
         return;
     }
     inputDevice->write(data->data(),size);
