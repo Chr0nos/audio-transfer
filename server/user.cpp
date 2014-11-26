@@ -164,7 +164,8 @@ bool User::readUserConfig(const QByteArray *data) {
     else if (exp.indexIn(rawUserConfig)) say("no user config");
     else {
         Readini* ini = qobject_cast<ServerMain*>(this->parent())->getIni();
-        if (!ini->getValue("general","userConfig").toInt()) {
+        if (!ini->isKey("general","userConfig"));
+        else if (!ini->getValue("general","userConfig").toInt()) {
             say("refused user config: not allowed in the configuration file.");
             return false;
         }
