@@ -36,8 +36,7 @@ SOURCES += main.cpp\
     modules/pulsedeviceasync.cpp \
     circularbuffer.cpp \
     graphicgenerator.cpp \
-    modules/circulardevice.cpp \
-    server/serversecurity.cpp
+    modules/circulardevice.cpp
 
 HEADERS  += mainwindow.h \
     manager.h \
@@ -55,8 +54,7 @@ HEADERS  += mainwindow.h \
     modules/pulsedeviceasync.h \
     circularbuffer.h \
     graphicgenerator.h \
-    modules/circulardevice.h \
-    server/serversecurity.h
+    modules/circulardevice.h
 
 
 FORMS    += mainwindow.ui
@@ -71,13 +69,16 @@ contains(DEFINES,COMLINE) {
 	server/servermain.cpp \
 	server/userhandler.cpp \
 	server/user.cpp \
-	server/afkkiller.cpp
+	server/security/serversecurity.cpp \
+	server/security/flowchecker.cpp
+
 
 	HEADERS +=    server/serversocket.h \
 	server/servermain.h \
 	server/userhandler.h \
 	server/user.h \
-	server/afkkiller.h
+	server/security/serversecurity.h \
+	server/security/flowchecker.h
 
 
 	config.files = server/server.ini
@@ -93,6 +94,7 @@ win32 {
     contains(DEFINES,PULSE) {
 	DEFINES -= PULSE
     }
+    DEFINES += WIN32
 }
 contains(DEFINES,PORTAUDIO) {
     LIBS += -lportaudio

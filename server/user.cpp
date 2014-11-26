@@ -11,6 +11,8 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     this->connectionTime = QTime::currentTime().msec();
     this->sockType = type;
     this->sock = socket;
+    lastBytesRead = 0;
+    this->flowChecker = NULL;
     if (type == ServerSocket::Tcp) {
         QTcpSocket* tcp = (QTcpSocket*) socket;
         connect(tcp,SIGNAL(stateChanged(QAbstractSocket::SocketState)),this,SLOT(sockStateChanged(QAbstractSocket::SocketState)));
@@ -22,16 +24,13 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     //at this point, the object name IS the peer address
     this->peerAddress = this->objectName();
 
-    //Creating the anti afk class
-    this->afk = new AfkKiller(2000,this);
-
-    //Starting the anti afk class
-    this->afk->start();
-
     //creating the manager, this class will manage the output using the CircularDevice
     this->manager = new Manager(this);
     //connect(this->manager,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
 
+    //flow checker interval
+    //note: the flow checker also check for afk users.
+    checkInterval = 2000;
 
     mc.bufferSize = 0;
 
@@ -61,7 +60,7 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
 
     QByteArray specs = mc.format->getFormatTextInfo().toLocal8Bit();
     specs.append("afk:");
-    specs.append(QString::number(afk->getInterval()));
+    specs.append(QString::number(checkInterval));
     send(specs);
 }
 User::~User() {
@@ -73,7 +72,7 @@ User::~User() {
     }
     //in udp you MUST dont close the socket.
 
-    afk->deleteLater();
+    if (flowChecker) flowChecker->deleteLater();
     manager->deleteLater();
     //we dont delete 'format' here because the manager will do this :)
 }
@@ -119,27 +118,35 @@ void User::sockRead() {
     const quint64 size = data.size();
     if ((!bytesRead) && (!managerStarted)) {
         readUserConfig(&data);
-        mc.devicesNames.output = this->objectName();
-        manager->setUserConfig(mc);
-        managerStarted = manager->start();
+        initUser();
         bytesRead += size;
         return;
     }
+
     inputDevice->write(data,size);
     bytesRead += size;
 }
+void User::initUser() {
+    mc.devicesNames.output = this->objectName();
+    manager->setUserConfig(mc);
+    managerStarted = manager->start();
+
+    //creating the flow checker (it check if the data are comming at the good speed)
+    this->flowChecker = new FlowChecker(mc.format,this->checkInterval,this);
+    connect(flowChecker,SIGNAL(debug(QString)),this,SLOT(say(QString)));
+    flowChecker->start();
+}
+
 void User::sockRead(const QByteArray* data) {
     //this is a Udp sockread
     QUdpSocket* sock = (QUdpSocket*) this->sock;
     (void) sock;
-
     const int size = data->size();
+
     if ((!bytesRead) && (!managerStarted)) {
         readUserConfig(data);
+        initUser();
         bytesRead += size;
-        mc.devicesNames.output = this->objectName();
-        manager->setUserConfig(mc);
-        managerStarted = manager->start();
         return;
     }
     inputDevice->write(data->data(),size);
@@ -156,6 +163,12 @@ bool User::readUserConfig(const QByteArray *data) {
     if (rawUserConfig.isEmpty()) say("no user config");
     else if (exp.indexIn(rawUserConfig)) say("no user config");
     else {
+        Readini* ini = qobject_cast<ServerMain>(this->parent()).getIni();
+        if (!ini->getValue("general","userConfig").toInt()) {
+            say("refused user config: not allowed in the configuration file.");
+            return;
+        }
+
         say("readed user config: " + rawUserConfig);
 
 
@@ -207,6 +220,16 @@ void User::kill(const QString reason) {
     }
     emit(kicked());
 }
+void User::ban(const QString reason, const int banTime) {
+    QHostAddress host = getHostAddress();
+    callSecurity()->addToBannedList(&host,banTime);
+
+    kill(reason);
+}
+ServerSecurity* User::callSecurity() {
+    return qobject_cast<UserHandler*>(this->parent())->callSecurity();
+}
+
 const QObject* User::getSocketPointer() {
     return this->sock;
 }
@@ -218,4 +241,16 @@ QHostAddress User::getHostAddress() {
     if (sockType == ServerSocket::Udp) address.setAddress(qobject_cast<QUdpSocket*>(this->sock)->peerAddress().toIPv4Address());
     else if (sockType == ServerSocket::Tcp) address.setAddress(qobject_cast<QTcpSocket*>(this->sock)->peerAddress().toIPv4Address());
     return address;
+}
+int User::getSpeed() {
+    //the speed will be returned in bytes per seconds
+    lastBytesRead = bytesRead;
+    const int elaspedTime = speedLastCheckTime.elapsed();
+    if (!elaspedTime) return -1;
+
+    const int speed = (bytesRead - lastBytesRead) / elaspedTime;
+
+    speedLastCheckTime = QTime::currentTime();
+    lastBytesRead = bytesRead;
+    return speed;
 }

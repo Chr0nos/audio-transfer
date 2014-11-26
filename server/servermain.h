@@ -5,7 +5,7 @@
 #include <QtNetwork/QTcpSocket>
 #include "server/serversocket.h"
 #include "server/userhandler.h"
-#include "server/serversecurity.h"
+#include "server/security/serversecurity.h"
 #include "readini.h"
 #include "audioformat.h"
 

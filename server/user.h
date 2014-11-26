@@ -6,8 +6,9 @@
 #include "manager.h"
 #include "audioformat.h"
 #include "server/serversocket.h"
-#include "server/afkkiller.h"
 #include "modules/circulardevice.h"
+#include "server/security/flowchecker.h"
+#include "server/security/serversecurity.h"
 
 class User : public QObject
 {
@@ -18,11 +19,14 @@ public:
     void setFormat(const AudioFormat* format);
     QString getUserName();
     void kill(const QString reason);
+    void ban(const QString reason,const int banTime = 0);
     const QObject* getSocketPointer();
     void send(const QByteArray data);
     quint64 getBytesCount();
     void stop();
     QHostAddress getHostAddress();
+    int getSpeed();
+    ServerSecurity* callSecurity();
 private:
     QObject* sock;
     Manager* manager;
@@ -31,10 +35,16 @@ private:
     bool readUserConfig(const QByteArray *data);
     ServerSocket::type sockType;
     QIODevice* inputDevice;
-    AfkKiller *afk;
     qint64 connectionTime;
     QString peerAddress;
     bool managerStarted;
+    void makeSpeedStatus();
+    quint64 lastBytesRead;
+    QTime speedLastCheckTime;
+    FlowChecker* flowChecker;
+    int checkInterval;
+    void initUser();
+
 
 signals:
     void debug(const QString message);

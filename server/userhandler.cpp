@@ -82,3 +82,6 @@ void UserHandler::kicked() {
 Readini* UserHandler::getIni() {
     return qobject_cast<ServerMain*>(this->parent())->getIni();
 }
+ServerSecurity* UserHandler::callSecurity() {
+    return qobject_cast<ServerMain*>(this->parent())->security;
+}

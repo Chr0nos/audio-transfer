@@ -1,7 +1,7 @@
 #include "serversocket.h"
 #include <QtNetwork/QTcpServer>
 #include <QtNetwork/QUdpSocket>
-#include "server/serversecurity.h"
+#include "server/security/serversecurity.h"
 #include "server/servermain.h"
 
 ServerSocket::ServerSocket(QObject *parent) :
@@ -86,4 +86,13 @@ QUdpSocket* ServerSocket::getUdpSocket() {
 }
 ServerSocket::type ServerSocket::getServerType() {
     return currentType;
+}
+QString ServerSocket::typeToString(ServerSocket::type type) {
+    switch (type) {
+        case Udp:
+            return QString("Udp");
+        case Tcp:
+            return QString("Tcp");
+    }
+    return QString("Unknow");
 }

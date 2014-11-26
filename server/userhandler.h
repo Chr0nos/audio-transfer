@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QList>
 #include "server/user.h"
+#include "server/security/serversecurity.h"
 #include "manager.h"
 
 class UserHandler : public QObject
@@ -19,6 +20,7 @@ public:
     User* at(const int pos);
     quint64 getBytesRead();
     Readini* getIni();
+    ServerSecurity* callSecurity();
 private:
     QList<User*> users;
     Manager::userConfig defaultConfig;

@@ -166,5 +166,4 @@ qint64 NativeAudio::bytesAvailable() {
     if (!in) return 0;
     return in->bytesReady() + QIODevice::bytesAvailable();
 }
-
 #endif

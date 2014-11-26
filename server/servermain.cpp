@@ -1,7 +1,7 @@
 #include "servermain.h"
 #include "audioformat.h"
 #include "server/serversocket.h"
-#include "server/serversecurity.h"
+#include "server/security/serversecurity.h"
 
 ServerMain::ServerMain(const QString configFilePath, QObject *parent) :
     QObject(parent)
@@ -24,31 +24,38 @@ ServerMain::~ServerMain() {
 
 bool ServerMain::listen(ServerSocket::type type) {
     if (!ini) {
+        AudioFormat *f = new AudioFormat();
         say("reading config file at: " + configFilePath);
         this->ini = new Readini(configFilePath);
+
         if (!ini->exists()) {
             say("no configuration file found.");
-            exit(0);
         }
-        else if (!ini->isSection("format")) {
+        if (!ini->isSection("format")) {
             say("no [format] section in the configuration file, please update");
-            exit(0);
+            f->setCodec("audio/pcm");
+            f->setSampleRate(96000);
+            f->setSampleSize(16);
+            f->setChannelCount(2);
+            say("using generic configuration for default audio format: 96khz, 16bits , 2 channels");
         }
-
-        AudioFormat *f = new AudioFormat();
-        f->setCodec(ini->getValue("format","codec"));
-        f->setSampleRate(ini->getValue("format","sampleRate").toInt());
-        f->setSampleSize(ini->getValue("format","sampleSize").toInt());
-        f->setChannelCount(ini->getValue("format","channels").toInt());
+        else {
+            say("creating default audio format from configuration file...");
+            f->setCodec(ini->getValue("format","codec"));
+            f->setSampleRate(ini->getValue("format","sampleRate").toInt());
+            f->setSampleSize(ini->getValue("format","sampleSize").toInt());
+            f->setChannelCount(ini->getValue("format","channels").toInt());
+            say("done.");
+        }
         formatDefault = f;
 
     }
     say("creating server socket");
     quint16 port = ini->getValue("general","port").toInt();
-    port = 1043;
+
     if (!port) {
-        say("error: invalid port specified: " + QString::number(port));
-        exit(0);
+        say("using default port: 1042");
+        port = 1042;
     }
 
     this->srv = new ServerSocket(this);
@@ -58,6 +65,7 @@ bool ServerMain::listen(ServerSocket::type type) {
 
     if (srv->startServer(type,port)) {
         say("server started on port " + QString::number(port));
+        say("server mode: " + ServerSocket::typeToString(type));
         return true;
     }
     return false;
