@@ -151,7 +151,6 @@ void User::sockRead(const QByteArray* data) {
     }
     inputDevice->write(data->data(),size);
     bytesRead += size;
-    emit(readedNewBytes(size));
 }
 void User::stop() {
     emit(sockClose(this));
@@ -190,7 +189,10 @@ bool User::readUserConfig(const QByteArray *data) {
                 const int intVal = value.toInt();
                 if (key == "samplerate") mc.format->setSampleRate(intVal);
                 else if (key == "samplesize") mc.format->setSampleSize(intVal);
-                else if (key == "name") this->setObjectName(value);
+                else if (key == "name") {
+                    say("renaming user to: " + value);
+                    this->setObjectName(value);
+                }
                 else if (key == "channels") mc.format->setChannelCount(intVal);
                 else send(QString("unknow option: " + key + "value: " + value).toLocal8Bit());
             }

@@ -74,7 +74,9 @@ void ServerSecurity::checkForUnban() {
     int m =  bannedHosts.count();
     for (int i = 0 ; i < m ; i++) {
         if (checkForUnban(i)) {
+            //because the size of bannedHost has changed, we decrement "m"
             m--;
+            //and re-set the current position to last value to prevent item skip
             i--;
         }
     }
@@ -82,6 +84,9 @@ void ServerSecurity::checkForUnban() {
 bool ServerSecurity::isBanned(const QHostAddress *address)  {
     int pos = bannedHosts.count() -1;
     while (pos--) {
+        //if the user WAS banned and is not anymore: no need to check in the full list.
+        if (checkForUnban(pos)) return false;
+
         if (bannedHosts.at(pos).host == *address) return true;
     }
     return false;

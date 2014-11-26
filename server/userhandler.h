@@ -21,6 +21,7 @@ public:
     quint64 getBytesRead();
     Readini* getIni();
     ServerSecurity* callSecurity();
+    quint64 getBytesReadForConnected();
 private:
     QList<User*> users;
     Manager::userConfig defaultConfig;
@@ -31,7 +32,6 @@ public slots:
 private slots:
     void say(const QString message);
     void sockClose(User* user);
-    void bytesNewRead(int size);
     void kicked();
 };
 

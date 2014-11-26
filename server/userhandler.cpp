@@ -5,14 +5,14 @@
 UserHandler::UserHandler(QObject *parent) :
     QObject(parent)
 {
+    //bascicly: bytesRead store all the "offline" users data read (after they disconnected)
+    this->bytesRead = 0;
 }
 bool UserHandler::append(User *user) {
 
     this->users.append(user);
-    this->bytesRead = 0;
     connect(user,SIGNAL(sockClose(User*)),this,SLOT(sockClose(User*)));
     connect(user,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-    connect(user,SIGNAL(readedNewBytes(int)),this,SLOT(bytesNewRead(int)));
     connect(user,SIGNAL(kicked()),this,SLOT(kicked()));
     return true;
 }
@@ -22,6 +22,9 @@ void UserHandler::say(const QString message) {
 void UserHandler::sockClose(User *user) {
     const int pos = users.indexOf(user);
     if (pos < 0) return;
+    //Adding the total bytes read of this user to the main counter (offline counter)
+    bytesRead += user->getBytesCount();
+
     say("deleting user: " + user->objectName());
     delete(users.at(pos));
     users.removeAt(pos);
@@ -35,7 +38,7 @@ void UserHandler::showUsersOnline() {
         User* x = (User*) *i;
         say(QString::number(count++) + ": " + x->objectName() + QString(" -> readed: ") + Size::getWsize(x->getBytesCount()));
     }
-    say("total readed data: " + Size::getWsize(bytesRead));
+    say("total readed data: " + Size::getWsize(getBytesRead()));
     if (!count) say("no user(s) online.");
     else say("end of list");
 }
@@ -69,12 +72,8 @@ User* UserHandler::at(const int pos) {
     return users.at(pos);
 }
 quint64 UserHandler::getBytesRead() {
-    return bytesRead;
+    return bytesRead + getBytesReadForConnected();
 }
-void UserHandler::bytesNewRead(int size) {
-    bytesRead += size;
-}
-
 void UserHandler::kicked() {
     User* user = (User*) sender();
     sockClose(user);
@@ -84,4 +83,10 @@ Readini* UserHandler::getIni() {
 }
 ServerSecurity* UserHandler::callSecurity() {
     return qobject_cast<ServerMain*>(this->parent())->security;
+}
+quint64 UserHandler::getBytesReadForConnected() {
+    quint64 size = 0;
+    QList<User*>::iterator i;
+    for (i = users.begin() ; i != users.end() ; i++) size += (*i)->getBytesCount();
+    return size;
 }
