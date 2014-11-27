@@ -1,0 +1,17 @@
+[Unit]
+Description=Audio-Transfer Server
+After=network.target
+
+[Service]
+Type=simple
+User=audio-transfer
+Group=audio
+ExecStart=/usr/bin/audio-transfer-client -platform offscreen --server --server-type udp --pid /etc/audio-transfer/server.pid
+RemainAfterExit=yes
+PIDFile=/etc/audio-transfer/server.pid
+
+# Give a reasonable amount of time for the server to start up/shut down
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target
