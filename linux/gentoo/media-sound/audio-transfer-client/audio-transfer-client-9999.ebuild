@@ -58,6 +58,10 @@ src_install() {
 	if use systemd; then {
 		insinto /usr/lib/systemd/system/
 		doins ./server/audio-transfer-server.service
+		insinto /etc/audio-transfer
+		fowners audio-transfer /etc/audio-transfer/
+		doins ./server/server.ini
+		fowners audio-transfer /etc/audio-transfer/server.ini
 	}
 	fi
 	insinto /usr/bin
