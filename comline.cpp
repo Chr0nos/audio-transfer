@@ -143,9 +143,12 @@ void Comline::parse(QStringList *argList) {
                 << "-d : turn on debug mode" << endl
                 << "-h : show this help" << endl
            #ifdef SERVER
+                << "--- For server mode only ---" << endl
                 << "--server : run in server mode (input will be ignored)" << endl
                 << "--server-type <type> : set type of incoming connection must be (tcp or udp) (tcp is default)" << endl
+                << "--pid <filePath> : write the server process pid to the specified file" << endl
            #endif
+                << "-platform offscreen : allow you to run the program withous any X connection" << endl
                 << "end of help" << endl;
         exit(0);
     }
@@ -311,6 +314,20 @@ void Comline::parse(QStringList *argList) {
                 }
             }
 #endif
+            else if (arg == "--pid") {
+                QString &filePath = value;
+                const qint64 pid = QCoreApplication::applicationPid();
+                say("creating pid file to: " + filePath);
+                say("current pid: " + QString::number(pid));
+                QFile file(filePath);
+                if (file.exists()) file.remove();
+                if (!file.open(QIODevice::WriteOnly)) {
+                    say("failed to create the pid file: check the permissions.");
+                    exit(1);
+                }
+                file.write(QString::number(pid).toLocal8Bit());
+                file.close();
+            }
 
             else say("unknow argument: " + arg);
         }

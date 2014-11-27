@@ -6,7 +6,7 @@
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    QApplication a(argc, argv,(bool) (argc -1));
 #ifdef COMLINE
     //argc++;
     if (argc > 1) {
