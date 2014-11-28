@@ -3,13 +3,14 @@
 #include "comline.h"
 #endif
 #include <QApplication>
+#include <QCoreApplication>
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv,(bool) (argc -1));
 #ifdef COMLINE
     //argc++;
     if (argc > 1) {
+        QCoreApplication a(argc,argv);
         QStringList argList;
         for (int p = 0;p <= argc;p++) {
             argList << argv[p];
@@ -26,8 +27,10 @@ int main(int argc, char *argv[])
             //com->start();
             return a.exec();
         }
+        return a.exec();
     }
 #endif
+    QApplication a(argc,argv);
     MainWindow w;
     w.show();
     return a.exec();
