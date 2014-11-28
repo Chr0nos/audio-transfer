@@ -17,7 +17,7 @@ DEFINES += MULTIMEDIA PULSE PORTAUDIO COMLINE SERVER
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = audio-transfer-client
+TARGET = audio-transfer
 TEMPLATE = app
 
 SOURCES += main.cpp\

@@ -55,16 +55,19 @@ pkg_preinst() {
 	fi
 }
 src_install() {
-	if use systemd; then {
-		insinto /usr/lib/systemd/system/
-		doins ./server/audio-transfer-server.service
-		insinto /etc/audio-transfer
-		fowners audio-transfer /etc/audio-transfer/
-		doins ./server/server.ini
-		fowners audio-transfer /etc/audio-transfer/server.ini
+	if use server; then {
+		if use systemd; then {
+			insinto /usr/lib/systemd/system/
+			doins ./server/audio-transfer-server.service
+			insinto /etc/audio-transfer
+			fowners audio-transfer /etc/audio-transfer/
+			doins ./server/server.ini
+			fowners audio-transfer /etc/audio-transfer/server.ini
+		}
+		fi
 	}
 	fi
 	insinto /usr/bin
-	dobin audio-transfer-client
+	dobin audio-transfer
 }
 

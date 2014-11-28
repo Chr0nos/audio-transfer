@@ -5,5 +5,5 @@ mkdir /etc/audio-transfer
 cp ./server/server.ini /etc/audio-transfer/
 chown -R audio-transfer:audio /etc/audio-transfer
 chmod 664 /etc/audio-transfer/server.ini
-cp audio-transfer-client /usr/bin/
+cp audio-transfer /usr/bin/
 
