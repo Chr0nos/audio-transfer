@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=audio-transfer
 Group=audio
-ExecStart=/usr/bin/audio-transfer-client -platform offscreen --server --server-type udp --pid /etc/audio-transfer/server.pid
+ExecStart=/usr/bin/audio-transfer -platform offscreen --server --server-type udp --pid /etc/audio-transfer/server.pid
 RemainAfterExit=yes
 PIDFile=/etc/audio-transfer/server.pid
 
