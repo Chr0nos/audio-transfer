@@ -14,6 +14,7 @@ public:
     bool start();
     int getInterval();
     void setFlowKick(const bool mode);
+    void stop();
 private:
     AudioFormat* format;
     QTimer timer;

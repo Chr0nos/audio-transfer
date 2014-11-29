@@ -220,6 +220,7 @@ void User::kill(const QString reason) {
         QTcpSocket* sock = (QTcpSocket*) this->sock;
         sock->close();
     }
+    flowChecker->stop();
     emit(kicked());
 }
 void User::ban(const QString reason, const int banTime) {

@@ -2,6 +2,11 @@
 #include "size.h"
 #include "server/servermain.h"
 
+/* this class manage all connected users
+ * the user list is stored in this->users
+ * each user is a "User*" object
+ * */
+
 UserHandler::UserHandler(QObject *parent) :
     QObject(parent)
 {
@@ -26,8 +31,15 @@ void UserHandler::sockClose(User *user) {
     bytesRead += user->getBytesCount();
 
     say("deleting user: " + user->objectName());
-    delete(users.at(pos));
+    delete(user);
+
+    //re-assign the pointer value to NULL just in case
+    user = NULL;
+
+    //deleteing the user from the user list
     users.removeAt(pos);
+
+    //showing user actualy online and stats
     showUsersOnline();
 }
 void UserHandler::showUsersOnline() {

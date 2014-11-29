@@ -27,6 +27,7 @@ bool FlowChecker::start() {
 }
 void FlowChecker::check() {
     User* user = qobject_cast<User*>(this->parent());
+    if (!user) return;
     const int bytesRead = user->getBytesCount();
 
     const int neededSpeed = format->getBytesSizeForDuration(timer.interval());
@@ -60,4 +61,7 @@ int FlowChecker::getInterval() {
 }
 void FlowChecker::setFlowKick(const bool mode) {
     this->enableFlowKick = mode;
+}
+void FlowChecker::stop() {
+    timer.stop();
 }
