@@ -1,4 +1,4 @@
-EAPI="4"
+EAPI="5"
 
 inherit git-2 eutils qmake-utils flag-o-matic user
 
@@ -43,29 +43,26 @@ src_configure() {
 	use debug && append-cppflags "-DDEBUG"
 	use server && append-cppflags "-DSERVER"
 
-	#here i'm still looking for a way to pass DEFINES...
+
 	#dont works if i put this in a src_compile() section
 	use qt5 && eqmake5
 	use qt4 && eqmake4
 }
 pkg_preinst() {
-	if use systemd; then {
-		enewuser audio-transfer -1 /dev/null -1 audio
-	}
+	if use systemd; then
+		enewuser audio-transfer -1 /dev/null /home/audio-transfer audio
 	fi
 }
 src_install() {
-	if use server; then {
+	if use server; then
 		insinto /etc/audio-transfer
 		doins ./server/server.ini
-		if use systemd; then {
+		if use systemd; then
 			insinto /usr/lib/systemd/system/
 			doins ./server/audio-transfer-server.service
 			fowners audio-transfer /etc/audio-transfer/
 			fowners audio-transfer /etc/audio-transfer/server.ini
-		}
 		fi
-	}
 	fi
 	insinto /usr/bin
 	dobin audio-transfer
