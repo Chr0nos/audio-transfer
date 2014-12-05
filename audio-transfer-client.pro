@@ -108,7 +108,7 @@ contains(DEFINES,MULTIMEDIA) {
 
 
 contains(DEFINES,DEBUG) {
-    QMAKE_CFLAGS_DEBUG     += -fsanitize=address -fno-omit-frame-pointer
-    QMAKE_CXXFLAGS_DEBUG   += -fsanitize=address -fno-omit-frame-pointer
-    QMAKE_LFLAGS_DEBUG     += -fsanitize=address -fno-omit-frame-pointer
+    QMAKE_CFLAGS_DEBUG     += -fsanitize=address -fno-omit-frame-pointer -qqdb
+    QMAKE_CXXFLAGS_DEBUG   += -fsanitize=address -fno-omit-frame-pointer -ggdb
+    QMAKE_LFLAGS_DEBUG     += -fsanitize=address -fno-omit-frame-pointer -ggdb
 }

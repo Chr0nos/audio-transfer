@@ -121,6 +121,7 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
             if (mode == QAudio::AudioInput) api->setDeviceId(config.portAudio.deviceIdInput,QIODevice::ReadOnly);
             else if (mode == QAudio::AudioOutput) api->setDeviceId(config.portAudio.deviceIdOutput,QIODevice::WriteOnly);
             connect(api,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+
             *device = api;
             break;
         }
@@ -278,4 +279,42 @@ void Manager::devInClose() {
 void Manager::say(const QString message) {
     emit(debug("Manager: " + message));
 }
-
+QMap<Manager::Mode,QString> Manager::getModesMap() {
+    QMap<Mode,QString> map;
+    map[Manager::File] = "file";
+#ifdef MULTIMEDIA
+    map[Manager::Device] = "native";
+#endif
+    map[Manager::None] = "none";
+    map[Manager::Zero] = "zero";
+#ifdef PORTAUDIO
+    map[Manager::PortAudio] = "portaudio";
+#endif
+#ifdef PULSE
+    map[Manager::PulseAudio] = "pulseaudio";
+#endif
+#ifdef PULSEASYNC
+    map[Manager::PulseAudioAsync] = "pulseasync";
+#endif
+    map[Manager::Tcp] = "tcp";
+    map[Manager::Udp] = "udp";
+    map[Manager::Raw] = "raw";
+    map[Manager::Pipe] = "pipe";
+    return map;
+}
+Manager::Mode Manager::getModeFromString(const QString *name) {
+    QMap<Manager::Mode,QString>::iterator i;
+    QMap<Manager::Mode,QString> map = Manager::getModesMap();
+    for (i = map.begin() ; i != map.end() ; i++) {
+        if (*name == i.value()) return i.key();
+    }
+    return Manager::None;
+}
+QString Manager::getStringFromMode(const Manager::Mode *mode) {
+    QMap<Manager::Mode,QString> map = getModesMap();
+    QMap<Manager::Mode,QString>::iterator i;
+    for (i = map.begin() ; i != map.end() ; i++) {
+        if (i.key() == *mode) return i.value();
+    }
+    return QString("none");
+}

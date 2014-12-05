@@ -215,6 +215,8 @@ void User::send(const QByteArray data) {
     }
 }
 void User::kill(const QString reason) {
+    flowChecker->setParent(0);
+    say("kicking user: " + reason);
     send(QString("you where kicked: reason: " + reason).toLocal8Bit());
     if (sockType == ServerSocket::Tcp) {
         QTcpSocket* sock = (QTcpSocket*) this->sock;

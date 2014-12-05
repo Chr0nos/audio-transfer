@@ -12,7 +12,12 @@ FlowChecker::FlowChecker(AudioFormat *format, const int checkInterval, QObject *
     this->format = format;
     timer.setParent(this);
     timer.setInterval(checkInterval);
+    this->lastBytesRead = 0;
     connect(&timer,SIGNAL(timeout()),this,SLOT(check()));
+}
+FlowChecker::~FlowChecker() {
+    stop();
+    disconnect(&timer,SIGNAL(timeout()),this,SLOT(check()));
 }
 
 bool FlowChecker::start() {
@@ -26,8 +31,9 @@ bool FlowChecker::start() {
     return true;
 }
 void FlowChecker::check() {
+    //the parent will set this to 0 in case of user deletion
+    if (!this->parent()) return;
     User* user = qobject_cast<User*>(this->parent());
-    if (!user) return;
     const int bytesRead = user->getBytesCount();
 
     const int neededSpeed = format->getBytesSizeForDuration(timer.interval());
@@ -37,17 +43,29 @@ void FlowChecker::check() {
 
     const int speed = bytesRead - lastBytesRead;
 
-    if (!speed) user->kill("afk");
+    if (!speed) {
+        stop();
+        user->kill("afk");
+        return;
+    }
     else if (!enableFlowKick);
     else if (speed > maxSpeed) {
         say("user is sending too much data: overflow attemp ?");
 
         //in case of an overflow attemps, it's realy more dangerous than underflow so: banning the user for 2 mins
-        if (warningCount++ > 3) user->ban("overflow",120000);
+        if (warningCount++ > 3) {
+            stop();
+            user->ban("overflow",120000);
+            return;
+        }
     }
     else if (speed < minSpeed) {
         say("user is not sending enoth data: buffer underflow prevention.");
-        if (warningCount++ > 3) user->kill("underflow");
+        if (warningCount++ > 3) {
+            stop();
+            user->kill("underflow");
+            return;
+        }
     }
     else warningCount = 0;
 
@@ -64,4 +82,6 @@ void FlowChecker::setFlowKick(const bool mode) {
 }
 void FlowChecker::stop() {
     timer.stop();
+    lastBytesRead = 0;
+    warningCount = 0;
 }

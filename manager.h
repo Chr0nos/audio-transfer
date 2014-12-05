@@ -23,6 +23,7 @@
 #include <QtMultimedia/QAudioDeviceInfo>
 #include <QObject>
 #include <QIODevice>
+#include <QMap>
 
 class Manager : public QObject
 {
@@ -88,6 +89,9 @@ public:
     bool isRecording();
     static QStringList intListToQStringList(QList<int> source);
     static QStringList getLocalIps(const bool ignoreLocal = true);
+    static QMap<Mode,QString> getModesMap();
+    static Mode getModeFromString(const QString *name);
+    static QString getStringFromMode(const Manager::Mode *mode);
 
 private:
     userConfig config;

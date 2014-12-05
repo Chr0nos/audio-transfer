@@ -11,6 +11,7 @@ class FlowChecker : public QObject
     Q_OBJECT
 public:
     explicit FlowChecker(AudioFormat* format,const int checkInterval,QObject *parent = 0);
+    ~FlowChecker();
     bool start();
     int getInterval();
     void setFlowKick(const bool mode);

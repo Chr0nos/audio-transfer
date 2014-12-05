@@ -10,12 +10,14 @@
 
 #include <QTextStream>
 #include <QAudioDeviceInfo>
+#include <QTime>
 
 Comline::Comline(QStringList *argList, QObject *parent) :
     QObject(parent)
 {
     bDebug = true;
     quiet = false;
+    sayUseTime = false;
     lastReadedValue = 0;
     ini = new Readini(MainWindow::getConfigFilePath(),this);
 
@@ -97,6 +99,10 @@ bool Comline::initConfig() {
 #ifdef PULSE
     mc.modeInput = Manager::PulseAudio;
 #endif
+#ifdef PORTAUDIO
+    mc.portAudio.deviceIdInput = 0;
+    mc.portAudio.deviceIdOutput = 0;
+#endif
     mc.modeOutput = Manager::Tcp;
     mc.tcpTarget.port = 1042;
     loadIni();
@@ -123,7 +129,7 @@ void Comline::parse(QStringList *argList) {
                 << "-o <mode> : this this output mode" << endl
                 << "\tavailables modes are:" << endl
                 #ifdef PULSE
-                << "\t- pulse (default input) : pulseaudio api" << endl
+                << "\t- pulse (default input)" << endl
                 #endif
                 #ifdef MULTIMEDIA
                 << "\t- native" << endl
@@ -141,12 +147,17 @@ void Comline::parse(QStringList *argList) {
                 << "-n <filePath> : load the specified ini config file path" << endl
                 << "-f <freq> : set the 'freq' as format frequency (default: 44100)" << endl
                 << "-d : turn on debug mode" << endl
+                << "-z : enable time and time zone" << endl
                 << "-h : show this help" << endl
            #ifdef SERVER
                 << "--- For server mode only ---" << endl
                 << "--server : run in server mode (input will be ignored)" << endl
                 << "--server-type <type> : set type of incoming connection must be (tcp or udp) (tcp is default)" << endl
                 << "--pid <filePath> : write the server process pid to the specified file" << endl
+           #endif
+           #ifdef DEBUG
+                 << "--test-cricular : run ring buffer main class self test (debug)" << endl
+                 << "--test-device : run ring buffer device test (debug)" << endl
            #endif
                 << "-platform offscreen : allow you to run the program withous any X connection" << endl
                 << "end of help" << endl;
@@ -175,6 +186,9 @@ void Comline::parse(QStringList *argList) {
         else if (arg == "-d") {
             say("debug mode turned on !");
             bDebug = true;
+        }
+        else if (arg == "-z") {
+            sayUseTime = true;
         }
 #ifdef SERVER
         else if (arg == "--server") {
@@ -246,7 +260,7 @@ void Comline::parse(QStringList *argList) {
                     value = raw.first();
                     raw.removeFirst();
                 }
-                Manager::Mode mode = stringToMode(&value);
+                Manager::Mode mode = Manager::getModeFromString(&value);
                 if (mode == Manager::None) {
                     debug("unknow string mode: " + value);
                     exit(1);
@@ -329,6 +343,9 @@ void Comline::parse(QStringList *argList) {
                 file.close();
             }
 
+            //lets handle this by Qt itself
+            else if (arg == "-platform");
+
             else say("unknow argument: " + arg);
         }
         else say("option " + arg + " passed but argument is missing !");
@@ -337,25 +354,11 @@ void Comline::parse(QStringList *argList) {
     if (!serverMode) start();
     else srv->listen(serverType);
 }
-Manager::Mode Comline::stringToMode(const QString *name) {
-#ifdef MULTIMEDIA
-    if (*name == "native") return Manager::Device;
-#endif
-#ifdef PULSE
-   else if (*name == "pulse") return Manager::PulseAudio;
-#endif
-#ifdef PORTAUDIO
-    else if (*name == "portaudio") return Manager::PortAudio;
-#endif
-    else if (*name == "tcp") return Manager::Tcp;
-    else if (*name == "udp") return Manager::Udp;
-    else if (*name == "zero") return Manager::Zero;
-    else if (*name == "pipe") return Manager::Pipe;
-    else if (*name == "file") return Manager::File;
-    return Manager::None;
-}
 void Comline::say(const QString message) {
-    if (!quiet) *out << message << endl;
+    if (!quiet) {
+        if (sayUseTime) *out << QTime::currentTime().toString("hh:mm:ss t : ");
+        *out << message << endl;
+    }
 }
 void Comline::loadIni() {
     if ((ini) && (ini->exists())) {

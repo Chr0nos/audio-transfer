@@ -51,6 +51,10 @@ src_configure() {
 pkg_preinst() {
 	if use systemd; then
 		enewuser audio-transfer -1 /dev/null /home/audio-transfer audio
+		dodir /home/audio-transfer
+		fowners audio-transfer /home/audio-transfer
+                fowners audio-transfer /etc/audio-transfer/
+                fowners audio-transfer /etc/audio-transfer/server.ini
 	fi
 }
 src_install() {
@@ -60,8 +64,6 @@ src_install() {
 		if use systemd; then
 			insinto /usr/lib/systemd/system/
 			doins ./server/audio-transfer-server.service
-			fowners audio-transfer /etc/audio-transfer/
-			fowners audio-transfer /etc/audio-transfer/server.ini
 		fi
 	fi
 	insinto /usr/bin

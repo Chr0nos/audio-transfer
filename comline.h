@@ -34,6 +34,7 @@ private:
     void say(const QString message);
     bool bDebug;
     bool quiet;
+    bool sayUseTime;
     QString iniPath;
     void loadIni();
 #ifdef SERVER
