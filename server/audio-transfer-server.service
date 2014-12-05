@@ -1,5 +1,6 @@
 [Unit]
 Description=Audio-Transfer Server
+After=dbus.service
 After=network.target
 
 [Service]
