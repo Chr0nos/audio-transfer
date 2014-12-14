@@ -34,7 +34,7 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
 
     mc.bufferSize = 0;
 
-    //creating the default audio format
+    //creating the default audio format (Todo: load default from the ini file)
     mc.format = new AudioFormat();
     mc.format->setChannelCount(2);
     mc.format->setCodec("audio/pcm");
@@ -50,10 +50,10 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     mc.devIn = this->inputDevice;
     mc.modeInput = Manager::Raw;
 
-    mc.modeOutput = Manager::Device;
-#ifdef PULSE
-    mc.modeOutput = Manager::PulseAudio;
-#endif
+
+    const QString moduleName = getIni()->getValue("general","output");
+    mc.modeOutput = Manager::getModeFromString(&moduleName);
+
     mc.devicesNames.output = this->objectName();
     //if the new user is localhost: let's just mute him (just to prevent ears/speakers to explode :p)
     if (this->objectName() == "127.0.0.1") mc.modeOutput = Manager::Zero;
@@ -72,7 +72,10 @@ User::~User() {
     }
     //in udp you MUST dont close the socket.
 
-    if (flowChecker) flowChecker->deleteLater();
+    if (flowChecker) {
+        disconnect(flowChecker,SIGNAL(debug(QString)),this,SLOT(say(QString)));
+        flowChecker->deleteLater();
+    }
     manager->deleteLater();
     //we dont delete 'format' here because the manager will do this :)
 }
@@ -139,8 +142,8 @@ void User::initUser() {
 
 void User::sockRead(const QByteArray* data) {
     //this is a Udp sockread
-    QUdpSocket* sock = (QUdpSocket*) this->sock;
-    (void) sock;
+    //QUdpSocket* sock = (QUdpSocket*) this->sock;
+    //(void) sock;
     const int size = data->size();
 
     if ((!bytesRead) && (!managerStarted)) {
@@ -258,4 +261,7 @@ int User::getSpeed() {
     speedLastCheckTime = QTime::currentTime();
     lastBytesRead = bytesRead;
     return speed;
+}
+Readini* User::getIni() {
+    return qobject_cast<UserHandler*>(this->parent())->getIni();
 }

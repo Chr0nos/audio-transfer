@@ -37,6 +37,12 @@ bool ServerMain::listen(ServerSocket::type type) {
             f->setSampleRate(96000);
             f->setSampleSize(16);
             f->setChannelCount(2);
+
+        #ifdef PULSE
+                ini->setValue("general","output","pulse");
+        #else
+                ini->setValue("general","output","native");
+        #endif
             say("using generic configuration for default audio format: 96khz, 16bits , 2 channels");
         }
         else {
@@ -47,6 +53,7 @@ bool ServerMain::listen(ServerSocket::type type) {
             f->setChannelCount(ini->getValue("format","channels").toInt());
             say("done.");
         }
+
         formatDefault = f;
 
     }

@@ -1,4 +1,5 @@
 #include "flowchecker.h"
+#include "size.h"
 
 #ifndef USER_H
 #include "server/user.h"
@@ -43,14 +44,15 @@ void FlowChecker::check() {
 
     const int speed = bytesRead - lastBytesRead;
 
+    //here we detect if the user is afk we kick him withous any warning
     if (!speed) {
         stop();
         user->kill("afk");
         return;
     }
-    else if (!enableFlowKick);
+    else if (!enableFlowKick); //DONT EVEN DARE TO PUT A RETURN HERE !!! (i'm serious ! we need fallback bellow)
     else if (speed > maxSpeed) {
-        say("user is sending too much data: overflow attemp ?");
+        say("user is sending too much data: overflow attemp ? (" + Size::getWsize(speed) + " instead of " + Size::getWsize(neededSpeed) + ")");
 
         //in case of an overflow attemps, it's realy more dangerous than underflow so: banning the user for 2 mins
         if (warningCount++ > 3) {

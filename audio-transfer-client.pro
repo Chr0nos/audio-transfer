@@ -13,15 +13,19 @@
 
 QT       += core gui network
 CONFIG   += c++11
-DEFINES += MULTIMEDIA PULSE PORTAUDIO COMLINE SERVER
+DEFINES += MULTIMEDIA PULSE PORTAUDIO COMLINE SERVER GUI
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = audio-transfer
 TEMPLATE = app
 
+contains(DEFINES,GUI) {
+    SOURCES += mainwindow.cpp
+    HEADERS += mainwindow.h
+}
+
 SOURCES += main.cpp\
-        mainwindow.cpp \
     manager.cpp \
     modules/tcpdevice.cpp \
     modules/udpdevice.cpp \
@@ -38,8 +42,7 @@ SOURCES += main.cpp\
     graphicgenerator.cpp \
     modules/circulardevice.cpp
 
-HEADERS  += mainwindow.h \
-    manager.h \
+HEADERS  += manager.h \
     main.h \
     readini.h \
     modules/pulse.h \

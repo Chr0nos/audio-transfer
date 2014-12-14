@@ -1,9 +1,11 @@
-#include "mainwindow.h"
 #ifdef COMLINE
+#include <QCoreApplication>
 #include "comline.h"
 #endif
+#ifdef GUI
 #include <QApplication>
-#include <QCoreApplication>
+#include "mainwindow.h"
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -22,16 +24,19 @@ int main(int argc, char *argv[])
         //argList << "--server" << "--server-type" << "udp";
 
         if (!argList.isEmpty()) {
+            //the start is triggered by the constructor
             Comline* com = new Comline(&argList);
             (void) com;
-            //com->start();
             return a.exec();
         }
         return a.exec();
     }
 #endif
+#ifdef GUI
     QApplication a(argc,argv);
     MainWindow w;
     w.show();
     return a.exec();
+#endif
+    return 0;
 }

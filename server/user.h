@@ -27,6 +27,7 @@ public:
     QHostAddress getHostAddress();
     int getSpeed();
     ServerSecurity* callSecurity();
+    Readini* getIni();
 private:
     QObject* sock;
     Manager* manager;

@@ -291,7 +291,7 @@ QMap<Manager::Mode,QString> Manager::getModesMap() {
     map[Manager::PortAudio] = "portaudio";
 #endif
 #ifdef PULSE
-    map[Manager::PulseAudio] = "pulseaudio";
+    map[Manager::PulseAudio] = "pulse";
 #endif
 #ifdef PULSEASYNC
     map[Manager::PulseAudioAsync] = "pulseasync";

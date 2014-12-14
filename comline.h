@@ -30,7 +30,6 @@ private:
     Readini* ini;
     bool initConfig();
     bool initResult;
-    Manager::Mode stringToMode(const QString* name);
     void say(const QString message);
     bool bDebug;
     bool quiet;

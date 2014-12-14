@@ -81,14 +81,7 @@ bool Comline::initConfig() {
     mc.format->setSampleRate(44100);
     mc.format->setSampleSize(16);
     mc.format->setChannelCount(2);
-/*
-    QList<QAudioDeviceInfo> devices = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
-    if (devices.isEmpty()) {
-        say("no devices availables, sorry");
-        exit(0);
-    }
-    QAudioDeviceInfo info = devices.first();
-  */
+
     mc.bufferSize = 0;
     mc.bufferMaxSize = 2*1024*1024; //2Mb
 
@@ -352,7 +345,9 @@ void Comline::parse(QStringList *argList) {
 
     }
     if (!serverMode) start();
+#ifdef SERVER
     else srv->listen(serverType);
+#endif
 }
 void Comline::say(const QString message) {
     if (!quiet) {
