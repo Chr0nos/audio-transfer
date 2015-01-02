@@ -17,11 +17,13 @@ public:
     void killAll(const QString reason);
     bool contains(const QObject* socket);
     int indexOf(const QObject* socket);
+    int indexOf(const User* user);
     User* at(const int pos);
     quint64 getBytesRead();
     Readini* getIni();
     ServerSecurity* callSecurity();
     quint64 getBytesReadForConnected();
+    int countUsers();
 private:
     QList<User*> users;
     Manager::userConfig defaultConfig;

@@ -42,8 +42,13 @@ void ServerSecurity::blockWithIpTables(const QHostAddress *address) {
     //no iptables on win32
     return;
 #else
+
+    const ServerSocket::type type = qobject_cast<ServerMain*>(this->parent())->getServerType();
+    if (type == ServerSocket::Invalid) return;
+    const QString typeString = ServerSocket::typeToString(type).toLower();
+
     QStringList args;
-    args << "-A" << "INPUT" << "-s" << address->toString() << "-j" << "DROP";
+    args << "-A" << "INPUT" << "-p" << typeString << "-s" << address->toString() << "-j" << "DROP";
     QProcess p(this);
     const int result = p.execute("iptables",args);
     if (!result) say("blocked address with iptable: " + address->toString());

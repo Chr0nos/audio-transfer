@@ -14,11 +14,13 @@ public:
     ~PipeDevice();
     bool open(OpenMode mode);
     void say(const QString message);
+    void setHexOutputEnabled(const bool mode);
 private:
     QFile *file;
     QTimer *timer;
     qint64 readData(char *data, qint64 maxlen);
     qint64 writeData(const char *data, qint64 len);
+    bool hexOutput;
 
 signals:
     void debug(const QString message);

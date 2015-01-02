@@ -1,9 +1,10 @@
-#include "mainwindow.h"
+#include "ui/mainwindow.h"
 #include "ui_mainwindow.h"
 #include "manager.h"
 #include "readini.h"
 #include "size.h"
-#include "graphicgenerator.h"
+#include "ui/graphicgenerator.h"
+//#include "ui/soundanalyser.h"
 
 #include <QtGui>
 #include <QString>
@@ -124,13 +125,12 @@ void MainWindow::on_pushButton_clicked()
         mc.format->setSampleSize(ui->samplesSize->currentText().toInt());
         mc.format->setChannelCount(ui->channelsCount->value());
 
-        mc.filePathOutput = ui->destinationFilePath->text();
-        mc.filePathInput = ui->sourceFilePath->text();
+        mc.file.output = ui->destinationFilePath->text();
+        mc.file.input = ui->sourceFilePath->text();
         mc.devices.input = ui->sourcesList->currentIndex();
         mc.devices.output = ui->destinationDeviceCombo->currentIndex();
         mc.bufferSize = bitrate * ui->destinationTcpBufferDuration->value() / 1000 / 100;
         mc.bufferMaxSize = 2097152; //2Mb
-        mc.devIn = NULL;
         if (ui->clientName->isChecked()) mc.devicesNames.output = ui->clientNameEdit->text();
 
 #ifdef PORTAUDIO
@@ -167,9 +167,9 @@ void MainWindow::on_pushButton_clicked()
                 ui->statusBar->showMessage("Error: invalid port: refusing to connect");
                 return;
             }
-            mc.tcpTarget.host = host;
-            mc.tcpTarget.port = port;
-            mc.tcpTarget.sendConfig = true;
+            mc.network.host = host;
+            mc.network.port = port;
+            mc.network.sendConfig = true;
             mc.modeOutput = Manager::Tcp;
 
             ui->statusBar->showMessage("Connecting to " + host + " on port " + QString().number(port));
@@ -177,7 +177,7 @@ void MainWindow::on_pushButton_clicked()
         else if (ui->destinationRadioPulseAudio->isChecked()) {
             debug("using pulseaudio target: this is an experimental feature!");
             if (!ui->destinationPulseAudioLineEdit->text().isEmpty()) {
-                mc.pulseTarget = ui->destinationPulseAudioLineEdit->text();
+                mc.pulse.target = ui->destinationPulseAudioLineEdit->text();
             }
             mc.modeOutput = Manager::PulseAudio;
             //mc.modeOutput = Manager::PulseAudioAsync;
@@ -637,3 +637,16 @@ void MainWindow::on_buttonSaveGraphic_clicked()
     ui->graphicViewLabel->pixmap()->toImage().save(fileName);
     debug("graphic saved to " + fileName);
 }
+
+void MainWindow::on_actionExit_triggered()
+{
+    exit(0);
+}
+/*
+void MainWindow::on_actionFreqgen_triggered()
+{
+    SoundAnalyser a(this);
+    a.exec();
+    a.show();
+}
+*/

@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QList>
 
 class AudioFormat
 {
@@ -22,6 +23,7 @@ public:
     quint64 getBytesSizeForDuration(const int msecs);
     const QString getFormatTextInfo();
     bool setFormat(AudioFormat *format);
+    static QList<int> getCommonSamplesRates();
 private:
     int sampleRate;
     int sampleSize;

@@ -4,6 +4,7 @@ PipeDevice::PipeDevice(const QString name, QObject *parent) :
     QIODevice(parent)
 {
     this->setObjectName(name);
+    this->hexOutput = false;
     file = NULL;
     timer = new QTimer(this);
     timer->setInterval(100);
@@ -15,6 +16,7 @@ PipeDevice::~PipeDevice() {
         if (file->isOpen()) file->close();
         delete(file);
     }
+    stop();
     delete(timer);
 }
 bool PipeDevice::open(OpenMode mode) {
@@ -60,8 +62,19 @@ qint64 PipeDevice::readData(char *data, qint64 maxlen) {
 
 qint64 PipeDevice::writeData(const char *data, qint64 len) {
     if (!file) return -1;
+    if (hexOutput) {
+        //this is the hexadecimal output debug
+        QByteArray hex = QByteArray::fromRawData(data,len).toHex();
+        return file->write(hex);
+    }
     return file->write(data,len);
 }
 void PipeDevice::stop() {
+    timer->disconnect();
     say("stoped");
+}
+void PipeDevice::setHexOutputEnabled(const bool mode) {
+    this->hexOutput = mode;
+    if (mode) say("switching to hexadecimal debug output");
+    else say("disabling hexadecimal mode");
 }

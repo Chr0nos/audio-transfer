@@ -2,7 +2,7 @@
 #define MANAGER_H
 
 #include "audioformat.h"
-
+#include "circularbuffer.h"
 
 #include "modules/nativeaudio.h"
 #include "modules/tcpdevice.h"
@@ -12,12 +12,17 @@
 
 #ifdef PULSE
     #include "modules/pulse.h"
+#endif
+
+#ifdef PULSEASYNC
     #include "modules/pulsedeviceasync.h"
 #endif
 
 #ifdef PORTAUDIO
     #include "modules/portaudiodevice.h"
 #endif
+
+#include "modules/freqgen.h"
 
 #include <QtMultimedia/QAudio>
 #include <QtMultimedia/QAudioDeviceInfo>
@@ -42,12 +47,8 @@ public:
         PortAudio = 7,
         PulseAudioAsync = 8,
         Pipe = 9,
-        Raw = 10
-    };
-    struct tcpConfig {
-        QString host;
-        int port;
-        bool sendConfig;
+        Raw = 10,
+        FreqGen = 11
     };
     struct portAudioSpecs {
         int deviceIdInput;
@@ -58,25 +59,46 @@ public:
        Mode modeInput;
        Mode modeOutput;
        AudioFormat *format;
-       tcpConfig tcpTarget;
        struct devicesId {
            int input;
            int output;
        };
        devicesId devices;
-       QString filePathOutput;
-       QString filePathInput;
+
        int bufferSize;
        int bufferMaxSize;
-       QString pulseTarget;
        portAudioSpecs portAudio;
-       QIODevice* devIn;
-       QIODevice* devOut;
+
        struct Name {
            QString input;
            QString output;
        };
        Name devicesNames;
+       struct pipeCfg {
+           bool hexMode;
+       };
+       struct pulseCfg {
+           QString target;
+       };
+       struct rawCfg {
+           QIODevice* devIn;
+           QIODevice* devOut;
+       };
+       struct networkCfg {
+           QString host;
+           qint16 port;
+           bool sendConfig;
+       };
+       struct fileCfg {
+           QString output;
+           QString input;
+       };
+
+       pipeCfg pipe;
+       pulseCfg pulse;
+       rawCfg raw;
+       networkCfg network;
+       fileCfg file;
     };
 
     explicit Manager(QObject *parent = 0);
@@ -100,7 +122,7 @@ private:
     QIODevice *devIn;
     QIODevice *devOut;
     AudioFormat *format;
-    QByteArray buffer;
+    CircularBuffer *buffer;
     quint64 bytesCount;
     bool bisRecording;
     void debugList(const QStringList list);

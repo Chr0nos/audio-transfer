@@ -5,6 +5,7 @@
 /* this class manage all connected users
  * the user list is stored in this->users
  * each user is a "User*" object
+ * TODO: handle each user on a separate Thread
  * */
 
 UserHandler::UserHandler(QObject *parent) :
@@ -31,7 +32,9 @@ void UserHandler::sockClose(User *user) {
     bytesRead += user->getBytesCount();
 
     say("deleting user: " + user->objectName());
-    delete(user);
+    user->disconnect();
+    user->deleteLater();
+    //delete(user);
 
     //re-assign the pointer value to NULL just in case
     user = NULL;
@@ -79,6 +82,16 @@ int UserHandler::indexOf(const QObject *socket) {
     }
     return -1;
 }
+int UserHandler::indexOf(const User *user) {
+    QList<User*>::iterator i;
+    int pos = -1;
+    for (i = users.begin() ; i != users.end() ; i++) {
+        pos++;
+        if ((User*) *i == user) return pos;
+    }
+    return -1;
+}
+
 User* UserHandler::at(const int pos) {
     if (users.count() < pos) return NULL;
     return users.at(pos);
@@ -101,4 +114,7 @@ quint64 UserHandler::getBytesReadForConnected() {
     QList<User*>::iterator i;
     for (i = users.begin() ; i != users.end() ; i++) size += (*i)->getBytesCount();
     return size;
+}
+int UserHandler::countUsers() {
+    return users.count();
 }

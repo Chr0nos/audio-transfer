@@ -3,6 +3,8 @@
 #include "server/serversocket.h"
 #include "server/security/serversecurity.h"
 
+//TODO: implement a CircularBuffer to take care about remote user buffer
+
 ServerMain::ServerMain(const QString configFilePath, QObject *parent) :
     QObject(parent)
 {
@@ -81,7 +83,13 @@ void ServerMain::say(const QString message) {
     emit(debug("ServerMain: " + message));
 }
 void ServerMain::sockOpen(QTcpSocket *newSock) {
-    User *newUser = new User(newSock,ServerSocket::Tcp,this);
+    const int max = ini->getValue("general","maxUsers").toInt();
+    if ((max) && (users->countUsers() >= max)) {
+        say("maximum users count reach: " + QString::number(max) + " -> rejecting new user from: " + newSock->peerAddress().toString());
+        newSock->deleteLater();
+        return;
+    }
+    User *newUser = new User(newSock,ServerSocket::Tcp,this->users);
     newSock->setObjectName(newSock->peerAddress().toString());
     say("adding new user: " + newSock->objectName());
     users->append(newUser);
@@ -90,16 +98,18 @@ void ServerMain::sockOpen(QTcpSocket *newSock) {
 
 void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const QByteArray *data, QUdpSocket *udp) {
     if (data->isEmpty()) return;
-    (void) senderPort;
     User* user = NULL;
+    (void) senderPort;
     const int pos = users->indexOf(udp);
     if (pos < 0) {
+        const int max = ini->getValue("general","maxUsers").toInt();
+        if ((max) && (users->countUsers() >= max)) return;
         if (!security->isAuthorisedHost(sender)) {
             //say("rejected data from: " + sender->toString());
             return;
         }
         say("adding udp user: " + sender->toString());
-        user = new User(udp,ServerSocket::Udp,this);
+        user = new User(udp,ServerSocket::Udp,this->users);
         user->setObjectName(sender->toString());
 
         users->append(user);
@@ -111,4 +121,8 @@ void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const
 }
 Readini* ServerMain::getIni() {
     return ini;
+}
+ServerSocket::type ServerMain::getServerType() {
+    if (!this->srv) return ServerSocket::Invalid;
+    return this->srv->getServerType();
 }

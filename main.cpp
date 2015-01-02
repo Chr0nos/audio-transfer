@@ -4,7 +4,7 @@
 #endif
 #ifdef GUI
 #include <QApplication>
-#include "mainwindow.h"
+#include "ui/mainwindow.h"
 #endif
 
 int main(int argc, char *argv[])
@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
         //i use this to debug the app, ignore it
         //argList.clear();
         //argList << "--server" << "--server-type" << "udp";
+        //argList << "-c" << "1" << "-f" << "44100" << "-s" << "8" << "-i" << "pulse" << "-o" << "zero";
 
         if (!argList.isEmpty()) {
             //the start is triggered by the constructor

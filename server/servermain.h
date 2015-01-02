@@ -18,6 +18,7 @@ public:
     bool listen(ServerSocket::type type);
     Readini* getIni();
     ServerSecurity* security;
+    ServerSocket::type getServerType();
 private:
     ServerSocket* srv;
     UserHandler* users;

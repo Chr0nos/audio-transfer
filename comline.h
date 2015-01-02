@@ -39,6 +39,7 @@ private:
 #ifdef SERVER
     ServerMain* srv;
 #endif
+    void showCommonRates();
 
 signals:
     void quit();

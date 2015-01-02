@@ -18,7 +18,6 @@ FlowChecker::FlowChecker(AudioFormat *format, const int checkInterval, QObject *
 }
 FlowChecker::~FlowChecker() {
     stop();
-    disconnect(&timer,SIGNAL(timeout()),this,SLOT(check()));
 }
 
 bool FlowChecker::start() {
@@ -39,10 +38,10 @@ void FlowChecker::check() {
 
     const int neededSpeed = format->getBytesSizeForDuration(timer.interval());
     //here the +- tolerance is 20%
-    const int maxSpeed = neededSpeed *1.2;
-    const int minSpeed = neededSpeed *0.8;
+    const unsigned int maxSpeed = neededSpeed *1.2;
+    const unsigned int minSpeed = neededSpeed *0.8;
 
-    const int speed = bytesRead - lastBytesRead;
+    const unsigned int speed = bytesRead - lastBytesRead;
 
     //here we detect if the user is afk we kick him withous any warning
     if (!speed) {
@@ -84,6 +83,7 @@ void FlowChecker::setFlowKick(const bool mode) {
 }
 void FlowChecker::stop() {
     timer.stop();
+    timer.disconnect();
     lastBytesRead = 0;
     warningCount = 0;
 }

@@ -37,6 +37,10 @@ bool ServerSocket::startServer(ServerSocket::type type, const int port) {
             return true;
             break;
         }
+        case ServerSocket::Invalid: {
+            return false;
+            break;
+        }
     }
     return false;
 }
@@ -93,6 +97,8 @@ QString ServerSocket::typeToString(ServerSocket::type type) {
             return QString("Udp");
         case Tcp:
             return QString("Tcp");
+        case Invalid:
+            return QString("Invalid");
     }
     return QString("Unknow");
 }

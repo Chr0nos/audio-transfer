@@ -15,6 +15,7 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     this->flowChecker = NULL;
     if (type == ServerSocket::Tcp) {
         QTcpSocket* tcp = (QTcpSocket*) socket;
+        tcp->setParent(this);
         connect(tcp,SIGNAL(stateChanged(QAbstractSocket::SocketState)),this,SLOT(sockStateChanged(QAbstractSocket::SocketState)));
         connect(tcp,SIGNAL(readyRead()),this,SLOT(sockRead()));
         this->setObjectName(tcp->peerAddress().toString());
@@ -47,12 +48,21 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
 
     //opening the buffer and defining it for the manager
     this->inputDevice->open(QIODevice::ReadWrite);
-    mc.devIn = this->inputDevice;
+    mc.raw.devIn = this->inputDevice;
     mc.modeInput = Manager::Raw;
 
 
-    const QString moduleName = getIni()->getValue("general","output");
+    QString moduleName = getIni()->getValue("general","output");
+
     mc.modeOutput = Manager::getModeFromString(&moduleName);
+    //this could appens if the configuration file was not configured or badly configured, so we load the "default" output
+    if (mc.modeOutput == Manager::None) {
+        #ifdef PULSE
+            mc.modeOutput = Manager::PulseAudio;
+        #else
+            mc.modeOutput = Manager::Device;
+        #endif
+    }
 
     mc.devicesNames.output = this->objectName();
     //if the new user is localhost: let's just mute him (just to prevent ears/speakers to explode :p)
@@ -67,16 +77,21 @@ User::~User() {
     say("deleting object");
     if (sockType == ServerSocket::Tcp) {
         QTcpSocket* sock = (QTcpSocket*) this->sock;
-        sock->close();
+        if (sock->isOpen()) sock->close();
+        sock->disconnect();
         sock->deleteLater();
     }
     //in udp you MUST dont close the socket.
 
     if (flowChecker) {
-        disconnect(flowChecker,SIGNAL(debug(QString)),this,SLOT(say(QString)));
-        flowChecker->deleteLater();
+        flowChecker->stop();
+        flowChecker->disconnect();
+        delete(flowChecker);
     }
-    manager->deleteLater();
+    if (manager) {
+        manager->disconnect();
+        delete(manager);
+    }
     //we dont delete 'format' here because the manager will do this :)
 }
 
@@ -165,7 +180,7 @@ bool User::readUserConfig(const QByteArray *data) {
     if (rawUserConfig.isEmpty()) say("no user config");
     else if (exp.indexIn(rawUserConfig)) say("no user config");
     else {
-        Readini* ini = qobject_cast<ServerMain*>(this->parent())->getIni();
+        Readini* ini = qobject_cast<UserHandler*>(this->parent())->getIni();
         if (!ini->isKey("general","userConfig"));
         else if (!ini->getValue("general","userConfig").toInt()) {
             say("refused user config: not allowed in the configuration file.");

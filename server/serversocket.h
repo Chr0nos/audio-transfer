@@ -13,7 +13,8 @@ public:
     explicit ServerSocket(QObject *parent = 0);
     enum type {
         Tcp = 0,
-        Udp = 1
+        Udp = 1,
+        Invalid = 2
     };
     bool startServer(ServerSocket::type type,int port);
     QUdpSocket* getUdpSocket();

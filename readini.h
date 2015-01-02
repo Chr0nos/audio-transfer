@@ -32,6 +32,7 @@ public:
     QMap<QString,QMap<QString,QString> > getRawData();
     void clear();
     QString getFilePath();
+    void reload();
 
 private:
     QFile file;

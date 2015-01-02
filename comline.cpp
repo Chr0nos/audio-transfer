@@ -1,7 +1,9 @@
 #include "comline.h"
 #include "manager.h"
 #include "readini.h"
-#include "mainwindow.h"
+#ifdef GUI
+#include "ui/mainwindow.h"
+#endif
 #include "size.h"
 #include "circularbuffer.h"
 #ifdef SERVER
@@ -51,7 +53,7 @@ bool Comline::start() {
     say("codec: " + mc.format->getCodec());
 
     if (manager->start()) {
-        timer->start();
+        if (timer) timer->start();
         return true;
     }
     else say("failed to start manager");
@@ -64,7 +66,9 @@ void Comline::showStats() {
     if (!manager) return;
     quint64 size = manager->getTransferedSize();
     int speed = (size - lastReadedValue) / timer->interval() * 1000;
-    *out << "transfered data: " << Size::getWsize(size)  << " speed: " << Size::getWsize(speed) << "/s needed average: " << Size::getWsize(mc.format->getBytesSizeForDuration(1000)) << "/s" << endl;
+    say("transfered data: " + Size::getWsize(size)  + " speed: " +
+        Size::getWsize(speed) + "/s needed average: " +
+        Size::getWsize(mc.format->getBytesSizeForDuration(1000)) + "/s");
     lastReadedValue = size;
 }
 void Comline::sockClose() {
@@ -97,18 +101,16 @@ bool Comline::initConfig() {
     mc.portAudio.deviceIdOutput = 0;
 #endif
     mc.modeOutput = Manager::Tcp;
-    mc.tcpTarget.port = 1042;
+    mc.network.port = 1042;
     loadIni();
 
-    mc.tcpTarget.sendConfig = true;
+    mc.network.sendConfig = true;
 
 #ifdef PULSE
     mc.modeInput = Manager::PulseAudio;
 #else
     mc.modeInput = Manager::Device;
 #endif
-    mc.devIn = NULL;
-    mc.devOut = NULL;
     return true;
 }
 
@@ -135,13 +137,16 @@ void Comline::parse(QStringList *argList) {
                 << "\t- udp:<host>[:port]" << endl
                 << "\t- file:<filePath>" << endl
                 << "\t- pipe" << endl
+                << "\t- freqgen" << endl
                 << "\tend of availables modes" << endl
                 << "-t <interval (msecs)> : set the interval between each speed refresh" << endl
                 << "-n <filePath> : load the specified ini config file path" << endl
                 << "-f <freq> : set the 'freq' as format frequency (default: 44100)" << endl
+                << "-s <sample Size> : set the sample size to the value, valids samples sizes are: 8, 16, 24, 32 (depending on hardware)" << endl
                 << "-d : turn on debug mode" << endl
                 << "-z : enable time and time zone" << endl
                 << "-h : show this help" << endl
+                << "-r : show indicatives bitrates usages for any modes" << endl
            #ifdef SERVER
                 << "--- For server mode only ---" << endl
                 << "--server : run in server mode (input will be ignored)" << endl
@@ -151,8 +156,9 @@ void Comline::parse(QStringList *argList) {
            #ifdef DEBUG
                  << "--test-cricular : run ring buffer main class self test (debug)" << endl
                  << "--test-device : run ring buffer device test (debug)" << endl
+                 << "--hex : need to be used with -o pipe: show the output as hexadecimal (for debug purpose)" << endl
            #endif
-                << "-platform offscreen : allow you to run the program withous any X connection" << endl
+                //<< "-platform offscreen : allow you to run the program withous any X connection" << endl
                 << "end of help" << endl;
         exit(0);
     }
@@ -182,6 +188,13 @@ void Comline::parse(QStringList *argList) {
         }
         else if (arg == "-z") {
             sayUseTime = true;
+        }
+        else if (arg == "--hex") {
+            mc.pipe.hexMode = true;
+        }
+        else if (arg == "-r") {
+            showCommonRates();
+            exit(0);
         }
 #ifdef SERVER
         else if (arg == "--server") {
@@ -262,22 +275,42 @@ void Comline::parse(QStringList *argList) {
                     if ((raw.count() == 1) && (raw.first() != "file")) {
                         //todo : fix this bug : detect is it's for input or output (this will be a hudge sh*t !)ls
                         say("using file path: " + raw.last());
-                        mc.filePathInput = raw.last();
-                        mc.filePathOutput = raw.last();
+                        mc.file.input = raw.last();
+                        mc.file.output = raw.last();
                     }
                     else {
                         say("require the file path as extra argument: file:<filePath>");
                         exit(1);
                     }
                 }
+#ifdef MULTIMEDIA
+                else if (mode == Manager::Device) {
+                    if (!raw.count());
+                    else if (raw.first() == "list") {
+                        say("devices list:");
+                        int count = 0;
+                        QStringList devices = NativeAudio::getDevicesNames(QAudio::AudioInput);
+                        for (QStringList::iterator i = devices.begin() ; i != devices.end() ; i++) {
+                            say(QString::number(count++) + ": " + *i);
+                        }
+                        say("end of list");
+                        exit(0);
+                    }
+                    else {
+                        mc.devices.input = raw.first().toInt();
+                        say("forced device: " + QString::number(mc.devices.input));
+                    }
+            }
+#endif
+
                 if (arg == "-o") {
                     mc.modeOutput = mode;
                     if ((mode == Manager::Tcp) || (mode == Manager::Udp)) {
                         //setting host at first argument
-                        if (raw.count() >= 1) mc.tcpTarget.host = raw.first();
+                        if (raw.count() >= 1) mc.network.host = raw.first();
 
                         //if there is a second argument, we assume it's the port number
-                        if ((raw.count() > 1) && (mc.tcpTarget.port = raw.at(1).toInt())) mc.tcpTarget.port = raw.at(1).toInt();
+                        if ((raw.count() > 1) && (mc.network.port = raw.at(1).toInt())) mc.network.port = raw.at(1).toInt();
 
                         //allowing user to specify a sender name with: -o tcp:<address>:<port>:<senderName>
                         if (raw.count() >= 3) mc.devicesNames.output = raw.at(2);
@@ -291,7 +324,8 @@ void Comline::parse(QStringList *argList) {
             }
             else if (arg == "-b") {
                 if (value.right(1) != "b") value = value + "b";
-                mc.bufferSize = Size::getRsize(value);
+                mc.bufferMaxSize = Size::getRsize(value);
+                mc.bufferSize = mc.bufferMaxSize;
                 say("buffer size has been set to " + QString::number(mc.bufferSize));
             }
             else if (arg == "-t") {
@@ -338,6 +372,13 @@ void Comline::parse(QStringList *argList) {
 
             //lets handle this by Qt itself
             else if (arg == "-platform");
+            else if (arg == "-s") {
+                if (!value.toInt()) {
+                    say("error: wrong sample size.");
+                    exit(1);
+                }
+                mc.format->setSampleSize(value.toInt());
+            }
 
             else say("unknow argument: " + arg);
         }
@@ -360,8 +401,8 @@ void Comline::loadIni() {
         //say("loading ini config file: " + ini->getFilePath());
         QStringList tcpInfo = ini->getValue("target","tcp").split(":");
         if (tcpInfo.count() == 2) {
-            mc.tcpTarget.host = tcpInfo.at(0);
-            mc.tcpTarget.port = tcpInfo.at(1).toInt();
+            mc.network.host = tcpInfo.at(0);
+            mc.network.port = tcpInfo.at(1).toInt();
         }
 
         mc.format->setCodec(ini->getValue("format","codec"));
@@ -373,4 +414,28 @@ void Comline::loadIni() {
 }
 void Comline::debugTrigger() {
     qDebug() << "debug trigger was called by" << sender() << qobject_cast<CircularDevice*>(sender())->bytesAvailable();
+}
+void Comline::showCommonRates() {
+    QList<int> rates = AudioFormat::getCommonSamplesRates();
+
+    say("indicatives bitrates usages:");
+    say("Channels\tSize\tRate\t\tBitrate");
+    int channels = 0;
+    while (channels++ < 8) {
+        int bits = 8;
+        while (bits <= 32) {
+            foreach (int rate,rates) {
+                const int bitrate = rate * bits * channels / 8;
+                QString rateString = Size::getWsize(rate,1000);
+                rateString = rateString.mid(0,rateString.length() -1).rightJustified(8,QChar(32));
+                say("" + QString::number(channels).rightJustified(5,QChar(32)) + "\t\t" +
+                    QString::number(bits) + "bits \t" +
+                    rateString + "hz\t" +
+                    Size::getWsize(bitrate).rightJustified(8,QChar(32)) + "/s"
+                    );
+            }
+            bits *= 2;
+        }
+    }
+    say("end");
 }

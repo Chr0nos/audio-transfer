@@ -1,4 +1,5 @@
 #include "manager.h"
+#include "size.h"
 
 #include <QString>
 #include <QIODevice>
@@ -13,6 +14,7 @@ Manager::Manager(QObject *parent) :
     config.modeInput = None;
     devIn = NULL;
     devOut = NULL;
+    buffer = NULL;
     bytesCount = 0;
     format = new AudioFormat();
     bisRecording = false;
@@ -20,12 +22,16 @@ Manager::Manager(QObject *parent) :
 }
 Manager::~Manager() {
     say("deleting manager");
-    if (devIn) devIn->deleteLater();
-    if (devOut) devOut->deleteLater();
+    if (devIn) delete(devIn);
+    if (devOut) delete(devOut);
+    if (buffer) delete(buffer);
     delete(format);
 }
 bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
-    if ((device) && ((*device))) (**device).deleteLater();
+    if ((device) && ((*device))) {
+        (**device).disconnect();
+        delete(*device);
+    }
     *device = NULL;
     QString name;
     QString* filePath;
@@ -37,16 +43,16 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
         target = config.modeInput;
         flag = QIODevice::ReadOnly;
         deviceId = config.devices.input;
-        filePath = &config.filePathInput;
-        rawDev = config.devIn;
+        filePath = &config.file.input;
+        rawDev = config.raw.devIn;
         if (!config.devicesNames.input.isEmpty()) name = config.devicesNames.input;
     }
     else if (mode == QAudio::AudioOutput) {
         target = config.modeOutput;
         flag = QIODevice::WriteOnly;
         deviceId = config.devices.output;
-        filePath = &config.filePathOutput;
-        rawDev = config.devOut;
+        filePath = &config.file.output;
+        rawDev = config.raw.devOut;
         if (!config.devicesNames.output.isEmpty()) name = config.devicesNames.output;
     }
 
@@ -62,20 +68,20 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
             break;
         }
         case Manager::Tcp: {
-            TcpDevice* tcpDevice = new TcpDevice(config.tcpTarget.host,config.tcpTarget.port,format,config.tcpTarget.sendConfig,this);
+            TcpDevice* tcpDevice = new TcpDevice(config.network.host,config.network.port,format,config.network.sendConfig,this);
             connect(tcpDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
             *device = tcpDevice;
             break;
         }
         case Manager::Udp: {
-            UdpDevice *udpDevice = new UdpDevice(config.tcpTarget.host,config.tcpTarget.port,format,config.tcpTarget.sendConfig,this);
+            UdpDevice *udpDevice = new UdpDevice(config.network.host,config.network.port,format,config.network.sendConfig,this);
             connect(udpDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
             *device = udpDevice;
             break;
         }
 #ifdef PULSE
         case Manager::PulseAudio: {
-            PulseDevice *pulseDevice = new PulseDevice(name,config.pulseTarget,format,this);
+            PulseDevice *pulseDevice = new PulseDevice(name,config.pulse.target,format,this);
             connect(pulseDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
             *device = pulseDevice;
             break;
@@ -112,6 +118,7 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
          case Manager::Pipe: {
             PipeDevice *pipeDevice = new PipeDevice(name + "PipeDevice socket",this);
             connect(pipeDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+            if (config.pipe.hexMode) pipeDevice->setHexOutputEnabled(true);
             *device = pipeDevice;
             break;
          }
@@ -131,6 +138,11 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
 #endif
          case Manager::Raw:
             *device = rawDev;
+            break;
+         case Manager::FreqGen:
+            Freqgen *freqgen = new Freqgen(format,this);
+            connect(freqgen,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+            *device = freqgen;
             break;
     }
     if (!*device) return false;
@@ -159,6 +171,10 @@ bool Manager::start() {
     else {
         emit(say("devices ok"));
         say("started");
+        if (config.bufferSize) {
+            say("creating buffer size for: " + Size::getWsize(config.bufferMaxSize));
+            buffer = new CircularBuffer(config.bufferMaxSize,"manager main buffer",this);
+        }
         bisRecording = true;
         bytesCount = 0;
         emit(started());
@@ -213,6 +229,10 @@ void Manager::transfer() {
     }
     QByteArray data = devIn->readAll();
     //QByteArray data = devIn->read(devIn->bytesAvailable());
+    if (!data.size()) {
+        say("warning: empty read.");
+        return;
+    }
 
     bytesCount += data.size();
     //in case of no buffer usage we dont copy data to buffer (better performance)
@@ -221,12 +241,10 @@ void Manager::transfer() {
     }
     else {
         //if the buffer size is too big: we just drop the datas to prevent memory overflow by this buffer
-        const int bsize = buffer.size();
-        if (bsize > config.bufferMaxSize) return;
-        buffer.append(data);
-        if (bsize >= config.bufferSize) {
-            devOut->write(buffer);
-            buffer.clear();
+        const int available = buffer->getAvailableBytesCount() + data.size();
+        buffer->append(data);
+        if (available >= config.bufferSize) {
+            devOut->write(buffer->getCurrentPosData(available));
         }
     }
 }
@@ -300,6 +318,7 @@ QMap<Manager::Mode,QString> Manager::getModesMap() {
     map[Manager::Udp] = "udp";
     map[Manager::Raw] = "raw";
     map[Manager::Pipe] = "pipe";
+    map[Manager::FreqGen] = "freqgen";
     return map;
 }
 Manager::Mode Manager::getModeFromString(const QString *name) {

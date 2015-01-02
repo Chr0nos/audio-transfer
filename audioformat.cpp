@@ -49,3 +49,8 @@ bool AudioFormat::setFormat(AudioFormat *format) {
     channelsCount = format->getChannelsCount();
     return true;
 }
+QList<int> AudioFormat::getCommonSamplesRates() {
+    QList<int> rates;
+    rates << 8000 << 11025 << 16000 << 22050 << 32000 << 44100 << 48000 << 96000 << 88200 << 176400 << 192000 << 384000;
+    return rates;
+}

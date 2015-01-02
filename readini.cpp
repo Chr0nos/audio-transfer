@@ -145,4 +145,7 @@ void Readini::clear() {
 QString Readini::getFilePath() {
     return filePath;
 }
-
+void Readini::reload() {
+    clear();
+    parseIni();
+}

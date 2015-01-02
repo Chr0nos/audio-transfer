@@ -10,19 +10,28 @@
 # - DEBUG : enable the debug mode
 # - SERVER : enable the built in server (require COMLINE)
 # - COMLINE : enable the command line mode
+# - GUI : enable the user interface
 
 QT       += core gui network
 CONFIG   += c++11
-DEFINES += MULTIMEDIA PULSE PORTAUDIO COMLINE SERVER GUI
+DEFINES += MULTIMEDIA PULSE PORTAUDIO COMLINE SERVER GUI DEBUG
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 TARGET = audio-transfer
 TEMPLATE = app
 
 contains(DEFINES,GUI) {
-    SOURCES += mainwindow.cpp
-    HEADERS += mainwindow.h
+    SOURCES += ui/mainwindow.cpp \
+	ui/graphicgenerator.cpp
+	#ui/soundanalyser.cpp
+
+    HEADERS += ui/mainwindow.h \
+	ui/graphicgenerator.h
+	#ui/soundanalyser.h
+
+    FORMS    += ui/mainwindow.ui \
+	ui/soundanalyser.ui
 }
 
 SOURCES += main.cpp\
@@ -39,8 +48,8 @@ SOURCES += main.cpp\
     modules/portaudiodevice.cpp \
     modules/pulsedeviceasync.cpp \
     circularbuffer.cpp \
-    graphicgenerator.cpp \
-    modules/circulardevice.cpp
+    modules/circulardevice.cpp \
+    modules/freqgen.cpp
 
 HEADERS  += manager.h \
     main.h \
@@ -51,16 +60,13 @@ HEADERS  += manager.h \
     modules/udpdevice.h \
     modules/nativeaudio.h \
     modules/pipedevice.h \
+    modules/circulardevice.h \
     audioformat.h \
     size.h \
     modules/portaudiodevice.h \
     modules/pulsedeviceasync.h \
     circularbuffer.h \
-    graphicgenerator.h \
-    modules/circulardevice.h
-
-
-FORMS    += mainwindow.ui
+    modules/freqgen.h
 
 contains(DEFINES,COMLINE) {
     CONFIG += console

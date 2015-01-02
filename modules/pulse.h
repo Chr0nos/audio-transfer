@@ -11,11 +11,34 @@
 #include <QIODevice>
 #include <QString>
 #include <QStringList>
-#include <QTimer>
 #include <QTime>
 #include <QByteArray>
+#include <QThread>
+#include "circularbuffer.h"
 
 #include "audioformat.h"
+
+/* because the pulse simple api is blocant
+ * i needed to make it on a separate thread
+ * it emit 'readyRead' when it's reading something
+ */
+class PulseDeviceRead : public QThread {
+    Q_OBJECT
+public:
+    PulseDeviceRead(pa_simple* stream,CircularBuffer* buffer,QObject* parent);
+    void run();
+    QByteArray getAvailableData();
+private:
+    void readFromPaSimple();
+    pa_simple* rec;
+    void say(const QString message);
+    CircularBuffer *readBuffer;
+signals:
+    void debug(const QString message);
+    void readyRead();
+};
+
+
 
 class PulseDevice : public QIODevice {
     Q_OBJECT
@@ -34,21 +57,21 @@ private:
     pa_simple *rec;
     pa_sample_spec ss;
     pa_sample_format getSampleSize();
-    bool makeChannelMap(pa_channel_map *map);
+    //bool makeChannelMap(pa_channel_map *map);
     quint64 getBiteRate();
     AudioFormat *format;
-    void say(const QString message);
     QString target;
     QString name;
-    QTimer* timer;
-    int latencyRec;
     quint64 lastWritePos;
     quint64 bytesWrite;
     quint64 bytesRead;
     QByteArray buffer;
     bool prepare(QIODevice::OpenMode mode,pa_simple **pulse);
+    PulseDeviceRead *record;
+    CircularBuffer *readBuffer;
 private slots:
     void testSlot();
+    void say(const QString message);
 signals:
     void readyRead();
     void debug(const QString message);
