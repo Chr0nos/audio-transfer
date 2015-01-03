@@ -121,9 +121,6 @@ qint64 NativeAudio::readData(char *data, qint64 maxlen) {
    return devIn->read(data,maxlen);
 }
 void NativeAudio::say(const QString message) {
-#ifdef DEBUG
-    qDebug() << "Native: " + message;
-#endif
     emit(debug("Native: " + message));
 }
 bool NativeAudio::setDeviceId(QAudio::Mode mode, const int id) {
