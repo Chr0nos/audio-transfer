@@ -5,27 +5,46 @@
 
 #include <pulse/pulseaudio.h>
 #include <pulse/error.h>
+#include <pulse/stream.h>
+#include <pulse/version.h>
 
-#include <QDebug>
+#include <QMap>
 
 /* /!\ WARNING /!\
  *  THIS MODULE STILL NOT WORKS PROPERLY, DONT USE IT PLEASE
  * /UNLESSE YOU WAN TO HELP ME TO MAKE IT USABLE...
+ * https://i0.wp.com/i69.photobucket.com/albums/i68/Dragodon/KeyboardFaceSmash.gif << me coding this...
  * */
+
+/* Ordre normal des procédures:
+ * QIODevice *dev = new PulseDeviceASync(format,QString(),this);
+ * //inutile de vérifier le open dans la classe parente: la fonction retournera toujours true du moment que l'on ouvre pas la classe en readWrite.
+ * //en cas de pépin le device se close tout seul (j'ai fait ce choix pas ne pas rendre le 'open' blocant et ainsi perdre tout l'intéret de l'asynchrone
+ * dev->open(QIODevice::WriteOnly);
+ *    makeContext
+ *        starting the threaded mainloop
+ *    makeStream (en cas de success du context (via le callback)
+ *    makeChannelsMap
+ *    emit(readyWrite);
+ * dev->write(char*,int);
+ * ...
+ * dev->close;
+ * destructeur.
+ */
 
 PulseDeviceASync::PulseDeviceASync(AudioFormat *format,const QString serverHost,QObject *parent) :
     QIODevice(parent)
 {
     say("init start");
-    this->name = "Audio-Transfer-Client";
+    this->setObjectName("Audio-Transfer");
     this->format = format;
     this->serverHost = serverHost;
     //intialisating pointers to NULL value
     mainloop = NULL;
     mainloop_api = NULL;
-    streamPlayback = NULL;
-    streamRecord = NULL;
+    stream = NULL;
     context = NULL;
+    readBuffer = NULL;
 
     say("setting sample specs");
     ss.channels = format->getChannelsCount();
@@ -41,16 +60,47 @@ PulseDeviceASync::PulseDeviceASync(AudioFormat *format,const QString serverHost,
 
     say("init ok");
 }
+PulseDeviceASync::~PulseDeviceASync() {
+
+   if (stream) {
+       say("deleting stream");
+       pa_stream_drain(stream,NULL,NULL);
+       pa_stream_disconnect(stream);
+       pa_stream_drop(stream);
+       stream = NULL;
+   }
+   if (context) {
+       say("deleting context");
+       pa_context_drain(context,NULL,NULL);
+       pa_context_disconnect(context);
+       context = NULL;
+   }
+   if (mainloop) {
+       say("deleting mainloop");
+       pa_threaded_mainloop_stop(mainloop);
+       //pa_threaded_mainloop_unlock(mainloop);
+       pa_threaded_mainloop_free(mainloop);
+       mainloop = NULL;
+   }
+   if (readBuffer) {
+       say("deleting buffer");
+       readBuffer->disconnect();
+       delete(readBuffer);
+   }
+   say("deleted");
+}
 
 //cette fonction est crade, mais je n'ai pas le choix et je commence à en avoir marre de me faire téraformer le trou du cul par l'api bordelique de pulseaudio !
 //futur moi: pardonne moi.
 void PulseDeviceASync::getSourcesDevices_cb(pa_context *c,const pa_source_info *i,int eol,void *userdata) {
     if (!c) return;
+    (void) eol;
     QList<pa_source_info> *sources = (QList<pa_source_info>*) userdata;
     sources->append(*i);
 }
 void PulseDeviceASync::getSinkDevices_cb(pa_context *c,const pa_sink_info* i,int eol,void *userdata) {
     if (!c) return;
+    (void) eol;
     QList<pa_sink_info> *sinks = (QList<pa_sink_info>*) userdata;
     sinks->append(*i);
 }
@@ -87,37 +137,117 @@ QList<pa_sink_info> PulseDeviceASync::getSinkDevices() {
 //ne surtout pas relire cette fonction: elle initialise tout un merdier pensé par les codeurs tordus de la lib de pulseaudio, *Dont touch: it's magic
 //TGCM / *i have no idea of what i'm doing....
 bool PulseDeviceASync::makeContext() {
-    mainloop = pa_mainloop_new();
+    mainloop = pa_threaded_mainloop_new();
 
     if (!mainloop) return false;
-    say("ok, got a main loop");
 
-    mainloop_api = pa_mainloop_get_api(mainloop);
+    say("main loop: ok");
+
+    mainloop_api = pa_threaded_mainloop_get_api(mainloop);
+
     if (!mainloop_api) return false;
-    say("got an main loop api");
+    say("main loop api: ok");
 
     //context = pa_context_new_with_proplist(mainloop_api,this->name.toStdString().c_str(),NULL);
-    context = pa_context_new(mainloop_api,name.toUtf8().constData());
+    context = pa_context_new(mainloop_api,this->objectName().toLocal8Bit().constData());
 
-    say("connecting context");
-    char *serverTarget = serverHost.toLocal8Bit().data();
+    say("requesting context to connect to pulseaudio server");
+
+    char* host;
+    if (serverHost.isEmpty()) {
+        host = NULL;
+        say("using default pulse server");
+    }
+    else host = serverHost.toLocal8Bit().data();
+
     say("server target: " + serverHost);
 
-    if (serverHost.isEmpty()) serverTarget = NULL;
-    int error = pa_context_connect(context,serverTarget,(pa_context_flags_t) 0,context_state_callback);
+    pa_spawn_api api;
+    api.atfork = NULL;
+    api.postfork = NULL;
+    api.prefork = NULL;
+    say("connecting context to state callback");
+    pa_context_set_state_callback(context,
+                                  PulseDeviceASync::context_state_callback,
+                                  this);
+
+    say("connecting context");
+
+    int error = pa_context_connect(context,
+                                   (const char*) host,
+                                   PA_CONTEXT_NOAUTOSPAWN,
+                                   &api);
+
+
     if (error < 0) {
         say("unable to connect the context to server");
         say("error is: " + QString(pa_strerror(error)));
         return false;
     }
-    say("context connected !");
-
     say("context ok");
-    qDebug() << "context" << context;
+    pa_threaded_mainloop_start(mainloop);
+
     return true;
 }
+bool PulseDeviceASync::makeStream() {
+    if (!makeChannelMap(&map)) {
+        say("unable to get a channel map");
+        return false;
+    }
+
+    stream = pa_stream_new(context,
+                           this->objectName().toLocal8Bit().constData(),
+                           &ss,
+                           &map); //the channel map: NULL for default
+    if (!stream) {
+        say("unable to get a stream playback, the most common cause is that you ask a too high sample size, try with a lower (like 16)");
+        return false;
+    }
+    say("connecting stream callback");
+    pa_stream_set_state_callback(stream,PulseDeviceASync::stream_state_callback,this);
+
+    int error = 0;
+
+    if (this->openMode() == QIODevice::WriteOnly) {
+        say("connecting playback");
+
+        //pour les stream flags, de la doc est dispo ici:
+        // http://freedesktop.org/software/pulseaudio/doxygen/def_8h.html#a6966d809483170bc6d2e6c16188850fc
+        error = pa_stream_connect_playback(stream,  //stream pointer (pa_stream*)
+                                   NULL, //name of the sink (NULL to default)
+                                   NULL,                              //Buffering attributes, or NULL for default
+                                   PA_STREAM_NOFLAGS,             //flags	Additional flags, or 0 for default
+                                   NULL,                              //volume Initial volume, or NULL for default
+                                   NULL);                             //sync_stream Synchronize this stream with the specified one, or NULL for a standalone stream
+    }
+    else {
+        say("connecting record");
+        //on definis le callback de lecture
+        pa_stream_set_read_callback(stream,
+                                    PulseDeviceASync::stream_read_callback,
+                                    this);
+
+        //on connecte le flux au contexte
+        error = pa_stream_connect_record(stream,
+                                         NULL, //source name, NULL for default
+                                         NULL,
+                                         PA_STREAM_NOFLAGS);
+
+    }
+    say("stream name: " + this->objectName());
+    say("stream device: " + QString(pa_stream_get_device_name(stream)));
+    say("stream device index: " + QString::number(pa_stream_get_device_index(stream)));
+
+    if (error < 0) {
+        say("return state: " + QString(pa_strerror(error)) + " / error num: " + QString::number(error));
+        say("context state: " + stateToString(pa_context_get_state(context)));
+        return false;
+    }
+    return true;
+}
+
 bool PulseDeviceASync::open(OpenMode mode) {
-    say("opening context/stream");
+    say("opening context");
 
     if (!this->isValidSampleSepcs()) {
         say("invalid sample format: aborting");
@@ -132,45 +262,27 @@ bool PulseDeviceASync::open(OpenMode mode) {
         }
         say("context created.");
     }
+    else say("using existing context");
 
-    say("context ok");
-    qDebug() << getDevicesNames(mode);
-    if (mode == QIODevice::WriteOnly) {
-
-        if (!makeChannelMap(&map)) {
-            say("unable to get a channel map");
-            return false;
-        }
-
-        streamPlayback = pa_stream_new(context,name.toUtf8().constData(),
-                      &ss,
-                      &map);
-        if (!streamPlayback) {
-            say("unable to get a stream playback, the most common cause is that you ask a too high sample size, try with a lower (like 16)");
-            return false;
-        }
-        say("ok got a stream playback");
-
-        say("connecting playback");
-        const int error = pa_stream_connect_playback(streamPlayback,  //stream pointer (pa_stream*)
-                                   name.toLocal8Bit().data(),         //name of the sink (NULL to default)
-                                   NULL,                              //Buffering attributes, or NULL for default
-                                   (pa_stream_flags_t) 0,             //flags	Additional flags, or 0 for default
-                                   NULL,                              //volume Initial volume, or NULL for default
-                                   NULL);                             //sync_stream Synchronize this stream with the specified one, or NULL for a standalone stream
-        //here i got the -15 -> invalid argument.
-        qDebug() << "stream playback pointer:" << streamPlayback;
-        qDebug() << "stream name:" <<  name.toLocal8Bit().data();
-
-        say("return state: " + QString(pa_strerror(error)) + " / error num: " + QString::number(error));
-        if (error < 0) return false;
+    if (mode == QIODevice::ReadWrite) {
+        say("readWrite mode is unsuported.");
+        return false;
     }
     else if (mode == QIODevice::ReadOnly) {
-        //todo
+        if (!readBuffer) {
+            //Création du buffer de lecture
+            readBuffer = new CircularBuffer(2097152,this->objectName(),this);
+            connect(readBuffer,SIGNAL(readyRead(int)),this,SIGNAL(readyRead()));
+        }
     }
-    //qDebug() << "devices names: " << getDevicesNames(QIODevice::WriteOnly);
+
+    /*ici on ment litéralement à QIODevice:
+     * l'api de pulseaudio étant asynchrone et ne voulant pas faire de fonction blocante qui stoperais le open:
+     * on lance la procédure de connection du contexte plus haut (via makeContext)
+     * une fois créé et connecté, il crééra un stream via makeStream
+     * alors la classe sera utilisable, il est aussi possible de vérifier si la classe est prete en attendant le signal readyWrite();
+    */
     QIODevice::open(mode);
-    qDebug() << this->getDevicesNames(QIODevice::ReadOnly) << this->getDevicesNames(QIODevice::WriteOnly);
     return true;
 }
 bool PulseDeviceASync::isValidSampleSepcs() {
@@ -182,32 +294,47 @@ bool PulseDeviceASync::isValidSampleSepcs() {
 
 qint64 PulseDeviceASync::readData(char *data, qint64 maxlen) {
     if (!maxlen) return 0;
-    //juste le temps d'implémenter la fonction de lecture pour éviter de se choper un warming.
-    memset(data,0,1);
-    return -1;
+    //juste le temps d'implémenter la fonction de lecture pour éviter de se choper un warning.
+    qint64 available = bytesAvailable();
+
+    //si on demande à lire plus que ce qui est dispo: on remet la valeur demandé à ce qui est lisible
+    if (maxlen > available) maxlen = available;
+
+    QByteArray sound = readBuffer->getCurrentPosData(maxlen);
+    memcpy(data,sound.data(),maxlen);
+
+    return maxlen;
 }
 qint64 PulseDeviceASync::writeData(const char *data, qint64 len) {
     if (!len) return 0;
-    if (!streamPlayback) return -1;
-    pa_stream_write(streamPlayback,
+    /* ici dans le cas ou le pointeur de stream n'est pas définis, on renvoi zero car
+     * il est fort possible que le parent de la classe soit en train d'écrire avant que le contexte
+     * ai eut le temps de se connecter au serveur pulseaudio (local ou distand)
+     * pour ne pas empecher les écritures ulterieures il vaut mieux retourner 0 et non -1 (qui empecherais les lectures suivantes)
+     * Todo: faire un buffer d'écriture qui garderais les infos manquées et les enveraient plus tard (au prix d'un lag, il faudrais rendre possible un choix)
+     */
+    if (!stream) return 0;
+    const int writable = pa_stream_writable_size(stream);
+    if (writable < len) len = writable;
+    if (!len) return 0;
+
+
+    int result = pa_stream_write(stream,
                     data,
                     len,
                     NULL,
                     0,
-                    PA_SEEK_ABSOLUTE
-                    );
-    //pa_stream_write()
-    return -1;
+                    PA_SEEK_RELATIVE);
+
+    if (!result) return len;
+    return result;
 }
 void PulseDeviceASync::close() {
-    context = NULL;
+    QIODevice::close();
     say("closed");
 }
 void PulseDeviceASync::say(const QString message) {
-#ifdef DEBUG
-    qDebug() << "PULSE ASYNC: " + message;
-#endif
-    emit(debug(message));
+    emit(debug("PulseAsync: " + message));
 }
 bool PulseDeviceASync::makeChannelMap(pa_channel_map* map) {
     if ((uint) format->getChannelsCount() > PA_CHANNELS_MAX) {
@@ -247,24 +374,121 @@ QList<int> PulseDeviceASync::getDefaultSamplesRates() {
     return rates;
 }
 void PulseDeviceASync::context_state_callback(pa_context *c, void *userdata) {
-    if (!c) return;
+    PulseDeviceASync* p = (PulseDeviceASync*) userdata;
+    //p->say("/!\\ callback event /!\\");
+    if (!c) {
+        p->say("invalid context");
+        return;
+    }
 
     switch (pa_context_get_state(c)) {
         case PA_CONTEXT_CONNECTING:
-        case PA_CONTEXT_AUTHORIZING:
-        case PA_CONTEXT_SETTING_NAME:
-            break;
+            p->say("connecting to pulseaudio");
+            return;
 
-        case PA_CONTEXT_READY: {
-                qDebug() << "Connection established";
+        case PA_CONTEXT_AUTHORIZING:
+            p->say("authorising");
+            return;
+        case PA_CONTEXT_SETTING_NAME:
+            p->say("setting name");
+            return;
+
+        case PA_CONTEXT_READY:
+            p->say("connection established");
+            if (!p->makeStream()) {
+                p->say("unable to create stream.");
+                p->close();
             }
+            else p->readyWrite();
             break;
         case PA_CONTEXT_TERMINATED:
+            p->say("terminated");
             break;
 
         case PA_CONTEXT_FAILED:
+            p->say("failed");
+            p->close();
+            break;
         default:
-            fprintf(stderr, "Context error: %s\n", pa_strerror(pa_context_errno(c)));
+            p->say("Context error: " + QString::number(pa_context_errno(c)));
+            break;
     }
 }
+void PulseDeviceASync::stream_state_callback(pa_stream* stream,void* userdata) {
+    PulseDeviceASync* p = (PulseDeviceASync*) userdata;
+    p->say("stream state callback called: " + QString::number((long) stream));
+    switch (pa_stream_get_state(stream)) {
+        case PA_STREAM_UNCONNECTED:
+            p->say("stream not connected");
+            break;
+        case PA_STREAM_CREATING:
+            p->say("stream creating state");
+            break;
+        case PA_STREAM_READY:
+            p->say("stream is ready");
+            break;
+        case PA_STREAM_FAILED:
+            p->say("stream failed state");
+            p->close();
+            break;
+        case PA_STREAM_TERMINATED:
+            p->say("stream terminated");
+            p->close();
+            break;
+    }
+}
+
+QString PulseDeviceASync::stateToString(pa_context_state_t state) {
+    QMap<pa_context_state_t,QString> states;
+    states[PA_CONTEXT_CONNECTING] = "connecting";
+    states[PA_CONTEXT_AUTHORIZING] = "authorising";
+    states[PA_CONTEXT_SETTING_NAME] = "setting name";
+    states[PA_CONTEXT_READY] = "ready";
+    states[PA_CONTEXT_TERMINATED] = "terminated";
+    states[PA_CONTEXT_FAILED] = "failed";
+
+    QMap<pa_context_state_t,QString>::iterator i;
+    for (i = states.begin() ; i != states.end() ; i++) {
+        if (i.key() == state) return i.value();
+    }
+    return QString();
+}
+qint64 PulseDeviceASync::bytesAvailable() {
+    //si on est en mode lecture: renvoi de 0 pour éviter un incident facheux (le pointeur readBuffer serait = à NULL)
+    if (this->openMode() == QIODevice::WriteOnly) return 0;
+    return QIODevice::bytesAvailable() + readBuffer->getAvailableBytesCount();
+}
+void PulseDeviceASync::setObjectName(const QString &name) {
+    /* je surclasse cette fonction pour renomer le flux en meme temps que l'objet
+     * ainsi on s'y retrouve plus facilement dans les flux sur pulseaudio dans le controleur de volume
+     */
+    QIODevice::setObjectName(name);
+    if (stream) {
+        pa_stream_set_name(stream,name.toLocal8Bit().data(),NULL,NULL);
+        say("renaming stream to: " + name);
+    }
+}
+
+void PulseDeviceASync::stream_read_callback(pa_stream *stream, size_t len, void *userdata) {
+    /* Ceci est la fonction qui lis les données depuis le flux
+     * elle remplis le readBuffer et c'est ce dernier qui envoi les readyRead()
+     */
+    if (!len) return;
+    PulseDeviceASync* p = (PulseDeviceASync*) userdata;
+    char* data;
+
+    size_t availableBytes = pa_stream_readable_size(stream);;
+
+    //Contrairement à ce que dis la documentation de pulseaudio: la fonction retounr 0 si les données on été bien lues, sinon -1
+    //mais en aucun cas la quantitée de données lues
+    int readBytes = pa_stream_peek(stream,
+                                   (const void**) &data,
+                                   &availableBytes);
+
+    //if (!readBytes) p->say("warning: unable to read audio from record stream");
+    if (readBytes < 0) p->say("error while reading audio from record stream");
+    else if (!p->readBuffer->append(data,availableBytes)) p->say("error: unable to add audio to read buffer");
+    pa_stream_drop(stream);
+}
+
 #endif
