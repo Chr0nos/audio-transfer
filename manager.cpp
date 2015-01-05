@@ -5,7 +5,6 @@
 #include <QIODevice>
 #include <QtNetwork/QNetworkInterface>
 #include <QFile>
-#include <QDebug>
 
 Manager::Manager(QObject *parent) :
     QObject(parent)
@@ -88,7 +87,9 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
         }
 #ifdef PULSEASYNC
         case Manager::PulseAudioAsync: {
-            *device = new PulseDeviceASync(format,config.pulseTarget,this);
+            PulseDeviceASync* pulse = new PulseDeviceASync(format,config.pulse.target,this);
+            connect(pulse,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+            *device = pulse;
             break;
         }
 #else
@@ -214,14 +215,14 @@ void Manager::setUserConfig(userConfig cfg) {
 void Manager::transfer() {
     //qDebug() << "transfer!" << devIn << devIn->isOpen();
     if ((!devOut) || (!devIn) || (!devIn->isOpen()) || (!devOut->isOpen())) {
-        say("manager: transfer: stoping");
+        say("transfer: stoping");
         qDebug() << "devOut: " << devOut;
-        if (!devOut) say("manager: transfer: devOut is null");
+        if (!devOut) say("transfer: devOut is null");
         else if (!devOut->isOpen()) say("manager: transfer: devOut is closed");
 
         qDebug() << "devIn: " << devIn;
-        if (!devIn) say("manager: transfer: devIn is null");
-        else if (!devIn->isOpen()) say("manager: transfer: devIn is closed");
+        if (!devIn) say("transfer: devIn is null");
+        else if (!devIn->isOpen()) say("transfer: devIn is closed");
 
         say("manager: stoping record");
         stop();
@@ -230,14 +231,22 @@ void Manager::transfer() {
     QByteArray data = devIn->readAll();
     //QByteArray data = devIn->read(devIn->bytesAvailable());
     if (!data.size()) {
+#ifdef DEBUG
         say("warning: empty read.");
+#endif
         return;
     }
 
     bytesCount += data.size();
     //in case of no buffer usage we dont copy data to buffer (better performance)
     if (!config.bufferSize) {
+#ifdef DEBUG
+        if (devOut->write(data) != data.size()) {
+            say("warning: the output has not played all available sound.");
+        }
+#else
         devOut->write(data);
+#endif
     }
     else {
         //if the buffer size is too big: we just drop the datas to prevent memory overflow by this buffer
