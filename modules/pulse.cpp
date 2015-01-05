@@ -241,6 +241,7 @@ void PulseDeviceRead::readFromPaSimple() {
         say("error: no stream set.");
         return;
     }
+
     u_int16_t data[4096]; //4Ko
     int bytesRead;
 
