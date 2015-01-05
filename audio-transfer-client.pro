@@ -5,7 +5,8 @@
 #-------------------------------------------------
 # Availables defines for this project:
 # - MULTIMEDIA : enable native audio output (mandatory)
-# - PULSE : enable pulseaudio (unix systems only)
+# - PULSE : enable pulseaudio via pa_simple api (unix systems only)
+# - PULSEASYNC : enable pulseaudio main api support (asynchrone)
 # - PORTAUDIO : enable portaudio support
 # - DEBUG : enable the debug mode
 # - SERVER : enable the built in server (require COMLINE)
@@ -14,7 +15,7 @@
 
 QT       += core gui network
 CONFIG   += c++11
-DEFINES += MULTIMEDIA PULSE PORTAUDIO COMLINE SERVER GUI DEBUG
+DEFINES += MULTIMEDIA PULSE PULSEASYNC PORTAUDIO COMLINE SERVER GUI DEBUG
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
