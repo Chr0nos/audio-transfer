@@ -26,6 +26,7 @@ class PulseDeviceRead : public QThread {
     Q_OBJECT
 public:
     PulseDeviceRead(pa_simple* stream,CircularBuffer* buffer,QObject* parent);
+    ~PulseDeviceRead();
     void run();
     QByteArray getAvailableData();
 private:

@@ -232,6 +232,10 @@ PulseDeviceRead::PulseDeviceRead(pa_simple *stream, CircularBuffer *buffer, QObj
     this->readBuffer = buffer;
 }
 
+PulseDeviceRead::~PulseDeviceRead() {
+    say("deleted");
+}
+
 void PulseDeviceRead::run() {
     say("starting");
     readFromPaSimple();
@@ -246,6 +250,7 @@ void PulseDeviceRead::readFromPaSimple() {
     int bytesRead;
 
     int error = 0;
+    QByteArray x;
     while (true) {
         //here... okay, DONT ASK ME WHY ! but, it's apears: pa_simple_read will bloc until the buffer was fully filed and will return 0 (dont ask my why zero, it's stupid !)
         bytesRead = pa_simple_read(rec,data,sizeof(data),&error);
@@ -259,7 +264,13 @@ void PulseDeviceRead::readFromPaSimple() {
 
         else {
             //if the read was successfull
-            if (!readBuffer->append((char*) data,sizeof(data))) say("unable to append new data to buffer.");
+            //uncomment to allow pointer copy instead of data copy
+            x = QByteArray::fromRawData((char*) data,(const int) sizeof(data));
+
+            //we copy the readed data into a QByteArray then passing it into the buffer;
+            //x = QByteArray((char*) data,sizeof(data));
+
+            if (!readBuffer->append(&x)) say("unable to append new data to buffer.");
             //the parent class will be notified by the readBuffer "readyRead" signal emited after this append.
         }
     }

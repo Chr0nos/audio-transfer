@@ -10,16 +10,12 @@
 
 #include <QMap>
 
-/* /!\ WARNING /!\
- *  THIS MODULE STILL NOT WORKS PROPERLY, DONT USE IT PLEASE
- * /UNLESSE YOU WAN TO HELP ME TO MAKE IT USABLE...
- * https://i0.wp.com/i69.photobucket.com/albums/i68/Dragodon/KeyboardFaceSmash.gif << me coding this...
- * */
-
-/* Ordre normal des procédures:
+/* https://i0.wp.com/i69.photobucket.com/albums/i68/Dragodon/KeyboardFaceSmash.gif << me coding this...
+ * Ordre normal des procédures:
  * QIODevice *dev = new PulseDeviceASync(format,QString(),this);
- * //inutile de vérifier le open dans la classe parente: la fonction retournera toujours true du moment que l'on ouvre pas la classe en readWrite.
- * //en cas de pépin le device se close tout seul (j'ai fait ce choix pas ne pas rendre le 'open' blocant et ainsi perdre tout l'intéret de l'asynchrone
+ * inutile de vérifier le open dans la classe parente: la fonction retournera toujours true du moment que l'on ouvre pas la classe en readWrite.
+ * en cas de pépin le device se close tout seul (j'ai fait ce choix pas ne pas rendre le 'open' blocant et ainsi perdre tout l'intéret de l'asynchrone
+ *
  * dev->open(QIODevice::WriteOnly);
  *    makeContext
  *        starting the threaded mainloop
@@ -30,6 +26,8 @@
  * ...
  * dev->close;
  * destructeur.
+ *
+ * pour la lecture il n'est pas recomandé d'appeler readData sans avoir préalablement recu un signal readyRead()
  */
 
 PulseDeviceASync::PulseDeviceASync(AudioFormat *format,const QString serverHost,QObject *parent) :
@@ -190,6 +188,9 @@ bool PulseDeviceASync::makeContext() {
     return true;
 }
 bool PulseDeviceASync::makeStream() {
+    //cette fonction créé le flux: elle DOIT être appelée par le callback du context dans le cas ou celui à réusi sa connection à pulseaudio
+    //elle est statique
+
     if (!makeChannelMap(&map)) {
         say("unable to get a channel map");
         return false;
@@ -265,14 +266,18 @@ bool PulseDeviceASync::open(OpenMode mode) {
     else say("using existing context");
 
     if (mode == QIODevice::ReadWrite) {
-        say("readWrite mode is unsuported.");
+        say("readWrite mode is unsupported.");
         return false;
     }
     else if (mode == QIODevice::ReadOnly) {
         if (!readBuffer) {
-            //Création du buffer de lecture
+            //Création du buffer de lecture (2Mb)
             readBuffer = new CircularBuffer(2097152,this->objectName(),this);
+
+            //je définis la polituqe de buffer overflow sur expand: si la taille maxi du buffer est atteinte celui s'agrandira de lui même
+            readBuffer->setOverflowPolicy(CircularBuffer::Expand);
             connect(readBuffer,SIGNAL(readyRead(int)),this,SIGNAL(readyRead()));
+            connect(readBuffer,SIGNAL(debug(QString)),this,SLOT(say(QString)));
         }
     }
 
@@ -294,7 +299,6 @@ bool PulseDeviceASync::isValidSampleSepcs() {
 
 qint64 PulseDeviceASync::readData(char *data, qint64 maxlen) {
     if (!maxlen) return 0;
-    //juste le temps d'implémenter la fonction de lecture pour éviter de se choper un warning.
     qint64 available = bytesAvailable();
 
     //si on demande à lire plus que ce qui est dispo: on remet la valeur demandé à ce qui est lisible
@@ -399,7 +403,7 @@ void PulseDeviceASync::context_state_callback(pa_context *c, void *userdata) {
                 p->say("unable to create stream.");
                 p->close();
             }
-            else p->readyWrite();
+            else if (p->openMode() == QIODevice::WriteOnly) p->readyWrite();
             break;
         case PA_CONTEXT_TERMINATED:
             p->say("terminated");
@@ -455,8 +459,15 @@ QString PulseDeviceASync::stateToString(pa_context_state_t state) {
 }
 qint64 PulseDeviceASync::bytesAvailable() {
     //si on est en mode lecture: renvoi de 0 pour éviter un incident facheux (le pointeur readBuffer serait = à NULL)
-    if (this->openMode() == QIODevice::WriteOnly) return 0;
-    return QIODevice::bytesAvailable() + readBuffer->getAvailableBytesCount();
+    switch (this->openMode()) {
+        case QIODevice::ReadWrite:
+            return -1;
+        case QIODevice::WriteOnly:
+            return 0;
+        case QIODevice::ReadOnly:
+            return QIODevice::bytesAvailable() + readBuffer->getAvailableBytesCount();
+    }
+    return -1;
 }
 void PulseDeviceASync::setObjectName(const QString &name) {
     /* je surclasse cette fonction pour renomer le flux en meme temps que l'objet
@@ -477,16 +488,15 @@ void PulseDeviceASync::stream_read_callback(pa_stream *stream, size_t len, void 
     PulseDeviceASync* p = (PulseDeviceASync*) userdata;
     char* data;
 
-    size_t availableBytes = pa_stream_readable_size(stream);;
+    size_t availableBytes = pa_stream_readable_size(stream);
 
-    //Contrairement à ce que dis la documentation de pulseaudio: la fonction retounr 0 si les données on été bien lues, sinon -1
+    //Contrairement à ce que dis la documentation de pulseaudio: la fonction retourne 0 si les données on été bien lues, sinon -1
     //mais en aucun cas la quantitée de données lues
-    int readBytes = pa_stream_peek(stream,
-                                   (const void**) &data,
-                                   &availableBytes);
+    int result = pa_stream_peek(stream,
+                                (const void**) &data,
+                                &availableBytes);
 
-    //if (!readBytes) p->say("warning: unable to read audio from record stream");
-    if (readBytes < 0) p->say("error while reading audio from record stream");
+    if (result < 0) p->say("error while reading audio from record stream");
     else if (!p->readBuffer->append(data,availableBytes)) p->say("error: unable to add audio to read buffer");
     pa_stream_drop(stream);
 }

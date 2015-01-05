@@ -3,6 +3,8 @@
 
 #include <QObject>
 #include <QMutex>
+#include <QByteArray>
+#include <QString>
 
 class CircularBuffer : public QObject
 {
@@ -11,9 +13,9 @@ public:
     explicit CircularBuffer(const uint bufferSize,const QString bufferName = "",QObject *parent = 0);
     ~CircularBuffer();
     int getSize();
-    bool append(QByteArray newData);
+    bool append(const QByteArray *newData);
     bool append(const QString text);
-    bool append(const char* newData,const int size);
+    bool append(const char* data,size_t size);
     void clear();
     QByteArray getCurrentPosData(int length);
     QByteArray getCurrentPosData();

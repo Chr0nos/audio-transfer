@@ -126,6 +126,9 @@ void Comline::parse(QStringList *argList) {
                 #ifdef PULSE
                 << "\t- pulse (default input)" << endl
                 #endif
+                #ifdef PULSEASYNC
+                << "\t- pulseasync" << endl
+                #endif
                 #ifdef MULTIMEDIA
                 << "\t- native" << endl
                  #endif

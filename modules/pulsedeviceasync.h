@@ -40,7 +40,6 @@ private:
     bool makeChannelMap(pa_channel_map* map);
     bool makeStream();
     pa_stream *stream;
-    void say(const QString message);
     AudioFormat *format;
     pa_threaded_mainloop* mainloop;
     pa_mainloop_api *mainloop_api;
@@ -56,7 +55,8 @@ signals:
     void debug(const QString message);
     void readyWrite();
 public slots:
-
+private slots:
+    void say(const QString message);
 };
 
 #endif // PULSEDEVICEASYNC_H

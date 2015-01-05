@@ -25,9 +25,10 @@ int CircularBuffer::getSize() {
     //return the actual buffer size (not the availableBytes sizes)
     return bsize;
 }
-bool CircularBuffer::append(QByteArray newData) {
+
+bool CircularBuffer::append(const QByteArray *newData) {
     QMutexLocker lock(&mutex);
-    int lenght = newData.size();
+    int lenght = newData->size();
     const int freeSpace = bsize - getAvailableBytesCount();
 
     //Start contains the start position to read for newData
@@ -45,7 +46,7 @@ bool CircularBuffer::append(QByteArray newData) {
                 const int missingSpace = lenght - freeSpace;
 
                 //writing possible data to left space
-                data.replace(positionWrite,freeSpace,newData.mid(start,freeSpace));
+                data.replace(positionWrite,freeSpace,newData->mid(start,freeSpace));
 
                 //here i move the positionRead to the amount of size that i will hadd just few lines below
                 if (positionRead > positionWrite) positionRead += missingSpace;
@@ -54,7 +55,7 @@ bool CircularBuffer::append(QByteArray newData) {
                 positionWrite += freeSpace;
 
                 //and inserting the missing left data
-                data.insert(positionWrite,newData.mid(freeSpace,missingSpace));
+                data.insert(positionWrite,newData->mid(freeSpace,missingSpace));
 
                 //ajusting the new buffer size:
                 bsize += missingSpace;
@@ -85,25 +86,28 @@ bool CircularBuffer::append(QByteArray newData) {
     const int left = bsize - positionWrite;
 
     if (left < lenght) {
-        data.replace(positionWrite,left,newData.mid(start,left));
+        data.replace(positionWrite,left,newData->mid(start,left));
         lenght -= left;
         positionWrite = 0;
         start = left;
     }
     //replace the old data with new ones
-    data.replace(positionWrite,lenght,newData.mid(start,lenght));
+    data.replace(positionWrite,lenght,newData->mid(start,lenght));
     //Appending lenght to the current write position
     positionWrite += lenght;
     lock.unlock();
-    emit(readyRead(lenght));
+    emit(readyRead(newData->size()));
     return true;
 }
-bool CircularBuffer::append(const char *newData, const int size) {
-    return append(QByteArray::fromRawData(newData,size));
+bool CircularBuffer::append(const char *data,size_t size) {
+    //this is an overloaded function
+    return append(QByteArray::fromRawData(data,size));
 }
 
 bool CircularBuffer::append(const QString text) {
-    return this->append(text.toLocal8Bit());
+    //this is an overloaded function
+    QByteArray x = text.toLocal8Bit();
+    return this->append(&x);
 }
 
 QByteArray CircularBuffer::getCurrentPosData(int length) {
@@ -187,8 +191,10 @@ void CircularBuffer::setOverflowPolicy(const OverflowPolicy newPolicy) {
     emit(overflowPolicyChanged(policy));
 }
 void CircularBuffer::say(const QString message) {
+    /*
 #ifdef DEBUG
     qDebug() << "CircularBuffer: " + this->objectName() + ": " + message;
 #endif
+*/
     emit(debug(message));
 }
