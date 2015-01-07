@@ -34,7 +34,6 @@ PulseDeviceASync::PulseDeviceASync(AudioFormat *format,const QString serverHost,
     QIODevice(parent)
 {
     say("init start");
-    this->setObjectName("Audio-Transfer");
     this->format = format;
     this->serverHost = serverHost;
     //intialisating pointers to NULL value

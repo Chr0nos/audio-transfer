@@ -24,7 +24,9 @@ qint64 CircularDevice::write(const QByteArray &data) {
 }
 
 qint64 CircularDevice::writeData(const char *data, qint64 len) {
-    if (!buffer->append(QByteArray::fromRawData(data,len))) return -1;
+    //if (!buffer->append(QByteArray(data,len))) return -1;
+    QByteArray x = QByteArray::fromRawData(data,len);
+    if (!buffer->append(&x)) return -1;
     emit(readyRead());
     return len;
 }
