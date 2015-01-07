@@ -85,25 +85,24 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
             *device = pulseDevice;
             break;
         }
+#else
+    case Manager::PulseAudio:
+            //in normal case: this condition will NEVER appens: the ui will not send PulseAudio is the module is not built in: but: security before evrythink.
+            emit(errors("pulse audio output requested but ATC was not compiled with pa module"));
+            return false;
+            break;
+#endif
+
 #ifdef PULSEASYNC
         case Manager::PulseAudioAsync: {
             PulseDeviceASync* pulse = new PulseDeviceASync(format,config.pulse.target,this);
+            pulse->setObjectName("Audio-Transfer");
             connect(pulse,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
             *device = pulse;
             break;
         }
 #else
         case Manager::PulseAudioAsync:
-            return false;
-            break;
-#endif
-#else
-    case Manager::PulseAudioAsync:
-            return false;
-            break;
-    case Manager::PulseAudio:
-            //in normal case: this condition will NEVER appens: the ui will not send PulseAudio is the module is not built in: but: security before evrythink.
-            emit(errors("pulse audio output requested but ATC was not compiled with pa module"));
             return false;
             break;
 #endif
