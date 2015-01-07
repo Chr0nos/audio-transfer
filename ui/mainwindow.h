@@ -28,12 +28,14 @@ public:
     int getBitrate();
 
 private slots:
+#ifdef MULTIMEDIA
     void on_refreshSources_clicked();
-    void on_pushButton_clicked();
     void on_sourcesList_currentTextChanged();
+    void on_sourcesList_currentIndexChanged(int index);
+#endif
+    void on_pushButton_clicked();
     void on_browseSourceFilePath_clicked();
     void recStoped();
-    void on_sourcesList_currentIndexChanged(int index);
     void refreshEnabledSources();
     void refreshEnabledDestinations();
     void refreshReadedData();

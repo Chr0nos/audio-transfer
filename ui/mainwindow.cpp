@@ -30,8 +30,6 @@ MainWindow::MainWindow(QWidget *parent) :
     timer = new QTimer(this);
     timer->setInterval(300);
     connect(manager,SIGNAL(stoped()),this,SLOT(recStoped()));
-    on_refreshSources_clicked();
-    ui->destinationDeviceCombo->addItems(Manager::getDevicesNames(QAudio::AudioOutput));
 
     connect(ui->sourceRadioDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
     connect(ui->sourceRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
@@ -44,7 +42,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->destinationRadioPulseAudio,SIGNAL(clicked()),SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioZeroDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
     connect(ui->destinationRadioPortAudio,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
-    connect(ui->checkboxSourceOutput,SIGNAL(clicked()),this,SLOT(on_refreshSources_clicked()));
 
     connect(manager,SIGNAL(errors(QString)),this,SLOT(errors(QString)));
     connect(manager,SIGNAL(started()),this,SLOT(started()));
@@ -78,6 +75,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->destinationDeviceRadio->hide();
     ui->refreshOutputDevices->hide();
     ui->refreshSources->hide();
+#else
+    ui->destinationDeviceCombo->addItems(Manager::getDevicesNames(QAudio::AudioOutput));
+    connect(ui->checkboxSourceOutput,SIGNAL(clicked()),this,SLOT(on_refreshSources_clicked()));
+    on_refreshSources_clicked();
 #endif
     debug("configuration path: " + getConfigFilePath());
 
@@ -107,15 +108,15 @@ void MainWindow::debug(const QString message) {
     ui->debug->scrollToBottom();
     qDebug() << message;
 }
-
-void MainWindow::on_refreshSources_clicked()
-{
+#ifdef MULTIMEDIA
+void MainWindow::on_refreshSources_clicked {
     ui->sourcesList->clear();
     ui->sourcesList->addItems(Manager::getDevicesNames(QAudio::AudioInput));
     if (ui->checkboxSourceOutput->isChecked()) {
         ui->sourcesList->addItems(Manager::getDevicesNames(QAudio::AudioOutput));
     }
 }
+#endif
 
 
 void MainWindow::on_pushButton_clicked()
@@ -204,10 +205,9 @@ void MainWindow::on_pushButton_clicked()
         ui->pushButton->setText("Record");
     }
 }
-
+#ifdef MULTIMEDIA
 void MainWindow::on_sourcesList_currentTextChanged()
 {
-#ifdef MULTIMEDIA
     ui->codecList->clear();
     ui->samplesRates->clear();
     ui->samplesSize->clear();
@@ -230,8 +230,8 @@ void MainWindow::on_sourcesList_currentTextChanged()
         ui->samplesRates->setCurrentIndex(ui->samplesRates->count() -1);
         ui->channelsCount->setValue(info.supportedChannelCounts().last());
     }
-#endif
 }
+#endif
 
 void MainWindow::on_browseSourceFilePath_clicked()
 {
@@ -266,10 +266,9 @@ bool MainWindow::isValidIp(const QString host) {
     }
     return true;
 }
-
+#ifdef MULTIMEDIA
 void MainWindow::on_sourcesList_currentIndexChanged(int index)
 {
-#ifdef MULTIMEDIA
     ui->samplesRates->clear();
     ui->codecList->clear();
     if (index >= 0) {
@@ -282,10 +281,9 @@ void MainWindow::on_sourcesList_currentIndexChanged(int index)
         ui->codecList->addItems(info.supportedCodecs());
         //ui->channelsCount->setMaximum(rec->getMaxChannelsCount());
     }
-#else
-    (void) index;
-#endif
 }
+#endif
+
 void MainWindow::refreshEnabledSources() {
     ui->refreshSources->setEnabled(false);
     ui->sourceFilePath->setEnabled(false);
@@ -373,8 +371,10 @@ void MainWindow::refreshReadedData() {
 }
 void MainWindow::on_refreshOutputDevices_clicked()
 {
+	#ifdef MULTIMEDIA
     ui->destinationDeviceCombo->clear();
     ui->destinationDeviceCombo->addItems(Manager::getDevicesNames(QAudio::AudioOutput));
+    #endif
 }
 
 void MainWindow::started() {

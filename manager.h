@@ -26,8 +26,8 @@
 
 #include "modules/freqgen.h"
 
-#include <QtMultimedia/QAudio>
-#include <QtMultimedia/QAudioDeviceInfo>
+//#include <QtMultimedia/QAudio>
+//#include <QtMultimedia/QAudioDeviceInfo>
 #include <QObject>
 #include <QIODevice>
 #include <QMap>
@@ -107,7 +107,9 @@ public:
     ~Manager();
     bool start();
     void stop();
+    #ifdef MULTIMEDIA
     static QStringList getDevicesNames(QAudio::Mode mode);
+    #endif
     void setUserConfig(userConfig cfg);
     quint64 getTransferedSize();
     bool isRecording();

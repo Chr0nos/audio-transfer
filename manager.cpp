@@ -202,15 +202,12 @@ void Manager::stop() {
     }
     emit(stoped());
 }
-
-QStringList Manager::getDevicesNames(QAudio::Mode mode) {
 #ifdef MULTIMEDIA
+QStringList Manager::getDevicesNames(QAudio::Mode mode) {
     return NativeAudio::getDevicesNames(mode);
-#else
-    (void) mode;
-    return QStringList();
-#endif
 }
+#endif
+
 void Manager::setUserConfig(userConfig cfg) {
     if (isRecording()) {
         emit(errors("can't change user configuration while transfering."));
