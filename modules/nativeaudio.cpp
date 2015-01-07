@@ -163,4 +163,8 @@ qint64 NativeAudio::bytesAvailable() {
     if (!in) return 0;
     return in->bytesReady() + QIODevice::bytesAvailable();
 }
+QAudio::Mode NativeAudio::getAudioFlag(const OpenModeFlag mode) {
+    if (mode == QIODevice::WriteOnly) return QAudio::AudioOutput;
+    return QAudio::AudioInput;
+}
 #endif

@@ -26,7 +26,7 @@ Manager::~Manager() {
     if (buffer) delete(buffer);
     delete(format);
 }
-bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
+bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device) {
     if ((device) && ((*device))) {
         (**device).disconnect();
         delete(*device);
@@ -35,20 +35,17 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
     QString name;
     QString* filePath;
     Manager::Mode target = Manager::None;
-    QIODevice::OpenModeFlag flag;
     QIODevice *rawDev;
     int deviceId;
-    if (mode == QAudio::AudioInput) {
+    if (mode == QIODevice::ReadOnly) {
         target = config.modeInput;
-        flag = QIODevice::ReadOnly;
         deviceId = config.devices.input;
         filePath = &config.file.input;
         rawDev = config.raw.devIn;
         if (!config.devicesNames.input.isEmpty()) name = config.devicesNames.input;
     }
-    else if (mode == QAudio::AudioOutput) {
+    else if (mode == QIODevice::WriteOnly) {
         target = config.modeOutput;
-        flag = QIODevice::WriteOnly;
         deviceId = config.devices.output;
         filePath = &config.file.output;
         rawDev = config.raw.devOut;
@@ -56,16 +53,23 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
     }
 
     switch (target) {
+#ifdef MULTIMEDIA
         case Manager::Device: {
             NativeAudio *native = new NativeAudio(name,format,this);
             connect(native,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-            if (!native->setDeviceId(mode,deviceId)) {
+            if (!native->setDeviceId(NativeAudio::getAudioFlag(mode),deviceId)) {
                 delete(native);
                 return false;
             }
             *device = native;
             break;
         }
+#else
+        case Manager::Device:
+            (void) deviceId;
+            say("not compiled with QtMultimedia support");
+            return false;
+#endif
         case Manager::Tcp: {
             TcpDevice* tcpDevice = new TcpDevice(config.network.host,config.network.port,format,config.network.sendConfig,this);
             connect(tcpDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
@@ -125,8 +129,8 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
 #ifdef PORTAUDIO
          case Manager::PortAudio: {
             PortAudioDevice* api = new PortAudioDevice(format,this);
-            if (mode == QAudio::AudioInput) api->setDeviceId(config.portAudio.deviceIdInput,QIODevice::ReadOnly);
-            else if (mode == QAudio::AudioOutput) api->setDeviceId(config.portAudio.deviceIdOutput,QIODevice::WriteOnly);
+            if (mode == QIODevice::ReadOnly) api->setDeviceId(config.portAudio.deviceIdInput,mode);
+            else if (mode == QIODevice::WriteOnly) api->setDeviceId(config.portAudio.deviceIdOutput,mode);
             connect(api,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
 
             *device = api;
@@ -147,24 +151,24 @@ bool Manager::prepare(QAudio::Mode mode, QIODevice **device) {
     }
     if (!*device) return false;
 
-    if (mode == QAudio::AudioInput) connect(*device,SIGNAL(readyRead()),this,SLOT(transfer()));
+    if (mode == QIODevice::ReadOnly) connect(*device,SIGNAL(readyRead()),this,SLOT(transfer()));
 
     //if a name is available lets assign it to the new device
     if (!name.isEmpty()) (**device).setObjectName(name);
 
     //in raw mode: we just dont open the device
     if (target == Manager::Raw) return true;
-    return (**device).open(flag);
+    return (**device).open(mode);
 }
 
 bool Manager::start() {
     say("Starting manager...");
 
-    if (!prepare(QAudio::AudioOutput,&devOut)) {
+    if (!prepare(QIODevice::WriteOnly,&devOut)) {
         emit(errors("failed to  start output"));
         emit(stoped());
     }
-    else if (!prepare(QAudio::AudioInput,&devIn)) {
+    else if (!prepare(QIODevice::ReadOnly,&devIn)) {
         emit(errors("failed to start input"));
         emit(stoped());
     }
@@ -200,7 +204,12 @@ void Manager::stop() {
 }
 
 QStringList Manager::getDevicesNames(QAudio::Mode mode) {
+#ifdef MULTIMEDIA
     return NativeAudio::getDevicesNames(mode);
+#else
+    (void) mode;
+    return QStringList();
+#endif
 }
 void Manager::setUserConfig(userConfig cfg) {
     if (isRecording()) {

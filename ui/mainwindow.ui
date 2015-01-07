@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>576</width>
-    <height>615</height>
+    <height>637</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -130,7 +130,13 @@
               <number>9</number>
              </property>
              <item>
-              <widget class="QComboBox" name="codecList"/>
+              <widget class="QComboBox" name="codecList">
+               <item>
+                <property name="text">
+                 <string>audio/pcm</string>
+                </property>
+               </item>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -158,6 +164,11 @@
                  <string>24</string>
                 </property>
                </item>
+               <item>
+                <property name="text">
+                 <string>32</string>
+                </property>
+               </item>
               </widget>
              </item>
             </layout>
@@ -176,7 +187,18 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QComboBox" name="samplesRates"/>
+              <widget class="QComboBox" name="samplesRates">
+               <item>
+                <property name="text">
+                 <string>96000</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>44100</string>
+                </property>
+               </item>
+              </widget>
              </item>
             </layout>
            </widget>

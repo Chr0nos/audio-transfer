@@ -8,12 +8,14 @@
 
 #include <QtGui>
 #include <QString>
-#include <QtMultimedia/QAudioOutput>
 #include <QFileDialog>
 #include <QDialog>
 #include <QTimer>
 #include <QDesktopWidget>
 
+#ifdef MULTIMEDIA
+#include <QtMultimedia/QAudioOutput>
+#endif
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -68,6 +70,14 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->portAudioSourceList->setEnabled(false);
     ui->portAudioSourceList->hide();
     ui->portAudioRefreshButton->hide();
+#endif
+#ifndef MULTIMEDIA
+    ui->sourceRadioDevice->hide();
+    ui->sourcesList->hide();
+    ui->destinationDeviceCombo->hide();
+    ui->destinationDeviceRadio->hide();
+    ui->refreshOutputDevices->hide();
+    ui->refreshSources->hide();
 #endif
     debug("configuration path: " + getConfigFilePath());
 
@@ -197,6 +207,7 @@ void MainWindow::on_pushButton_clicked()
 
 void MainWindow::on_sourcesList_currentTextChanged()
 {
+#ifdef MULTIMEDIA
     ui->codecList->clear();
     ui->samplesRates->clear();
     ui->samplesSize->clear();
@@ -219,6 +230,7 @@ void MainWindow::on_sourcesList_currentTextChanged()
         ui->samplesRates->setCurrentIndex(ui->samplesRates->count() -1);
         ui->channelsCount->setValue(info.supportedChannelCounts().last());
     }
+#endif
 }
 
 void MainWindow::on_browseSourceFilePath_clicked()
@@ -257,6 +269,7 @@ bool MainWindow::isValidIp(const QString host) {
 
 void MainWindow::on_sourcesList_currentIndexChanged(int index)
 {
+#ifdef MULTIMEDIA
     ui->samplesRates->clear();
     ui->codecList->clear();
     if (index >= 0) {
@@ -269,6 +282,9 @@ void MainWindow::on_sourcesList_currentIndexChanged(int index)
         ui->codecList->addItems(info.supportedCodecs());
         //ui->channelsCount->setMaximum(rec->getMaxChannelsCount());
     }
+#else
+    (void) index;
+#endif
 }
 void MainWindow::refreshEnabledSources() {
     ui->refreshSources->setEnabled(false);

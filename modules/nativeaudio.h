@@ -24,6 +24,7 @@ public:
     bool setDeviceId(QAudio::Mode mode,const int id);
     static QStringList getDevicesNames(QAudio::Mode mode);
     qint64 bytesAvailable();
+    static QAudio::Mode getAudioFlag(const QIODevice::OpenModeFlag mode);
 private:
     qint64 readData(char *data, qint64 maxlen);
     qint64 writeData(const char *data, qint64 len);

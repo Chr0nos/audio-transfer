@@ -9,9 +9,11 @@
 #ifdef SERVER
 #include "server/serversocket.h"
 #endif
+#ifdef MULTIMEDIA
+#include <QAudioDeviceInfo>
+#endif
 
 #include <QTextStream>
-#include <QAudioDeviceInfo>
 #include <QTime>
 
 Comline::Comline(QStringList *argList, QObject *parent) :

@@ -14,7 +14,7 @@ ZeroDevice::ZeroDevice(AudioFormat* format,QObject *parent) :
     bytesCountPs = format->getBitrate();
     lastReadTime = 0;
     timer = new QTimer(this);
-    timer->setInterval(10);
+    timer->setInterval(100);
     connect(timer,SIGNAL(timeout()),this,SIGNAL(readyRead()));
 
 }

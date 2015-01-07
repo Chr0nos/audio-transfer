@@ -41,13 +41,9 @@ private slots:
     void on_configSave_clicked();
     void on_portAudioRefreshButton_clicked();
     void on_refreshPortAudioDestinationButton_clicked();
-
     void on_buttonResetGraphic_clicked();
-
     void on_buttonSaveGraphic_clicked();
-
     void on_actionExit_triggered();
-
     //void on_actionFreqgen_triggered();
 
 public slots:

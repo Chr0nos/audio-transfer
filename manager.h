@@ -4,7 +4,9 @@
 #include "audioformat.h"
 #include "circularbuffer.h"
 
-#include "modules/nativeaudio.h"
+#ifdef MULTIMEDIA
+    #include "modules/nativeaudio.h"
+#endif
 #include "modules/tcpdevice.h"
 #include "modules/udpdevice.h"
 #include "modules/zerodevice.h"
@@ -126,7 +128,7 @@ private:
     quint64 bytesCount;
     bool bisRecording;
     void debugList(const QStringList list);
-    bool prepare(QAudio::Mode mode, QIODevice **device);
+    bool prepare(QIODevice::OpenModeFlag mode, QIODevice **device);
     void say(const QString message);
 
 signals:
