@@ -27,7 +27,7 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
 
     //creating the manager, this class will manage the output using the CircularDevice
     this->manager = new Manager(this);
-    //connect(this->manager,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+    if (getIni()->getValue("general","verbose").toInt()) connect(this->manager,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
 
     //flow checker interval
     //note: the flow checker also check for afk users.
