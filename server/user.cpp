@@ -205,13 +205,29 @@ bool User::readUserConfig(const QByteArray *data) {
                     value = fields.at(1);
                 }
                 const int intVal = value.toInt();
-                if (key == "samplerate") mc.format->setSampleRate(intVal);
+                if (key == "samplerate") {
+                    if (intVal < 1) {
+                        kill("invalid sample rate.");
+                        return true;
+                    }
+                    else mc.format->setSampleRate(intVal);
+                }
                 else if (key == "samplesize") mc.format->setSampleSize(intVal);
                 else if (key == "name") {
-                    say("renaming user to: " + value);
-                    this->setObjectName(value);
+                    if (value.length() > 64) say("rejecting user name: name is too long.");
+                    else {
+                        say("renaming user to: " + value);
+                        this->setObjectName(value);
+                    }
                 }
-                else if (key == "channels") mc.format->setChannelCount(intVal);
+                else if (key == "channels") {
+                    if ((!intVal) || (intVal < 1)) {
+                        say("user has sent invalid number of channels: closing connection.");
+                        this->kill("invalid channel numbers");
+                        return true;
+                    }
+                    mc.format->setChannelCount(intVal);
+                }
                 else send(QString("unknow option: " + key + "value: " + value).toLocal8Bit());
             }
         }
@@ -233,7 +249,7 @@ void User::send(const QByteArray data) {
     }
 }
 void User::kill(const QString reason) {
-    flowChecker->setParent(0);
+    flowChecker->setParent(NULL);
     say("kicking user: " + reason);
     send(QString("you where kicked: reason: " + reason).toLocal8Bit());
     if (sockType == ServerSocket::Tcp) {
