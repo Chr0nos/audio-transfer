@@ -15,6 +15,8 @@
 
 #include <QTextStream>
 #include <QTime>
+#include <QDir>
+#include <QCoreApplication>
 
 Comline::Comline(QStringList *argList, QObject *parent) :
     QObject(parent)
@@ -23,7 +25,13 @@ Comline::Comline(QStringList *argList, QObject *parent) :
     quiet = false;
     sayUseTime = false;
     lastReadedValue = 0;
-    ini = new Readini(MainWindow::getConfigFilePath(),this);
+    QString cfgPath;
+#ifdef GUI
+    cfgPath = MainWindow::getConfigFilePath();
+#else
+    cfgPath = QDir::homePath() + "/.audio-transfer/client.ini";
+#endif
+    ini = new Readini(cfgPath,this);
 
     //this is the transfer stats refresh timer
     timer = new QTimer(this);
