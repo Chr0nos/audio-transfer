@@ -1,6 +1,6 @@
 build:
 	Linux mint:
-		sudo aptitude install libpulse-dev build-essential libqt5core5 libqt5gui5 libqt5network5 qtmultimedia5-dev git
+		sudo aptitude install libpulse-dev build-essential libqt5core5 libqt5gui5 libqt5network5 qtmultimedia5-dev libqt5multimedia5-plugins libqt5multimedia5 git
 		git clone https://code.google.com/p/audio-transfer-client
 		cd audio-transfer-client
 		/usr/lib/x86_64-linux-gnu/qt5/bin/qmake
