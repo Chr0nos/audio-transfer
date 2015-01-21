@@ -105,7 +105,7 @@ void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const
         const int max = ini->getValue("general","maxUsers").toInt();
         if ((max) && (users->countUsers() >= max)) return;
         if (!security->isAuthorisedHost(sender)) {
-            //say("rejected data from: " + sender->toString());
+            if (ini->getValue("general","showUdpRejected").toInt()) say("rejected data from: " + sender->toString());
             return;
         }
         say("adding udp user: " + sender->toString());

@@ -66,7 +66,7 @@ void ServerSecurity::addToBannedList(const QHostAddress *address, const int banT
     bannedHosts.append(user);
 }
 bool ServerSecurity::checkForUnban(const int pos) {
-    const bannedUser user = bannedHosts.at(pos);
+    bannedUser user = bannedHosts.at(pos);
     if (user.bannedSince.elapsed() > user.banTime) {
         say("unbanning user: " + user.host.toString());
         bannedHosts.removeAt(pos);
@@ -87,8 +87,8 @@ void ServerSecurity::checkForUnban() {
     }
 }
 bool ServerSecurity::isBanned(const QHostAddress *address)  {
-    int pos = bannedHosts.count() -1;
-    while (pos--) {
+    int pos = bannedHosts.count();
+    while (pos-- > 0) {
         //if the user WAS banned and is not anymore: no need to check in the full list.
         if (checkForUnban(pos)) return false;
 
