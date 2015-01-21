@@ -4,7 +4,7 @@
 #include "readini.h"
 #include "size.h"
 #include "ui/graphicgenerator.h"
-//#include "ui/soundanalyser.h"
+#include "ui/soundanalyser.h"
 
 #include <QtGui>
 #include <QString>
@@ -108,12 +108,52 @@ void MainWindow::debug(const QString message) {
     ui->debug->scrollToBottom();
     qDebug() << message;
 }
+
 #ifdef MULTIMEDIA
-void MainWindow::on_refreshSources_clicked {
+void MainWindow::on_refreshSources_clicked() {
     ui->sourcesList->clear();
     ui->sourcesList->addItems(Manager::getDevicesNames(QAudio::AudioInput));
     if (ui->checkboxSourceOutput->isChecked()) {
         ui->sourcesList->addItems(Manager::getDevicesNames(QAudio::AudioOutput));
+    }
+}
+void MainWindow::on_sourcesList_currentTextChanged()
+{
+    ui->codecList->clear();
+    ui->samplesRates->clear();
+    ui->samplesSize->clear();
+    if (ui->sourcesList->currentIndex() >= 0) {
+        QList<QAudioDeviceInfo> infoList = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
+        if (ui->checkboxSourceOutput->isChecked()) {
+            infoList << QAudioDeviceInfo::availableDevices(QAudio::AudioOutput);
+        }
+
+        QAudioDeviceInfo info = infoList.at(ui->sourcesList->currentIndex());
+        ui->pushButton->setEnabled(true);
+        ui->codecList->addItems(info.supportedCodecs());
+        ui->codecList->setCurrentIndex(0);
+        ui->samplesSize->addItems(Manager::intListToQStringList(info.supportedSampleSizes()));
+        ui->samplesRates->addItems(Manager::intListToQStringList(info.supportedSampleRates()));
+        ui->channelsCount->setMaximum(info.supportedChannelCounts().last());
+
+        //setting current config as the best possible
+        ui->samplesSize->setCurrentIndex(ui->samplesSize->count() -1);
+        ui->samplesRates->setCurrentIndex(ui->samplesRates->count() -1);
+        ui->channelsCount->setValue(info.supportedChannelCounts().last());
+    }
+}
+void MainWindow::on_sourcesList_currentIndexChanged(int index)
+{
+    ui->samplesRates->clear();
+    ui->codecList->clear();
+    if (index >= 0) {
+        QList<QAudioDeviceInfo> infoList = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
+        infoList.append(QAudioDeviceInfo::availableDevices(QAudio::AudioOutput));
+
+        QAudioDeviceInfo info = infoList.at(ui->sourcesList->currentIndex());
+
+        ui->samplesRates->addItems(Manager::intListToQStringList(info.supportedSampleRates()));
+        ui->codecList->addItems(info.supportedCodecs());
     }
 }
 #endif
@@ -205,33 +245,6 @@ void MainWindow::on_pushButton_clicked()
         ui->pushButton->setText("Record");
     }
 }
-#ifdef MULTIMEDIA
-void MainWindow::on_sourcesList_currentTextChanged()
-{
-    ui->codecList->clear();
-    ui->samplesRates->clear();
-    ui->samplesSize->clear();
-    if (ui->sourcesList->currentIndex() >= 0) {
-        QList<QAudioDeviceInfo> infoList = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
-        if (ui->checkboxSourceOutput->isChecked()) {
-            infoList << QAudioDeviceInfo::availableDevices(QAudio::AudioOutput);
-        }
-
-        QAudioDeviceInfo info = infoList.at(ui->sourcesList->currentIndex());
-        ui->pushButton->setEnabled(true);
-        ui->codecList->addItems(info.supportedCodecs());
-        ui->codecList->setCurrentIndex(0);
-        ui->samplesSize->addItems(Manager::intListToQStringList(info.supportedSampleSizes()));
-        ui->samplesRates->addItems(Manager::intListToQStringList(info.supportedSampleRates()));
-        ui->channelsCount->setMaximum(info.supportedChannelCounts().last());
-
-        //setting current config as the best possible
-        ui->samplesSize->setCurrentIndex(ui->samplesSize->count() -1);
-        ui->samplesRates->setCurrentIndex(ui->samplesRates->count() -1);
-        ui->channelsCount->setValue(info.supportedChannelCounts().last());
-    }
-}
-#endif
 
 void MainWindow::on_browseSourceFilePath_clicked()
 {
@@ -266,23 +279,6 @@ bool MainWindow::isValidIp(const QString host) {
     }
     return true;
 }
-#ifdef MULTIMEDIA
-void MainWindow::on_sourcesList_currentIndexChanged(int index)
-{
-    ui->samplesRates->clear();
-    ui->codecList->clear();
-    if (index >= 0) {
-        QList<QAudioDeviceInfo> infoList = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
-        infoList.append(QAudioDeviceInfo::availableDevices(QAudio::AudioOutput));
-
-        QAudioDeviceInfo info = infoList.at(ui->sourcesList->currentIndex());
-
-        ui->samplesRates->addItems(Manager::intListToQStringList(info.supportedSampleRates()));
-        ui->codecList->addItems(info.supportedCodecs());
-        //ui->channelsCount->setMaximum(rec->getMaxChannelsCount());
-    }
-}
-#endif
 
 void MainWindow::refreshEnabledSources() {
     ui->refreshSources->setEnabled(false);
@@ -658,11 +654,9 @@ void MainWindow::on_actionExit_triggered()
 {
     exit(0);
 }
-/*
 void MainWindow::on_actionFreqgen_triggered()
 {
     SoundAnalyser a(this);
     a.exec();
     a.show();
 }
-*/

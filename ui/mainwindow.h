@@ -46,7 +46,7 @@ private slots:
     void on_buttonResetGraphic_clicked();
     void on_buttonSaveGraphic_clicked();
     void on_actionExit_triggered();
-    //void on_actionFreqgen_triggered();
+    void on_actionFreqgen_triggered();
 
 public slots:
     void errors(const QString error);
