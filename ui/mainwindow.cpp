@@ -656,7 +656,7 @@ void MainWindow::on_actionExit_triggered()
 }
 void MainWindow::on_actionFreqgen_triggered()
 {
-    SoundAnalyser a(this);
-    a.exec();
-    a.show();
+    //SoundAnalyser a(this);
+    //a.exec();
+    //a.show();
 }
