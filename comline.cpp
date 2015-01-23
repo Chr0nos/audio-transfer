@@ -300,9 +300,20 @@ void Comline::parse(QStringList *argList) {
                 else if (mode == Manager::Device) {
                     if (!raw.count());
                     else if (raw.first() == "list") {
-                        say("devices list:");
+                        QAudio::Mode audioMode;
+                        QString textMode;
+                        if (arg == "-o") {
+                            audioMode = QAudio::AudioOutput;
+                            textMode = "output";
+                        }
+                        else {
+                            audioMode = QAudio::AudioInput;
+                            textMode = "input";
+                        }
+
+                        say(textMode + " devices list:");
                         int count = 0;
-                        QStringList devices = NativeAudio::getDevicesNames(QAudio::AudioInput);
+                        QStringList devices = NativeAudio::getDevicesNames(audioMode);
                         for (QStringList::iterator i = devices.begin() ; i != devices.end() ; i++) {
                             say(QString::number(count++) + ": " + *i);
                         }
