@@ -1,4 +1,5 @@
 #include "circularbuffer.h"
+#include "size.h"
 #include <QDebug>
 #include <QMutexLocker>
 
@@ -13,6 +14,7 @@ CircularBuffer::CircularBuffer(const uint bufferSize, const QString bufferName, 
     data.reserve(bufferSize);
     positionRead = 0;
     positionWrite = 0;
+    packetSize = 0;
     policy = Replace;
     this->setObjectName(bufferName);
     say("buffer initialized");
@@ -96,7 +98,10 @@ bool CircularBuffer::append(const QByteArray *newData) {
     //Appending lenght to the current write position
     positionWrite += lenght;
     lock.unlock();
-    emit(readyRead(newData->size()));
+    if (packetSize) {
+        if (getAvailableBytesCount() >= packetSize) emit(readyRead(getAvailableBytesCount()));
+    }
+    else emit(readyRead(newData->size()));
     return true;
 }
 bool CircularBuffer::append(const char *data,size_t size) {
@@ -196,5 +201,9 @@ void CircularBuffer::say(const QString message) {
     qDebug() << "CircularBuffer: " + this->objectName() + ": " + message;
 #endif
 */
-    emit(debug(message));
+    emit(debug("CircularBuffer: " + message));
+}
+void CircularBuffer::setPacketSize(const size_t size) {
+    say("switching packet size to: " + Size::getWsize(size));
+    this->packetSize = size;
 }

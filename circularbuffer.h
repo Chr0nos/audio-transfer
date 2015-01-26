@@ -30,8 +30,10 @@ public:
         Replace = 2
     };
     void setOverflowPolicy(const OverflowPolicy newPolicy);
+    void setPacketSize(const size_t size);
 
 private:
+    size_t packetSize;
     int bsize;
     int originalSize;
     QByteArray data;
@@ -45,6 +47,7 @@ signals:
     void readyRead(const int size);
     void overflowPolicyChanged(const OverflowPolicy newPolicy);
     void debug(const QString message);
+
 public slots:
 
 };
