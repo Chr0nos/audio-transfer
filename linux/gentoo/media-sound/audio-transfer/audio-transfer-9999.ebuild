@@ -3,11 +3,11 @@ EAPI="5"
 inherit git-2 eutils qmake-utils flag-o-matic user
 
 DESCRIPTION="Audio transfer client, to transfer audio over LAN"
-HOMEPAGE="https://code.google.com/p/audio-transfer-client"
+HOMEPAGE="https://github.com/Chr0nos/audio-transfer"
 
-EGIT_REPO_URI="https://code.google.com/p/audio-transfer-client/"
+EGIT_REPO_URI="https://github.com/Chr0nos/audio-transfer.git"
 
-LICENSE="LGPL-3"
+LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS=""
 IUSE="+qt4 qt5 pulseaudio debug portaudio +comline +server systemd"
