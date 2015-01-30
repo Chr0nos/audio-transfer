@@ -151,6 +151,9 @@ void User::initUser() {
 
     //creating the flow checker (it check if the data are comming at the good speed)
     this->flowChecker = new FlowChecker(mc.format,this->checkInterval,this);
+    connect(flowChecker,SIGNAL(ban(QString,int)),this,SLOT(ban(QString,int)));
+    connect(flowChecker,SIGNAL(kick(QString)),this,SLOT(kill(QString)));
+
     connect(flowChecker,SIGNAL(debug(QString)),this,SLOT(say(QString)));
     flowChecker->start();
 }

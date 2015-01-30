@@ -25,6 +25,8 @@ private:
     bool enableFlowKick;
 signals:
     void debug(const QString message);
+    void kick(const QString reason);
+    void ban(const QString reason,const int duration);
 private slots:
     void check();
 public slots:

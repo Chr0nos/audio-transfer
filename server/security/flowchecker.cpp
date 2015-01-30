@@ -5,8 +5,6 @@
 #include "server/user.h"
 #endif
 
-#include <QDebug>
-
 FlowChecker::FlowChecker(AudioFormat *format, const int checkInterval, QObject *parent) :
     QObject(parent)
 {
@@ -46,7 +44,7 @@ void FlowChecker::check() {
     //here we detect if the user is afk we kick him withous any warning
     if (!speed) {
         stop();
-        user->kill("afk");
+        emit(kick("afk"));
         return;
     }
     else if (!enableFlowKick); //DONT EVEN DARE TO PUT A RETURN HERE !!! (i'm serious ! we need fallback bellow)
@@ -56,7 +54,7 @@ void FlowChecker::check() {
         //in case of an overflow attemps, it's realy more dangerous than underflow so: banning the user for 2 mins
         if (warningCount++ > 3) {
             stop();
-            user->ban("overflow",120000);
+            emit(ban("overflow",120000));
             return;
         }
     }
@@ -64,7 +62,7 @@ void FlowChecker::check() {
         say("user is not sending enoth data: buffer underflow prevention.");
         if (warningCount++ > 3) {
             stop();
-            user->kill("underflow");
+            emit(kick("underflow"));
             return;
         }
     }

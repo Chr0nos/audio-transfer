@@ -18,12 +18,9 @@ public:
     ~User();
     void setFormat(const AudioFormat* format);
     QString getUserName();
-    void kill(const QString reason);
-    void ban(const QString reason,const int banTime = 0);
     const QObject* getSocketPointer();
     void send(const QByteArray data);
     quint64 getBytesCount();
-    void stop();
     QHostAddress getHostAddress();
     int getSpeed();
     ServerSecurity* callSecurity();
@@ -57,7 +54,9 @@ private slots:
     void sockRead();
 public slots:
     void sockRead(const QByteArray* data);
-
+    void kill(const QString reason);
+    void ban(const QString reason,const int banTime);
+    void stop();
 };
 
 #endif // USER_H
