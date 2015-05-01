@@ -14,24 +14,31 @@ QString Size::getWsize(const quint64 size, const int steps) {
     if (n >= keys.count()) n = keys.count() -1;
     return QString::number(isize,10,2) + keys.at(n);
 }
+
 quint64 Size::getRsize(const QString wsize) {
     //this method convert an humain size to a bytes size
-    QStringList keys = Size::getUnits();
-    for (int p = keys.count() -1;p;p--) {
-        const int len = keys.at(p).length();
-        const int sizeEndPos = wsize.length() - len;
+    QStringList keys;
+    QString number;
+    int len;
+    int sizeEndPos;
+    double size;
+
+    keys = Size::getUnits();
+    for (int p = keys.count() -1 ; p ; p--) {
+        len = keys.at(p).length();
+        sizeEndPos = wsize.length() - len;
         //prevent empty sizes like "b" (withous any numbers)
         if (!sizeEndPos) return 0;
         if (wsize.right(len) == keys.at(p)) {
-            QString number = wsize.mid(0,sizeEndPos);
-            double size = number.toDouble();
+            number = wsize.mid(0,sizeEndPos);
+            size = number.toDouble();
             while (p--) size *= 1024;
             return size;
         }
     }
-
     return 0;
 }
+
 QStringList Size::getUnits() {
     QStringList keys;
     keys << "b" << "Kb" << "Mb" << "Gb" << "Tb" << "Pb" << "Eb" << "Zb" << "Yb";
