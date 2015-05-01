@@ -42,6 +42,7 @@ private:
     FlowChecker* flowChecker;
     int checkInterval;
     void initUser();
+    bool isPossibleConfigLine(const char* input, int lenght);
 
 
 signals:

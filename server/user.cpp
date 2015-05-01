@@ -151,9 +151,9 @@ void User::initUser() {
 
     //creating the flow checker (it check if the data are comming at the good speed)
     this->flowChecker = new FlowChecker(mc.format,this->checkInterval,this);
+
     connect(flowChecker,SIGNAL(ban(QString,int)),this,SLOT(ban(QString,int)));
     connect(flowChecker,SIGNAL(kick(QString)),this,SLOT(kill(QString)));
-
     connect(flowChecker,SIGNAL(debug(QString)),this,SLOT(say(QString)));
     flowChecker->start();
 }
@@ -177,11 +177,37 @@ void User::stop() {
     emit(sockClose(this));
 }
 
+bool User::isPossibleConfigLine(const char *input, int lenght)
+{
+    /*
+     ** this function check if a config line could be a valid one or not
+     ** it's here to replace the regex usage and be more acurate
+     ** allowed range are: a-z A-Z : 0-9
+     */
+    int i;
+    char c;
+
+    i = 0;
+    while (i < lenght)
+    {
+        c = input[i];
+        if (c == 32);
+        else if (c == ':');
+        else if ((c >= 'A') && (c <= 'Z'));
+        else if ((c >= 'a') && (c <= 'z'));
+        else if ((c >= '0') && (c <= '9'));
+        else return false;
+        i++;
+    }
+    return true;
+}
+
 bool User::readUserConfig(const QByteArray *data) {
     QString rawUserConfig = QString(*data).split("\n").first();
-    QRegExp exp("[\\W]|[^\\d]|[^:]|[^\\s]",Qt::CaseSensitive,QRegExp::RegExp2);
-    if (rawUserConfig.isEmpty()) say("no user config");
-    else if (exp.indexIn(rawUserConfig)) say("no user config");
+    if (!isPossibleConfigLine(rawUserConfig.toLocal8Bit().data(), rawUserConfig.length()))
+    {
+        say("no user config");
+    }
     else {
         Readini* ini = qobject_cast<UserHandler*>(this->parent())->getIni();
         if (!ini->isKey("general","userConfig"));
