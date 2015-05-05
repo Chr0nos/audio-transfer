@@ -15,7 +15,14 @@
 
 QT       += core gui network
 CONFIG   += c++11
-DEFINES += MULTIMEDIA PULSE PULSEASYNC PORTAUDIO COMLINE SERVER GUI DEBUG
+DEFINES += PULSE PULSEASYNC PORTAUDIO COMLINE SERVER GUI MULTIMEDIA ASIO
+#DEFINES += GUI
+
+
+contains(DEFINES, ASIO)
+{
+    LIBS += -lboost_system
+}
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
@@ -25,11 +32,11 @@ TEMPLATE = app
 contains(DEFINES,GUI) {
     SOURCES += ui/mainwindow.cpp \
 	ui/graphicgenerator.cpp
-	#ui/soundanalyser.cpp
+	ui/soundanalyser.cpp
 
     HEADERS += ui/mainwindow.h \
 	ui/graphicgenerator.h
-	#ui/soundanalyser.h
+	ui/soundanalyser.h
 
     FORMS    += ui/mainwindow.ui \
 	ui/soundanalyser.ui
@@ -50,7 +57,9 @@ SOURCES += main.cpp\
     modules/pulsedeviceasync.cpp \
     circularbuffer.cpp \
     modules/circulardevice.cpp \
-    modules/freqgen.cpp
+    modules/freqgen.cpp \
+    modules/filters/volumechange.cpp \
+    modules/asiodevice.cpp
 
 HEADERS  += manager.h \
     main.h \
@@ -67,7 +76,9 @@ HEADERS  += manager.h \
     modules/portaudiodevice.h \
     modules/pulsedeviceasync.h \
     circularbuffer.h \
-    modules/freqgen.h
+    modules/freqgen.h \
+    modules/filters/volumechange.h \
+    modules/asiodevice.h
 
 contains(DEFINES,COMLINE) {
     CONFIG += console
@@ -108,6 +119,10 @@ win32 {
 }
 contains(DEFINES,PORTAUDIO) {
     LIBS += -lportaudio
+}
+#if pulseasync was set: we need pulse
+contains(DEFINES,PULSEASYNC) {
+    DEFINES += PULSE
 }
 contains(DEFINES,PULSE) {
     LIBS += -lpulse-simple -lpulse
