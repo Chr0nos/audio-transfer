@@ -123,58 +123,93 @@ bool Comline::initConfig() {
 #endif
     return true;
 }
+void Comline::showHelp()
+{
+    *out << "availables arguments:" << endl
+            << "-c <x> : x is the number of channels to send" << endl
+            << "-i <mode> : use this input mode" << endl
+            << "-o <mode> : this this output mode" << endl
+            << "\tavailables modes are:" << endl
+        #ifdef PULSE
+            << "\t- pulse (default input)" << endl
+        #endif
+        #ifdef PULSEASYNC
+            << "\t- pulseasync" << endl
+        #endif
+        #ifdef MULTIMEDIA
+            << "\t- native" << endl
+             #endif
+        #ifdef PORTAUDIO
+            << "\t- portaudio" << endl
+        #endif
+            << "\t- zero" << endl
+            << "\t- tcp:<host>[:port]" << endl
+            << "\t- udp:<host>[:port]" << endl
+            << "\t- file:<filePath>" << endl
+            << "\t- pipe" << endl
+            << "\t- freqgen" << endl
+            << "\tend of availables modes" << endl
+            << "-t <interval (msecs)> : set the interval between each speed refresh" << endl
+            << "-n <filePath> : load the specified ini config file path" << endl
+            << "-f <freq> : set the 'freq' as format frequency (default: 44100)" << endl
+            << "-s <sample Size> : set the sample size to the value, valids samples sizes are: 8, 16, 24, 32 (depending on hardware)" << endl
+            << "-d : turn on debug mode" << endl
+            << "-z : enable time and time zone" << endl
+            << "-h : show this help" << endl
+            << "-r : show indicatives bitrates usages for any modes" << endl
+       #ifdef SERVER
+            << "--- For server mode only ---" << endl
+            << "--server : run in server mode (input will be ignored)" << endl
+            << "--server-type <type> : set type of incoming connection must be (tcp or udp) (tcp is default)" << endl
+            << "--pid <filePath> : write the server process pid to the specified file" << endl
+       #endif
+       #ifdef DEBUG
+             << "--test-cricular : run ring buffer main class self test (debug)" << endl
+             << "--test-device : run ring buffer device test (debug)" << endl
+             << "--hex : need to be used with -o pipe: show the output as hexadecimal (for debug purpose)" << endl
+       #endif
+            //<< "-platform offscreen : allow you to run the program withous any X connection" << endl
+            << "end of help" << endl;
+    exit(0);
+}
+
+#ifdef SERVER
+void Comline::makeServer()
+{
+    //this thing is the server mode, it's currently in developement, the idea is to re-use the current Manager class and other stuffs
+    /* this will handle:
+     * - Tcp incoming connection (and handle)
+     * - Udp incoming datagram
+     * - Format attribution
+     * - Manager initialisation for each client (one Manager object Per client) (inside a user class i guess)
+     * - TimeOut detection
+     *
+    */
+    QStringList configPath;
+    QString goodConfigFilePath;
+
+    configPath << QDir::home().path() + "/.audio-transfer/server.ini";
+    configPath << QDir::home().path() + "/.audio-transfer-server.ini";
+    configPath << "/etc/audio-transfer/server.ini";
+    foreach (QString filePath,configPath) {
+        if (QFile::exists(filePath)) {
+            goodConfigFilePath = filePath;
+            break;
+        }
+    }
+    if (goodConfigFilePath.isEmpty()) {
+        say("warning: no configuration file found !");
+    }
+
+    srv = new ServerMain(goodConfigFilePath,this);
+    connect(srv,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
+}
+#endif
 
 void Comline::parse(QStringList *argList) {
     bool serverMode = false;
     ServerSocket::type serverType = ServerSocket::Tcp;
-    if ((argList->contains("--help")) || (argList->contains("-h"))) {
-        *out << "availables arguments:" << endl
-                << "-c <x> : x is the number of channels to send" << endl
-                << "-i <mode> : use this input mode" << endl
-                << "-o <mode> : this this output mode" << endl
-                << "\tavailables modes are:" << endl
-                #ifdef PULSE
-                << "\t- pulse (default input)" << endl
-                #endif
-                #ifdef PULSEASYNC
-                << "\t- pulseasync" << endl
-                #endif
-                #ifdef MULTIMEDIA
-                << "\t- native" << endl
-                 #endif
-                #ifdef PORTAUDIO
-                << "\t- portaudio" << endl
-                #endif
-                << "\t- zero" << endl
-                << "\t- tcp:<host>[:port]" << endl
-                << "\t- udp:<host>[:port]" << endl
-                << "\t- file:<filePath>" << endl
-                << "\t- pipe" << endl
-                << "\t- freqgen" << endl
-                << "\tend of availables modes" << endl
-                << "-t <interval (msecs)> : set the interval between each speed refresh" << endl
-                << "-n <filePath> : load the specified ini config file path" << endl
-                << "-f <freq> : set the 'freq' as format frequency (default: 44100)" << endl
-                << "-s <sample Size> : set the sample size to the value, valids samples sizes are: 8, 16, 24, 32 (depending on hardware)" << endl
-                << "-d : turn on debug mode" << endl
-                << "-z : enable time and time zone" << endl
-                << "-h : show this help" << endl
-                << "-r : show indicatives bitrates usages for any modes" << endl
-           #ifdef SERVER
-                << "--- For server mode only ---" << endl
-                << "--server : run in server mode (input will be ignored)" << endl
-                << "--server-type <type> : set type of incoming connection must be (tcp or udp) (tcp is default)" << endl
-                << "--pid <filePath> : write the server process pid to the specified file" << endl
-           #endif
-           #ifdef DEBUG
-                 << "--test-cricular : run ring buffer main class self test (debug)" << endl
-                 << "--test-device : run ring buffer device test (debug)" << endl
-                 << "--hex : need to be used with -o pipe: show the output as hexadecimal (for debug purpose)" << endl
-           #endif
-                //<< "-platform offscreen : allow you to run the program withous any X connection" << endl
-                << "end of help" << endl;
-        exit(0);
-    }
+    if ((argList->contains("--help")) || (argList->contains("-h"))) showHelp();
     else if (argList->contains("--test-circular")) {
         debug("runing circular buffer test");
         circularTest();
@@ -186,7 +221,7 @@ void Comline::parse(QStringList *argList) {
     }
 
     const int m = argList->count();
-    for (int i = 0; i < m ; i++) {
+    for (int i = 0 ; i < m ; i++) {
         QString arg = argList->at(i);
 
         if (arg.isEmpty()) continue;
@@ -211,34 +246,8 @@ void Comline::parse(QStringList *argList) {
         }
 #ifdef SERVER
         else if (arg == "--server") {
-            //this thing is the server mode, it's currently in developement, the idea is to re-use the current Manager class and other stuffs
-            /* this will handle:
-             * - Tcp incoming connection (and handle)
-             * - Udp incoming datagram
-             * - Format attribution
-             * - Manager initialisation for each client (one Manager object Per client) (inside a user class i guess)
-             * - TimeOut detection
-             *
-            */
+            makeServer();
             serverMode = true;
-            QStringList configPath;
-            configPath << QDir::home().path() + "/.audio-transfer/server.ini";
-            configPath << QDir::home().path() + "/.audio-transfer-server.ini";
-            configPath << "/etc/audio-transfer/server.ini";
-            QString goodConfigFilePath;
-            foreach (QString filePath,configPath) {
-                if (QFile::exists(filePath)) {
-                    goodConfigFilePath = filePath;
-                    break;
-                }
-            }
-            if (goodConfigFilePath.isEmpty()) {
-                say("warning: no configuration file found !");
-            }
-
-            srv = new ServerMain(goodConfigFilePath,this);
-            connect(srv,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
-
         }
         else if (arg == "--test-device") {
             CircularDevice* circular = new CircularDevice(512,this);
@@ -324,9 +333,8 @@ void Comline::parse(QStringList *argList) {
                         mc.devices.input = raw.first().toInt();
                         say("forced device: " + QString::number(mc.devices.input));
                     }
-            }
+                }
 #endif
-
                 if (arg == "-o") {
                     mc.modeOutput = mode;
                     if ((mode == Manager::Tcp) || (mode == Manager::Udp)) {
@@ -380,18 +388,7 @@ void Comline::parse(QStringList *argList) {
             }
 #endif
             else if (arg == "--pid") {
-                QString &filePath = value;
-                const qint64 pid = QCoreApplication::applicationPid();
-                say("creating pid file to: " + filePath);
-                say("current pid: " + QString::number(pid));
-                QFile file(filePath);
-                if (file.exists()) file.remove();
-                if (!file.open(QIODevice::WriteOnly)) {
-                    say("failed to create the pid file: check the permissions.");
-                    exit(1);
-                }
-                file.write(QString::number(pid).toLocal8Bit());
-                file.close();
+                writePid(&value);
             }
 
             //lets handle this by Qt itself
@@ -414,6 +411,23 @@ void Comline::parse(QStringList *argList) {
     else srv->listen(serverType);
 #endif
 }
+void Comline::writePid(QString *value)
+{
+    QString &filePath = *value;
+    const qint64 pid = QCoreApplication::applicationPid();
+    QFile file(filePath);
+
+    say("creating pid file to: " + filePath);
+    say("current pid: " + QString::number(pid));
+    if (file.exists()) file.remove();
+    if (!file.open(QIODevice::WriteOnly)) {
+        say("failed to create the pid file: check the permissions.");
+        exit(1);
+    }
+    file.write(QString::number(pid).toLocal8Bit());
+    file.close();
+}
+
 void Comline::say(const QString message) {
     if (!quiet) {
         if (sayUseTime) *out << QTime::currentTime().toString("hh:mm:ss t : ");
@@ -441,16 +455,19 @@ void Comline::debugTrigger() {
 }
 void Comline::showCommonRates() {
     QList<int> rates = AudioFormat::getCommonSamplesRates();
+    int rate;
+    int bits;
+    QString rateString;
 
     say("indicatives bitrates usages:");
     say("Channels\tSize\tRate\t\tBitrate");
     int channels = 0;
     while (channels++ < 8) {
-        int bits = 8;
+        bits = 8;
         while (bits <= 32) {
-            foreach (int rate,rates) {
+            foreach (rate,rates) {
                 const int bitrate = rate * bits * channels / 8;
-                QString rateString = Size::getWsize(rate,1000);
+                rateString = Size::getWsize(rate,1000);
                 rateString = rateString.mid(0,rateString.length() -1).rightJustified(8,QChar(32));
                 say("" + QString::number(channels).rightJustified(5,QChar(32)) + "\t\t" +
                     QString::number(bits) + "bits \t" +
@@ -462,4 +479,9 @@ void Comline::showCommonRates() {
         }
     }
     say("end");
+}
+void Comline::showQStringList(QStringList *list) {
+    QStringList::iterator i;
+    for (i = list->begin() ; i != list->end() ; i++)
+        *out << "-" << *i << endl;
 }

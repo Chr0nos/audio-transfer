@@ -36,10 +36,15 @@ private:
     bool sayUseTime;
     QString iniPath;
     void loadIni();
+    void showHelp();
+    void writePid(QString *value);
 #ifdef SERVER
     ServerMain* srv;
+    void testDevice();
+    void makeServer();
 #endif
     void showCommonRates();
+    void showQStringList(QStringList* list);
 
 signals:
     void quit();
