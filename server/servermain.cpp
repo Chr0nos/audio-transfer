@@ -99,10 +99,12 @@ void ServerMain::sockOpen(QTcpSocket *newSock) {
 void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const QByteArray *data, QUdpSocket *udp) {
     if (data->isEmpty()) return;
     User* user = NULL;
-    (void) senderPort;
+    int max;
     const int pos = users->indexOf(udp);
+
+    (void) senderPort;
     if (pos < 0) {
-        const int max = ini->getValue("general","maxUsers").toInt();
+        max = ini->getValue("general","maxUsers").toInt();
         if ((max) && (users->countUsers() >= max)) return;
         if (!security->isAuthorisedHost(sender)) {
             if (ini->getValue("general","showUdpRejected").toInt()) say("rejected data from: " + sender->toString());
@@ -111,7 +113,6 @@ void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const
         say("adding udp user: " + sender->toString());
         user = new User(udp,ServerSocket::Udp,this->users);
         user->setObjectName(sender->toString());
-
         users->append(user);
     }
     else {
@@ -119,6 +120,7 @@ void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const
     }
     user->sockRead(data);
 }
+
 Readini* ServerMain::getIni() {
     return ini;
 }
