@@ -43,7 +43,8 @@ private:
     int checkInterval;
     void initUser();
     bool isPossibleConfigLine(const char* input, int lenght);
-
+    void initFormat();
+    bool readUserConfigOption(const QString *key, const QString *value, const int *intVal);
 
 signals:
     void debug(const QString message);

@@ -1,7 +1,6 @@
 #include "user.h"
 #include "server/servermain.h"
 #include <QTime>
-#include <QRegExp>
 
 User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     QObject(parent)
@@ -13,7 +12,8 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     this->sock = socket;
     lastBytesRead = 0;
     this->flowChecker = NULL;
-    if (type == ServerSocket::Tcp) {
+    if (type == ServerSocket::Tcp)
+    {
         QTcpSocket* tcp = (QTcpSocket*) socket;
         tcp->setParent(this);
         connect(tcp,SIGNAL(stateChanged(QAbstractSocket::SocketState)),this,SLOT(sockStateChanged(QAbstractSocket::SocketState)));
@@ -35,12 +35,8 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
 
     mc.bufferSize = 0;
 
-    //creating the default audio format (Todo: load default from the ini file)
-    mc.format = new AudioFormat();
-    mc.format->setChannelCount(2);
-    mc.format->setCodec("audio/pcm");
-    mc.format->setSampleRate(96000);
-    mc.format->setSampleSize(16);
+    //creating the default audio format
+    initFormat();
 
     //creating a 2Mb ring buffer device
     this->inputDevice = new CircularDevice(2097152,this);
@@ -50,7 +46,6 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     this->inputDevice->open(QIODevice::ReadWrite);
     mc.raw.devIn = this->inputDevice;
     mc.modeInput = Manager::Raw;
-
 
     QString moduleName = getIni()->getValue("general","output");
 
@@ -73,30 +68,65 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     specs.append(QString::number(checkInterval));
     send(specs);
 }
-User::~User() {
+
+User::~User()
+{
     say("deleting object");
-    if (sockType == ServerSocket::Tcp) {
+    if (sockType == ServerSocket::Tcp)
+    {
         QTcpSocket* sock = (QTcpSocket*) this->sock;
         if (sock->isOpen()) sock->close();
         sock->disconnect();
         sock->deleteLater();
     }
     //in udp you MUST dont close the socket.
-
-    if (flowChecker) {
+    if (flowChecker)
+    {
         flowChecker->stop();
         flowChecker->disconnect();
         delete(flowChecker);
     }
-    if (manager) {
+    if (manager)
+    {
         manager->disconnect();
         delete(manager);
     }
     //we dont delete 'format' here because the manager will do this :)
 }
 
+void User::initFormat()
+{
+    short channels;
+    int rate;
+    short size;
+    QString codec;
+    Readini *ini;
+
+    channels = 0;
+    rate = 0;
+    size = 0;
+    ini = getIni();
+    if ((ini) && (ini->exists()))
+    {
+        channels = ini->getValue("format", "channels").toInt();
+        rate = ini->getValue("format", "sampleRate").toInt();
+        codec = ini->getValue("format", "codec");
+        size = ini->getValue("format", "sampleSize").toInt();
+    }
+    if (channels <= 0) channels = 2;
+    if (!rate) rate = 96000;
+    if (codec.isEmpty()) codec = "audio/pcm";
+    if (!size) size = 16;
+    mc.format = new AudioFormat();
+    mc.format->setChannelCount(channels);
+    mc.format->setCodec(codec);
+    mc.format->setSampleRate(rate);
+    mc.format->setSampleSize(size);
+}
+
 void User::sockStateChanged(QAbstractSocket::SocketState state) {
-    switch (state) {
+    switch (state)
+    {
         case QAbstractSocket::ConnectedState:
             say("connected");
             break;
@@ -121,20 +151,27 @@ void User::sockStateChanged(QAbstractSocket::SocketState state) {
             break;
     }
 }
-void User::say(const QString message) {
+
+void User::say(const QString message)
+{
     emit(debug("User: " + this->getUserName() + ": " + message));
 }
-QString User::getUserName() {
+
+QString User::getUserName()
+{
     return this->objectName();
 }
-void User::sockRead() {
+
+void User::sockRead()
+{
     //this is the Tcp sockread, the udp data DONT cant this method
     //say("sockread !");
     QTcpSocket* sock = (QTcpSocket*) this->sock;
     QByteArray data = sock->readAll();
 
     const quint64 size = data.size();
-    if ((!bytesRead) && (!managerStarted)) {
+    if ((!bytesRead) && (!managerStarted))
+    {
         readUserConfig(&data);
         initUser();
         bytesRead += size;
@@ -144,7 +181,9 @@ void User::sockRead() {
     inputDevice->write(data,size);
     bytesRead += size;
 }
-void User::initUser() {
+
+void User::initUser()
+{
     mc.devicesNames.output = this->objectName();
     manager->setUserConfig(mc);
     managerStarted = manager->start();
@@ -158,13 +197,15 @@ void User::initUser() {
     flowChecker->start();
 }
 
-void User::sockRead(const QByteArray* data) {
+void User::sockRead(const QByteArray* data)
+{
     //this is a Udp sockread
     //QUdpSocket* sock = (QUdpSocket*) this->sock;
     //(void) sock;
     const int size = data->size();
 
-    if ((!bytesRead) && (!managerStarted)) {
+    if ((!bytesRead) && (!managerStarted))
+    {
         readUserConfig(data);
         initUser();
         bytesRead += size;
@@ -173,7 +214,9 @@ void User::sockRead(const QByteArray* data) {
     inputDevice->write(data->data(),size);
     bytesRead += size;
 }
-void User::stop() {
+
+void User::stop()
+{
     emit(sockClose(this));
 }
 
@@ -202,62 +245,55 @@ bool User::isPossibleConfigLine(const char *input, int lenght)
     return true;
 }
 
-bool User::readUserConfig(const QByteArray *data) {
+bool User::readUserConfig(const QByteArray *data)
+{
+    /*
+     ** this method is called if the user
+     ** has not sent anything yet
+     ** it detect if the user is sending  a configuration line
+     ** and it parse parameters sent by the remote client
+     */
     QString rawUserConfig = QString(*data).split("\n").first();
     if (!isPossibleConfigLine(rawUserConfig.toLocal8Bit().data(), rawUserConfig.length()))
     {
         say("no user config");
     }
-    else {
-        Readini* ini = qobject_cast<UserHandler*>(this->parent())->getIni();
+    else
+    {
+        int intVal;
+        QString key;
+        QString value;
+        QString opt;
+        QStringList fields;
+        int argc;
+        QStringList options;
+        Readini* ini;
+        QStringList::iterator i;
+
+        ini = getIni();
         if (!ini->isKey("general","userConfig"));
-        else if (!ini->getValue("general","userConfig").toInt()) {
+        else if (!ini->getValue("general","userConfig").toInt())
+        {
             say("refused user config: not allowed in the configuration file.");
             return false;
         }
         say("readed user config: " + rawUserConfig);
-
-
-        QStringList options = rawUserConfig.split(" ");
-        QStringList::iterator i;
-        for (i = options.begin();i != options.end();i++) {
-            QString opt = *i;
-            QStringList fields = opt.split(":");
-            const int argc = fields.count();
-            if (argc < 2) {
-                if (!opt.isEmpty()) say("missing value for option: " + opt);
-            }
-            else {
-                QString value;
-                const QString key = fields.at(0);
-                if (fields.count() >= 2) {
+        options = rawUserConfig.split(" ");
+        for (i = options.begin() ; i != options.end() ; i++) {
+            opt = *i;
+            fields = opt.split(":");
+            argc = fields.count();
+            if ((argc < 2) && (!opt.isEmpty())) say("missing value for option: " + opt);
+            else
+            {
+                value.clear();
+                key = fields.at(0);
+                if (argc >= 2)
+                {
                     value = fields.at(1);
                 }
-                const int intVal = value.toInt();
-                if (key == "samplerate") {
-                    if (intVal < 1) {
-                        kill("invalid sample rate.");
-                        return true;
-                    }
-                    else mc.format->setSampleRate(intVal);
-                }
-                else if (key == "samplesize") mc.format->setSampleSize(intVal);
-                else if (key == "name") {
-                    if (value.length() > 64) say("rejecting user name: name is too long.");
-                    else {
-                        say("renaming user to: " + value);
-                        this->setObjectName(value);
-                    }
-                }
-                else if (key == "channels") {
-                    if ((!intVal) || (intVal < 1)) {
-                        say("user has sent invalid number of channels: closing connection.");
-                        this->kill("invalid channel numbers");
-                        return true;
-                    }
-                    mc.format->setChannelCount(intVal);
-                }
-                else send(QString("unknow option: " + key + "value: " + value).toLocal8Bit());
+                intVal = value.toInt();
+                readUserConfigOption(&key, &value, &intVal);
             }
         }
         say("end of user configuration received.");
@@ -266,62 +302,122 @@ bool User::readUserConfig(const QByteArray *data) {
     }
     return false;
 }
-void User::send(const QByteArray data) {
-    if (sockType == ServerSocket::Tcp) {
+
+bool User::readUserConfigOption(const QString *key, const QString *value, const int *intVal)
+{
+    /*
+    ** this method is the inside of the user line configuration
+    ** parser, any other option should be added here
+    */
+    if (*key == "samplerate") {
+        if (*intVal < 1)
+        {
+            kill("invalid sample rate.");
+            return true;
+        }
+        else mc.format->setSampleRate(*intVal);
+    }
+    else if (*key == "samplesize") mc.format->setSampleSize(*intVal);
+    else if (*key == "name")
+    {
+        if (value->length() > 64) say("rejecting user name: name is too long.");
+        else
+        {
+            say("renaming user to: " + *value);
+            this->setObjectName(*value);
+        }
+    }
+    else if (*key == "channels")
+    {
+        if ((!*intVal) || (*intVal < 1))
+        {
+            say("user sent invalid number of channels: closing connection.");
+            this->kill("invalid channels numbers");
+            return true;
+        }
+        mc.format->setChannelCount(*intVal);
+    }
+    else send(QString("unknow option: " + *key + "value: " + *value).toLocal8Bit());
+    return false;
+}
+
+void User::send(const QByteArray data)
+{
+    if (sockType == ServerSocket::Tcp)
+    {
         QTcpSocket* sock = (QTcpSocket*) this->sock;
         sock->write(data + (char) 10);
     }
-    else {
+    else
+    {
         QUdpSocket* sock = (QUdpSocket*) this->sock;
         if (!sock->isOpen()) return;
         sock->write(data + (char) 10);
     }
 }
-void User::kill(const QString reason) {
+
+void User::kill(const QString reason)
+{
     flowChecker->setParent(NULL);
     say("kicking user: " + reason);
     send(QString("you where kicked: reason: " + reason).toLocal8Bit());
-    if (sockType == ServerSocket::Tcp) {
+    if (sockType == ServerSocket::Tcp)
+    {
         QTcpSocket* sock = (QTcpSocket*) this->sock;
         sock->close();
     }
     flowChecker->stop();
     emit(kicked());
 }
-void User::ban(const QString reason, const int banTime) {
+
+void User::ban(const QString reason, const int banTime)
+{
     QHostAddress host = getHostAddress();
     callSecurity()->addToBannedList(&host,banTime);
-
     kill(reason);
 }
-ServerSecurity* User::callSecurity() {
+
+ServerSecurity* User::callSecurity()
+{
     return qobject_cast<UserHandler*>(this->parent())->callSecurity();
 }
 
-const QObject* User::getSocketPointer() {
+const QObject* User::getSocketPointer()
+{
     return this->sock;
 }
-quint64 User::getBytesCount() {
+
+quint64 User::getBytesCount()
+{
     return bytesRead;
 }
-QHostAddress User::getHostAddress() {
+
+QHostAddress User::getHostAddress()
+{
     QHostAddress address;
     if (sockType == ServerSocket::Udp) address.setAddress(qobject_cast<QUdpSocket*>(this->sock)->peerAddress().toIPv4Address());
     else if (sockType == ServerSocket::Tcp) address.setAddress(qobject_cast<QTcpSocket*>(this->sock)->peerAddress().toIPv4Address());
     return address;
 }
-int User::getSpeed() {
+
+int User::getSpeed()
+{
+    int elaspedTime;
+    int speed;
+
     //the speed will be returned in bytes per seconds
     lastBytesRead = bytesRead;
-    const int elaspedTime = speedLastCheckTime.elapsed();
+    elaspedTime = speedLastCheckTime.elapsed();
     if (!elaspedTime) return -1;
 
-    const int speed = (bytesRead - lastBytesRead) / elaspedTime;
+    speed = (bytesRead - lastBytesRead) / elaspedTime;
 
     speedLastCheckTime = QTime::currentTime();
     lastBytesRead = bytesRead;
     return speed;
 }
-Readini* User::getIni() {
+
+Readini* User::getIni()
+{
     return qobject_cast<UserHandler*>(this->parent())->getIni();
 }
