@@ -1,9 +1,6 @@
 #include "flowchecker.h"
 #include "size.h"
-
-#ifndef USER_H
 #include "server/user.h"
-#endif
 
 FlowChecker::FlowChecker(AudioFormat *format, const int checkInterval, QObject *parent) :
     QObject(parent)

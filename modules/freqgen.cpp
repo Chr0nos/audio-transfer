@@ -11,6 +11,7 @@ Freqgen::Freqgen(AudioFormat *format, QObject *parent) :
     timer.setInterval(50);
     connect(&timer,SIGNAL(timeout()),this,SIGNAL(readyRead()));
 }
+
 void Freqgen::close() {
     timer.stop();
     sample.clear();

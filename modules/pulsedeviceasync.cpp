@@ -103,10 +103,15 @@ void PulseDeviceASync::getSinkDevices_cb(pa_context *c,const pa_sink_info* i,int
 }
 
 QStringList PulseDeviceASync::getDevicesNames(QIODevice::OpenMode mode) {
+    if (!this->isOpen()) {
+        say("cannot retrive avaialbles devices: not connected to pulseaudio: use open().");
+        return QStringList();
+    }
     QStringList devicesNames;
     if (!context) return devicesNames;
     else if (mode == QIODevice::WriteOnly) {
         QList<pa_sink_info> sinks = getSinkDevices();
+        say("devices found: " + QString::number(sinks.count()));
         const int m = sinks.count();
         for (int p = 0;p < m;p++) {
             devicesNames << sinks.at(p).name;

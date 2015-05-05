@@ -227,6 +227,9 @@ qint64 PulseDevice::bytesAvailable() {
 
 
 PulseDeviceRead::PulseDeviceRead(pa_simple *stream, CircularBuffer *buffer, QObject *parent) {
+    /* you sould not call this class in your code:
+     * use PulseDevice class who handle this one
+     */
     this->setParent(parent);
     this->rec = stream;
     this->readBuffer = buffer;

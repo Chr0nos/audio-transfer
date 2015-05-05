@@ -1,5 +1,4 @@
 #include "pipedevice.h"
-#include <stdio.h>
 
 #include <QDebug>
 
@@ -73,9 +72,11 @@ bool PipeDevice::open(OpenMode mode) {
 
     return false;
 }
+
 void PipeDevice::say(const QString message) {
     emit(debug("PipeDevice: " + message));
 }
+
 qint64 PipeDevice::readData(char *data, qint64 maxlen) {
     if (!input) {
         say("read requested but not input available: did you open in ReadOnly mode ?");
@@ -131,7 +132,7 @@ qint64 PipeDevice::bytesAvailable() {
 }
 
 
-//over this line the class is PipeDeviceRead: herited of QThread
+//over this line the class is PipeDeviceRead: it's runing on a separate thread
 
 PipeDeviceRead::PipeDeviceRead(CircularBuffer *buffer, const int blocksize, QObject *parent) {
     this->setParent(parent);
@@ -148,6 +149,8 @@ PipeDeviceRead::~PipeDeviceRead() {
 }
 
 void PipeDeviceRead::start() {
+    char *raw;
+
     say("opening stdin");
     if (!file->open(stdin,QIODevice::ReadOnly)) {
         say("error: unable to open stdin");
@@ -155,7 +158,12 @@ void PipeDeviceRead::start() {
     }
 
     say("allocating memory");
-    char raw[block];
+    raw = new char[block];
+    if (!raw)
+    {
+        say("failed to allocate memory: quiting");
+        exit(1);
+    }
 
     say("starting read");
     qint64 bytesRead = 0;
@@ -169,6 +177,7 @@ void PipeDeviceRead::start() {
 
 
     say("error. bytesread: " + QString::number(bytesRead));
+    free(raw);
     file->close();
     emit(failed());
 }

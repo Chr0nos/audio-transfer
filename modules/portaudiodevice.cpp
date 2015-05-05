@@ -30,7 +30,6 @@ PortAudioDevice::PortAudioDevice(AudioFormat *format, QObject *parent) :
     QIODevice(parent)
 {
     say("init");
-    say("api version: " + QString(Pa_GetVersionText()));
     modeAsync = true;
 
     binit = false;
@@ -84,6 +83,7 @@ void PortAudioDevice::close() {
 bool PortAudioDevice::open(OpenMode mode) {
     say("opening device");
     if (!initPa()) return false;
+    say("api version: " + QString(Pa_GetVersionText()));
     say("creating stream");
     PaError err;
 
@@ -152,9 +152,6 @@ bool PortAudioDevice::open(OpenMode mode) {
     return true;
 }
 void PortAudioDevice::say(const QString message) {
-#ifdef DEBUG
-    qDebug() << "PortAudio Device: " + message;
-#endif
     emit(debug("PortAudio: " + message));
 }
 qint64 PortAudioDevice::readData(char *data, qint64 maxlen) {
