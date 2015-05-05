@@ -8,11 +8,15 @@ ServerSocket::ServerSocket(QObject *parent) :
     QObject(parent)
 {
 }
-bool ServerSocket::startServer(ServerSocket::type type, const int port) {
+bool ServerSocket::startServer(ServerSocket::type type, const int port)
+{
+    QTcpServer *serv;
+    QUdpSocket *sock;
+
     this->currentType = type;
     switch (type) {
         case ServerSocket::Tcp: {
-            QTcpServer* serv = new QTcpServer(this);
+            serv = new QTcpServer(this);
             connect(serv,SIGNAL(newConnection()),this,SLOT(newConnection()));
             if (!serv->listen(QHostAddress::Any,port)) {
                 say("cannot bind port: " + QString::number(port));
@@ -25,7 +29,7 @@ bool ServerSocket::startServer(ServerSocket::type type, const int port) {
             break;
         }
         case ServerSocket::Udp: {
-            QUdpSocket *sock = new QUdpSocket(this);
+            sock = new QUdpSocket(this);
             if (!sock->bind(port)) {
                 say("cannot bind port: " + QString::number(port));
                 sock->deleteLater();
