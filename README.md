@@ -40,7 +40,6 @@ emerge -av audio-transfer-client
 ### Windows
 
 #### from sources
-
 1. Install QtCreator (like: Qt 5.4.0 for Windows 32-bit MinGW 4.9.1 )
 2. get https://github.com/Chr0nos/audio-transfer/archive/master.zip
 unzip it where you want
@@ -53,6 +52,7 @@ now you can build the project as release
 ---
 
 #### get a binary
-``
-just get a [binary](http://195.154.105.106/Chr0nos/audio-transfer.zip)
+
+Just get a [binary](http://62.210.182.55/Chr0nos/audio-transfer.zip)
 note: the build will not be recent as from source (i dont make a build on each commit)
+
