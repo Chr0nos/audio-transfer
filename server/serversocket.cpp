@@ -77,24 +77,33 @@ QTcpSocket *ServerSocket::sockOpenTcp() {
 }
 
 void ServerSocket::sockOpenUdp() {
+    /*
+    ** this method is actualy called on every packets received
+    ** in udp mode
+    */
     QUdpSocket* udp = (QUdpSocket*) srv;
-    while (udp->hasPendingDatagrams()) {
-        QByteArray datagram;
-        datagram.resize(udp->pendingDatagramSize());
-        QHostAddress sender;
-        quint16 senderPort;
+    QByteArray datagram;
+    QHostAddress sender;
+    quint16 senderPort;
 
-        udp->readDatagram(datagram.data(),datagram.size(),&sender,&senderPort);
-        emit(readData(&sender,&senderPort,&datagram,udp));
+    while (udp->hasPendingDatagrams())
+    {
+        datagram.clear();
+        datagram.resize(udp->pendingDatagramSize());
+        udp->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
+        emit(readData(&sender, &senderPort, &datagram, udp));
     }
 }
+
 QUdpSocket* ServerSocket::getUdpSocket() {
     if (currentType == Tcp) return 0;
     return (QUdpSocket*) this->srv;
 }
+
 ServerSocket::type ServerSocket::getServerType() {
     return currentType;
 }
+
 QString ServerSocket::typeToString(ServerSocket::type type) {
     switch (type) {
         case Udp:
