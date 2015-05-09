@@ -24,6 +24,10 @@
     #include "modules/portaudiodevice.h"
 #endif
 
+#ifdef ASIO
+    #include "modules/asiodevice.h"
+#endif
+
 #include "modules/freqgen.h"
 
 //#include <QtMultimedia/QAudio>
@@ -50,7 +54,8 @@ public:
         PulseAudioAsync = 8,
         Pipe = 9,
         Raw = 10,
-        FreqGen = 11
+        FreqGen = 11,
+        AsIO = 12
     };
     struct portAudioSpecs {
         int deviceIdInput;
@@ -132,6 +137,7 @@ private:
     void debugList(const QStringList list);
     bool prepare(QIODevice::OpenModeFlag mode, QIODevice **device);
     void say(const QString message);
+    bool transferChecks();
 
 signals:
     void errors(const QString error);
