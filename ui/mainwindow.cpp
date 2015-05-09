@@ -158,6 +158,15 @@ void MainWindow::on_sourcesList_currentIndexChanged(int index)
 }
 #endif
 
+Manager::Mode MainWindow::getNetModeForLine(QString *line)
+{
+    Manager::Mode mode;
+    QString firstArg;
+
+    firstArg = line->split(':').at(0);
+    mode = Manager::getModeFromString(&firstArg);
+    return mode;
+}
 
 void MainWindow::on_pushButton_clicked()
 {
@@ -207,6 +216,7 @@ void MainWindow::on_pushButton_clicked()
             ui->statusBar->showMessage("redirecting from " + ui->sourcesList->currentText() + " to " + ui->destinationDeviceCombo->currentText());
         }
         else if (ui->destinationRadioTcp->isChecked()) {
+            QString fullHost = ui->destinationTcpSocket->text();
             const QString host = ui->destinationTcpSocket->text().split(":").first();
 
             const int port = ui->destinationTcpSocket->text().split(":").last().toInt();
@@ -221,17 +231,16 @@ void MainWindow::on_pushButton_clicked()
             mc.network.host = host;
             mc.network.port = port;
             mc.network.sendConfig = true;
-            mc.modeOutput = Manager::Tcp;
+            mc.modeOutput = getNetModeForLine(&fullHost);
 
             ui->statusBar->showMessage("Connecting to " + host + " on port " + QString().number(port));
         }
         else if (ui->destinationRadioPulseAudio->isChecked()) {
-            debug("using pulseaudio target: this is an experimental feature!");
             if (!ui->destinationPulseAudioLineEdit->text().isEmpty()) {
                 mc.pulse.target = ui->destinationPulseAudioLineEdit->text();
             }
-            mc.modeOutput = Manager::PulseAudio;
-            //mc.modeOutput = Manager::PulseAudioAsync;
+            //mc.modeOutput = Manager::PulseAudio;
+            mc.modeOutput = Manager::PulseAudioAsync;
 
         }
         else if (ui->destinationRadioZeroDevice->isChecked()) mc.modeOutput = Manager::Zero;

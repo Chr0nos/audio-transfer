@@ -66,6 +66,7 @@ private:
     void refreshPortAudioDevices(QComboBox* target);
     void setDefaultFormats();
     QList<int> speeds;
+    Manager::Mode getNetModeForLine(QString *line);
 };
 
 
