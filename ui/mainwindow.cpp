@@ -165,6 +165,7 @@ Manager::Mode MainWindow::getNetModeForLine(QString *line)
 
     firstArg = line->split(':').at(0);
     mode = Manager::getModeFromString(&firstArg);
+    if (mode == Manager::None) mode = Manager::Tcp;
     return mode;
 }
 
@@ -216,10 +217,18 @@ void MainWindow::on_pushButton_clicked()
             ui->statusBar->showMessage("redirecting from " + ui->sourcesList->currentText() + " to " + ui->destinationDeviceCombo->currentText());
         }
         else if (ui->destinationRadioTcp->isChecked()) {
-            QString fullHost = ui->destinationTcpSocket->text();
-            const QString host = ui->destinationTcpSocket->text().split(":").first();
+            QString rawLine = ui->destinationTcpSocket->text();
+            QStringList tokens = rawLine.split(":");
+            int toks = tokens.count();
+            if (toks < 2)
+            {
+                debug("missing parameters");
+                return;
+            }
+            QString host = tokens.at(toks -2);
 
-            const int port = ui->destinationTcpSocket->text().split(":").last().toInt();
+
+            const int port = tokens.last().toInt();
             if (!isValidIp(host)) {
                 ui->statusBar->showMessage("Error: invalid target ip: refusing to connect");
                 return;
@@ -231,7 +240,7 @@ void MainWindow::on_pushButton_clicked()
             mc.network.host = host;
             mc.network.port = port;
             mc.network.sendConfig = true;
-            mc.modeOutput = getNetModeForLine(&fullHost);
+            mc.modeOutput = getNetModeForLine(&rawLine);
 
             ui->statusBar->showMessage("Connecting to " + host + " on port " + QString().number(port));
         }
