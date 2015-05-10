@@ -66,7 +66,7 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     QByteArray specs = mc.format->getFormatTextInfo().toLocal8Bit();
     specs.append("afk:");
     specs.append(QString::number(checkInterval));
-    send(specs);
+    send(&specs);
 }
 
 User::~User()
@@ -197,7 +197,7 @@ void User::initUser()
     flowChecker->start();
 }
 
-void User::sockRead(const QByteArray* data)
+void User::sockRead(const QByteArray *data)
 {
     //this is a Udp sockread
     //QUdpSocket* sock = (QUdpSocket*) this->sock;
@@ -213,6 +213,18 @@ void User::sockRead(const QByteArray* data)
     }
     inputDevice->write(data->data(),size);
     bytesRead += size;
+}
+
+void User::readData(QHostAddress *sender, const quint16 *senderPort, const QByteArray *data, QUdpSocket *udp)
+{
+    /*
+    ** this slot is used to be connected directly with
+    ** the serversocket class who read directly the udp datagram
+    */
+    (void) sender;
+    (void) senderPort;
+    (void) udp;
+    this->sockRead(data);
 }
 
 void User::stop()
@@ -269,7 +281,9 @@ bool User::readUserConfig(const QByteArray *data)
         QStringList options;
         Readini* ini;
         QStringList::iterator i;
+        QByteArray confirm;
 
+        confirm = QString("configuration received !").toLocal8Bit();
         ini = getIni();
         if (!ini->isKey("general","userConfig"));
         else if (!ini->getValue("general","userConfig").toInt())
@@ -297,7 +311,7 @@ bool User::readUserConfig(const QByteArray *data)
             }
         }
         say("end of user configuration received.");
-        send(QString("configuration received !").toLocal8Bit());
+        send(&confirm);
         return true;
     }
     return false;
@@ -309,6 +323,8 @@ bool User::readUserConfigOption(const QString *key, const QString *value, const 
     ** this method is the inside of the user line configuration
     ** parser, any other option should be added here
     */
+    QByteArray errorString;
+
     if (*key == "samplerate") {
         if (*intVal < 1)
         {
@@ -337,30 +353,43 @@ bool User::readUserConfigOption(const QString *key, const QString *value, const 
         }
         mc.format->setChannelCount(*intVal);
     }
-    else send(QString("unknow option: " + *key + "value: " + *value).toLocal8Bit());
+    else
+    {
+        errorString = QString("unknow option: " + *key + "value: " + *value).toLocal8Bit();
+        send(&errorString);
+    }
     return false;
 }
 
-void User::send(const QByteArray data)
+void User::send(QByteArray *data)
 {
+    QTcpSocket *tcp;
+    QUdpSocket *udp;
+    quint64 size;
+
+    data->append((char) 10);
+    size = data->size();
     if (sockType == ServerSocket::Tcp)
     {
-        QTcpSocket* sock = (QTcpSocket*) this->sock;
-        sock->write(data + (char) 10);
+        tcp = (QTcpSocket*) this->sock;
+        tcp->write(data->data(), size);
     }
     else
     {
-        QUdpSocket* sock = (QUdpSocket*) this->sock;
-        if (!sock->isOpen()) return;
-        sock->write(data + (char) 10);
+        udp = (QUdpSocket*) this->sock;
+        if (!udp->isOpen()) return;
+        udp->write(data->data(), size);
     }
 }
 
 void User::kill(const QString reason)
 {
+    QByteArray reason_b;
+
+    reason_b = QString("you where kicked: reason: " + reason).toLocal8Bit();
     flowChecker->setParent(NULL);
     say("kicking user: " + reason);
-    send(QString("you where kicked: reason: " + reason).toLocal8Bit());
+    send(&reason_b);
     if (sockType == ServerSocket::Tcp)
     {
         QTcpSocket* sock = (QTcpSocket*) this->sock;
@@ -372,8 +401,15 @@ void User::kill(const QString reason)
 
 void User::ban(const QString reason, const int banTime)
 {
-    QHostAddress host = getHostAddress();
-    callSecurity()->addToBannedList(&host,banTime);
+    /*
+    ** this method ban the current user with the given reason
+    ** for the banTime
+    ** if banTime = 0 : the ban is permanent
+    */
+    QHostAddress host;
+
+    host = getHostAddress();
+    callSecurity()->addToBannedList(&host, banTime);
     kill(reason);
 }
 
@@ -395,6 +431,7 @@ quint64 User::getBytesCount()
 QHostAddress User::getHostAddress()
 {
     QHostAddress address;
+
     if (sockType == ServerSocket::Udp) address.setAddress(qobject_cast<QUdpSocket*>(this->sock)->peerAddress().toIPv4Address());
     else if (sockType == ServerSocket::Tcp) address.setAddress(qobject_cast<QTcpSocket*>(this->sock)->peerAddress().toIPv4Address());
     return address;

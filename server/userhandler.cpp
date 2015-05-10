@@ -14,17 +14,20 @@ UserHandler::UserHandler(QObject *parent) :
     //bascicly: bytesRead store all the "offline" users data read (after they disconnected)
     this->bytesRead = 0;
 }
-bool UserHandler::append(User *user) {
 
+bool UserHandler::append(User *user)
+{
     this->users.append(user);
     connect(user,SIGNAL(sockClose(User*)),this,SLOT(sockClose(User*)));
     connect(user,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
     connect(user,SIGNAL(kicked()),this,SLOT(kicked()));
     return true;
 }
+
 void UserHandler::say(const QString message) {
     emit(debug("UserHandler: " + message));
 }
+
 void UserHandler::sockClose(User *user) {
     const int pos = users.indexOf(user);
 
@@ -46,6 +49,7 @@ void UserHandler::sockClose(User *user) {
     //showing user actualy online and stats
     showUsersOnline();
 }
+
 void UserHandler::showUsersOnline()
 {
     /*
@@ -68,6 +72,7 @@ void UserHandler::showUsersOnline()
     if (!count) say("no user(s) online.");
     else say("end of list");
 }
+
 void UserHandler::killAll(const QString reason)
 {
     /*

@@ -19,7 +19,7 @@ public:
     void setFormat(const AudioFormat* format);
     QString getUserName();
     const QObject* getSocketPointer();
-    void send(const QByteArray data);
+    void send(QByteArray *data);
     quint64 getBytesCount();
     QHostAddress getHostAddress();
     int getSpeed();
@@ -55,7 +55,8 @@ private slots:
     void say(const QString message);
     void sockRead();
 public slots:
-    void sockRead(const QByteArray* data);
+    void sockRead(const QByteArray *data);
+    void readData(QHostAddress *sender, const quint16 *senderPort, const QByteArray *data, QUdpSocket *udp);
     void kill(const QString reason);
     void ban(const QString reason,const int banTime);
     void stop();

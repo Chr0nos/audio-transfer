@@ -8,6 +8,7 @@ ServerSocket::ServerSocket(QObject *parent) :
     QObject(parent)
 {
 }
+
 bool ServerSocket::startServer(ServerSocket::type type, const int port)
 {
     QTcpServer *serv;
@@ -15,10 +16,12 @@ bool ServerSocket::startServer(ServerSocket::type type, const int port)
 
     this->currentType = type;
     switch (type) {
-        case ServerSocket::Tcp: {
+        case ServerSocket::Tcp:
+        {
             serv = new QTcpServer(this);
             connect(serv,SIGNAL(newConnection()),this,SLOT(newConnection()));
-            if (!serv->listen(QHostAddress::Any,port)) {
+            if (!serv->listen(QHostAddress::Any,port))
+            {
                 say("cannot bind port: " + QString::number(port));
                 serv->deleteLater();
                 exit(0);
@@ -28,9 +31,11 @@ bool ServerSocket::startServer(ServerSocket::type type, const int port)
             return true;
             break;
         }
-        case ServerSocket::Udp: {
+        case ServerSocket::Udp:
+        {
             sock = new QUdpSocket(this);
-            if (!sock->bind(port)) {
+            if (!sock->bind(port))
+            {
                 say("cannot bind port: " + QString::number(port));
                 sock->deleteLater();
                 exit(0);
@@ -41,21 +46,25 @@ bool ServerSocket::startServer(ServerSocket::type type, const int port)
             return true;
             break;
         }
-        case ServerSocket::Invalid: {
+        case ServerSocket::Invalid:
+        {
             return false;
             break;
         }
     }
     return false;
 }
-void ServerSocket::newConnection() {
+
+void ServerSocket::newConnection()
+{
     if (currentType == Tcp) {
         say("sockopen.");
         QTcpSocket* sock = sockOpenTcp();
         ServerSecurity* security = qobject_cast<ServerMain*>(this->parent())->security;
         QHostAddress peer(sock->peerAddress());
 
-        if (!security->isAuthorisedHost(&peer)) {
+        if (!security->isAuthorisedHost(&peer))
+        {
             const QString host = sock->peerAddress().toString();
             sock->close();
             sock->deleteLater();
@@ -65,27 +74,32 @@ void ServerSocket::newConnection() {
         emit(sockOpen(sock));
     }
     else sockOpenUdp();
-
 }
-void ServerSocket::say(const QString message) {
+
+void ServerSocket::say(const QString message)
+{
     emit(debug(message));
 }
-QTcpSocket *ServerSocket::sockOpenTcp() {
+
+QTcpSocket *ServerSocket::sockOpenTcp()
+{
     QTcpServer* tcp = (QTcpServer*) srv;
     QTcpSocket *sock = tcp->nextPendingConnection();
     return sock;
 }
 
-void ServerSocket::sockOpenUdp() {
+void ServerSocket::sockOpenUdp()
+{
     /*
     ** this method is actualy called on every packets received
     ** in udp mode
     */
-    QUdpSocket* udp = (QUdpSocket*) srv;
+    QUdpSocket *udp;
     QByteArray datagram;
     QHostAddress sender;
     quint16 senderPort;
 
+    udp = (QUdpSocket*) srv;
     while (udp->hasPendingDatagrams())
     {
         datagram.clear();
@@ -95,17 +109,21 @@ void ServerSocket::sockOpenUdp() {
     }
 }
 
-QUdpSocket* ServerSocket::getUdpSocket() {
+QUdpSocket* ServerSocket::getUdpSocket()
+{
     if (currentType == Tcp) return 0;
     return (QUdpSocket*) this->srv;
 }
 
-ServerSocket::type ServerSocket::getServerType() {
+ServerSocket::type ServerSocket::getServerType()
+{
     return currentType;
 }
 
-QString ServerSocket::typeToString(ServerSocket::type type) {
-    switch (type) {
+QString ServerSocket::typeToString(ServerSocket::type type)
+{
+    switch (type)
+    {
         case Udp:
             return QString("Udp");
         case Tcp:
