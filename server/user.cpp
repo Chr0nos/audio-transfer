@@ -44,7 +44,7 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
 void User::start()
 {
     this->mutex = new QMutex();
-    QMutexLocker lock(this->mutex);
+    //QMutexLocker lock(this->mutex);
     say("user start...");
     if (type == ServerSocket::Tcp)
     {
@@ -111,7 +111,7 @@ void User::initModule()
 
 User::~User()
 {
-    QMutexLocker lock(this->mutex);
+    //QMutexLocker lock(this->mutex);
     say("deleting object");
     if (sockType == ServerSocket::Tcp)
     {
@@ -132,7 +132,7 @@ User::~User()
         manager->disconnect();
         delete(manager);
     }
-    lock.unlock();
+    //lock.unlock();
     delete(this->mutex);
     //we dont delete 'format' here because the manager will do this :)
 }
@@ -207,7 +207,7 @@ void User::sockRead()
 {
     //this is the Tcp sockread, the udp data DONT cant this method
     //say("sockread !");
-    QMutexLocker lock(this->mutex);
+    //QMutexLocker lock(this->mutex);
     QTcpSocket* sock = (QTcpSocket*) this->sock;
     QByteArray data = sock->readAll();
     const quint64 size = data.size();
@@ -250,7 +250,7 @@ void User::sockRead(const QByteArray *data)
     //(void) sock;
     const int size = data->size();
 
-    QMutexLocker lock(this->mutex);
+    //QMutexLocker lock(this->mutex);
     if ((!bytesRead) && (!managerStarted))
     {
         readUserConfig(data);
@@ -317,7 +317,7 @@ bool User::readUserConfig(const QByteArray *data)
     ** it detect if the user is sending  a configuration line
     ** and it parse parameters sent by the remote client
     */
-    QMutexLocker lock(this->mutex);
+    //QMutexLocker lock(this->mutex);
     QString rawUserConfig = QString(*data).split("\n").first();
     if (!isPossibleConfigLine(rawUserConfig.toLocal8Bit().data(), rawUserConfig.length()))
     {
