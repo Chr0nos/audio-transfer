@@ -5,6 +5,7 @@
 #include <QList>
 #include "server/user.h"
 #include "server/security/serversecurity.h"
+#include "server/serversocket.h"
 #include "manager.h"
 
 class UserHandler : public QObject
@@ -12,7 +13,6 @@ class UserHandler : public QObject
     Q_OBJECT
 public:
     explicit UserHandler(QObject *parent = 0);
-    bool append(User *user);
     void showUsersOnline();
     void killAll(const QString reason);
     bool contains(const QObject* socket);
@@ -24,6 +24,8 @@ public:
     ServerSecurity* callSecurity();
     quint64 getBytesReadForConnected();
     int countUsers();
+    User* last();
+    User* createUser(QObject *socket, ServerSocket::type type, QString userName);
 private:
     QList<User*> users;
     Manager::userConfig defaultConfig;

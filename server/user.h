@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QtNetwork/QTcpSocket>
+#include <QMutex>
 #include "manager.h"
 #include "audioformat.h"
 #include "server/serversocket.h"
@@ -25,26 +26,36 @@ public:
     int getSpeed();
     ServerSecurity* callSecurity();
     Readini* getIni();
+    void moveToThread(QThread *thread);
 private:
+    bool readUserConfig(const QByteArray *data);
+    bool isPossibleConfigLine(const char* input, int lenght);
+    void initUser();
+    void initFormat();
+    bool readUserConfigOption(const QString *key, const QString *value, const int *intVal);
+    void makeSpeedStatus();
+    void initModule();
+    void sendSpecs();
+    void initFlowChecker();
     QObject* sock;
     Manager* manager;
     Manager::userConfig mc;
     quint64 bytesRead;
-    bool readUserConfig(const QByteArray *data);
     ServerSocket::type sockType;
     QIODevice* inputDevice;
     qint64 connectionTime;
     QString peerAddress;
     bool managerStarted;
-    void makeSpeedStatus();
     quint64 lastBytesRead;
     QTime speedLastCheckTime;
     FlowChecker* flowChecker;
     int checkInterval;
-    void initUser();
-    bool isPossibleConfigLine(const char* input, int lenght);
-    void initFormat();
-    bool readUserConfigOption(const QString *key, const QString *value, const int *intVal);
+    Readini *ini;
+    ServerSecurity *security;
+    ServerSocket::type type;
+    bool allowUserConfig;
+    QString moduleName;
+    QMutex *mutex;
 
 signals:
     void debug(const QString message);
@@ -60,6 +71,7 @@ public slots:
     void kill(const QString reason);
     void ban(const QString reason,const int banTime);
     void stop();
+    void start();
 };
 
 #endif // USER_H

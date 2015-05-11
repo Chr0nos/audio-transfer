@@ -1,10 +1,17 @@
 #include "user.h"
 #include "server/servermain.h"
 #include <QTime>
+#include <QMutexLocker>
+
+/*
+** Todo: implement security directly in this user class
+*/
 
 User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     QObject(parent)
 {
+    this->ini = qobject_cast<UserHandler*>(this->parent())->getIni();
+    this->security = qobject_cast<UserHandler*>(this->parent())->callSecurity();
     bytesRead = 0;
     this->managerStarted = false;
     this->connectionTime = QTime::currentTime().msec();
@@ -12,69 +19,103 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     this->sock = socket;
     lastBytesRead = 0;
     this->flowChecker = NULL;
-    if (type == ServerSocket::Tcp)
-    {
-        QTcpSocket* tcp = (QTcpSocket*) socket;
-        tcp->setParent(this);
-        connect(tcp,SIGNAL(stateChanged(QAbstractSocket::SocketState)),this,SLOT(sockStateChanged(QAbstractSocket::SocketState)));
-        connect(tcp,SIGNAL(readyRead()),this,SLOT(sockRead()));
-        this->setObjectName(tcp->peerAddress().toString());
-
-    }
+    this->type = type;
+    this->manager = NULL;
+    this->mutex = NULL;
 
     //at this point, the object name IS the peer address
     this->peerAddress = this->objectName();
 
-    //creating the manager, this class will manage the output using the CircularDevice
-    this->manager = new Manager(this);
-    if (getIni()->getValue("general","verbose").toInt()) connect(this->manager,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
+    if (ini->getValue("general","verbose").toInt()) connect(this->manager, SIGNAL(debug(QString)), this, SIGNAL(debug(QString)));
 
     //flow checker interval
     //note: the flow checker also check for afk users.
     checkInterval = 2000;
 
+    //because the server works in local mode we dont need a buffer
     mc.bufferSize = 0;
+
+    if (!ini->isKey("general","userConfig")) this->allowUserConfig = true;
+    else this->allowUserConfig = (bool) ini->getValue("general","userConfig").toInt();
+
+    moduleName = ini->getValue("general","output");
+}
+
+void User::start()
+{
+    this->mutex = new QMutex();
+    QMutexLocker lock(this->mutex);
+    say("user start...");
+    if (type == ServerSocket::Tcp)
+    {
+        QTcpSocket *tcp = (QTcpSocket*) socket;
+        tcp->setParent(this);
+        connect(tcp,SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(sockStateChanged(QAbstractSocket::SocketState)));
+        connect(tcp,SIGNAL(readyRead()),this,SLOT(sockRead()));
+        this->setObjectName(tcp->peerAddress().toString());
+    }
+
+    say("user creating device");
+    //creating a 2Mb ring buffer device
+    this->inputDevice = new CircularDevice(2097152, this);
+    this->inputDevice->open(QIODevice::ReadWrite);
+    mc.raw.devIn = this->inputDevice;
+
+    say("device done");
+    //confiruring output module
+    initModule();
 
     //creating the default audio format
     initFormat();
 
-    //creating a 2Mb ring buffer device
-    this->inputDevice = new CircularDevice(2097152,this);
-    //this->inputDevice = new QBuffer(this);
+    //creating the manager, this class will manage the output using the CircularDevice
+    this->manager = new Manager(this);
+    sendSpecs();
 
-    //opening the buffer and defining it for the manager
-    this->inputDevice->open(QIODevice::ReadWrite);
-    mc.raw.devIn = this->inputDevice;
-    mc.modeInput = Manager::Raw;
+    say("user is now ready");
+}
 
-    QString moduleName = getIni()->getValue("general","output");
-
-    mc.modeOutput = Manager::getModeFromString(&moduleName);
-    //this could appens if the configuration file was not configured or badly configured, so we load the "default" output
-    if (mc.modeOutput == Manager::None) {
-        #ifdef PULSE
-            mc.modeOutput = Manager::PulseAudio;
-        #else
-            mc.modeOutput = Manager::Device;
-        #endif
-    }
-
-    mc.devicesNames.output = this->objectName();
-    //if the new user is localhost: let's just mute him (just to prevent ears/speakers to explode :p)
-    if (this->objectName() == "127.0.0.1") mc.modeOutput = Manager::Zero;
-
+void User::sendSpecs()
+{
+    /*
+    ** this method send the server specification to
+    ** the remote client, must be called AFTER mc.format initialisation
+    ** called by: this->start();
+    */
     QByteArray specs = mc.format->getFormatTextInfo().toLocal8Bit();
     specs.append("afk:");
     specs.append(QString::number(checkInterval));
     send(&specs);
 }
 
+void User::initModule()
+{
+    /*
+    ** called by: this->start();
+    */
+    //opening the buffer and defining it for the manager
+    mc.modeInput = Manager::Raw;
+    mc.modeOutput = Manager::getModeFromString(&moduleName);
+    //this could appens if the configuration file was not configured or badly configured, so we load the "default" output
+    if (mc.modeOutput == Manager::None)
+    {
+        #ifdef PULSE
+            mc.modeOutput = Manager::PulseAudio;
+        #else
+            mc.modeOutput = Manager::Device;
+        #endif
+    }
+    //if the new user is localhost: let's just mute him (just to prevent ears/speakers to explode :p)
+    if (this->objectName() == "127.0.0.1") mc.modeOutput = Manager::Zero;
+}
+
 User::~User()
 {
+    QMutexLocker lock(this->mutex);
     say("deleting object");
     if (sockType == ServerSocket::Tcp)
     {
-        QTcpSocket* sock = (QTcpSocket*) this->sock;
+        QTcpSocket *sock = (QTcpSocket*) this->sock;
         if (sock->isOpen()) sock->close();
         sock->disconnect();
         sock->deleteLater();
@@ -91,6 +132,8 @@ User::~User()
         manager->disconnect();
         delete(manager);
     }
+    lock.unlock();
+    delete(this->mutex);
     //we dont delete 'format' here because the manager will do this :)
 }
 
@@ -100,12 +143,10 @@ void User::initFormat()
     int rate;
     short size;
     QString codec;
-    Readini *ini;
 
     channels = 0;
     rate = 0;
     size = 0;
-    ini = getIni();
     if ((ini) && (ini->exists()))
     {
         channels = ini->getValue("format", "channels").toInt();
@@ -166,10 +207,11 @@ void User::sockRead()
 {
     //this is the Tcp sockread, the udp data DONT cant this method
     //say("sockread !");
+    QMutexLocker lock(this->mutex);
     QTcpSocket* sock = (QTcpSocket*) this->sock;
     QByteArray data = sock->readAll();
-
     const quint64 size = data.size();
+
     if ((!bytesRead) && (!managerStarted))
     {
         readUserConfig(&data);
@@ -177,20 +219,24 @@ void User::sockRead()
         bytesRead += size;
         return;
     }
-
-    inputDevice->write(data,size);
+    inputDevice->write(data, size);
     bytesRead += size;
 }
 
 void User::initUser()
 {
-    mc.devicesNames.output = this->objectName();
-    manager->setUserConfig(mc);
-    managerStarted = manager->start();
+    this->mc.devicesNames.output = this->objectName();
+    this->manager->setUserConfig(this->mc);
+    this->managerStarted = this->manager->start();
+    this->initFlowChecker();
+}
+
+void User::initFlowChecker()
+{
+    QMutexLocker lock(this->mutex);
 
     //creating the flow checker (it check if the data are comming at the good speed)
     this->flowChecker = new FlowChecker(mc.format,this->checkInterval,this);
-
     connect(flowChecker,SIGNAL(ban(QString,int)),this,SLOT(ban(QString,int)));
     connect(flowChecker,SIGNAL(kick(QString)),this,SLOT(kill(QString)));
     connect(flowChecker,SIGNAL(debug(QString)),this,SLOT(say(QString)));
@@ -204,6 +250,7 @@ void User::sockRead(const QByteArray *data)
     //(void) sock;
     const int size = data->size();
 
+    QMutexLocker lock(this->mutex);
     if ((!bytesRead) && (!managerStarted))
     {
         readUserConfig(data);
@@ -229,6 +276,11 @@ void User::readData(QHostAddress *sender, const quint16 *senderPort, const QByte
 
 void User::stop()
 {
+    QMutexLocker lock(this->mutex);
+    if (this->inputDevice)
+    {
+        this->inputDevice->close();
+    }
     emit(sockClose(this));
 }
 
@@ -260,11 +312,12 @@ bool User::isPossibleConfigLine(const char *input, int lenght)
 bool User::readUserConfig(const QByteArray *data)
 {
     /*
-     ** this method is called if the user
-     ** has not sent anything yet
-     ** it detect if the user is sending  a configuration line
-     ** and it parse parameters sent by the remote client
-     */
+    ** this method is called if the user
+    ** has not sent anything yet
+    ** it detect if the user is sending  a configuration line
+    ** and it parse parameters sent by the remote client
+    */
+    QMutexLocker lock(this->mutex);
     QString rawUserConfig = QString(*data).split("\n").first();
     if (!isPossibleConfigLine(rawUserConfig.toLocal8Bit().data(), rawUserConfig.length()))
     {
@@ -279,14 +332,12 @@ bool User::readUserConfig(const QByteArray *data)
         QStringList fields;
         int argc;
         QStringList options;
-        Readini* ini;
         QStringList::iterator i;
         QByteArray confirm;
 
         confirm = QString("configuration received !").toLocal8Bit();
-        ini = getIni();
-        if (!ini->isKey("general","userConfig"));
-        else if (!ini->getValue("general","userConfig").toInt())
+
+        if (!this->allowUserConfig)
         {
             say("refused user config: not allowed in the configuration file.");
             return false;
@@ -415,7 +466,7 @@ void User::ban(const QString reason, const int banTime)
 
 ServerSecurity* User::callSecurity()
 {
-    return qobject_cast<UserHandler*>(this->parent())->callSecurity();
+    return security;
 }
 
 const QObject* User::getSocketPointer()
@@ -456,5 +507,27 @@ int User::getSpeed()
 
 Readini* User::getIni()
 {
-    return qobject_cast<UserHandler*>(this->parent())->getIni();
+    return ini;
+}
+
+void User::moveToThread(QThread *thread)
+{
+    /*
+    ** for now: this method make the whole application has
+    ** a segmentation fault, so don't move to threads yet
+    ** i'm working on it
+    */
+    say("moving to an other thread");
+    connect(thread, SIGNAL(finished()), this, SLOT(deleteLater()));
+    QObject::moveToThread(thread);
+    /*
+    if (type == ServerSocket::Tcp)
+    {
+        this->sock->moveToThread(thread);
+    }
+    this->flowChecker->moveToThread(thread);
+    this->manager->moveToThread(thread);
+    this->inputDevice->moveToThread(thread);
+    */
+    say("moving done");
 }

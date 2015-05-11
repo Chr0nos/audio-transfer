@@ -1,6 +1,7 @@
 #include "userhandler.h"
 #include "size.h"
 #include "server/servermain.h"
+#include <QThread>
 
 /* this class manage all connected users
  * the user list is stored in this->users
@@ -15,13 +16,34 @@ UserHandler::UserHandler(QObject *parent) :
     this->bytesRead = 0;
 }
 
-bool UserHandler::append(User *user)
+User* UserHandler::createUser(QObject *socket, ServerSocket::type type, QString userName)
 {
+    User* user;
+    QThread *thread;
+    bool threads;
+
+    threads = false;
+    user = new User(socket, type, this);
+    if (!user)
+    {
+        say("error: cannot create new user: failed to alocate memory");
+        return 0;
+    }
+    connect(user, SIGNAL(sockClose(User*)), this, SLOT(sockClose(User*)));
+    connect(user, SIGNAL(debug(QString)),this, SIGNAL(debug(QString)));
+    connect(user, SIGNAL(kicked()), this, SLOT(kicked()));
+    user->setObjectName(userName);
     this->users.append(user);
-    connect(user,SIGNAL(sockClose(User*)),this,SLOT(sockClose(User*)));
-    connect(user,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-    connect(user,SIGNAL(kicked()),this,SLOT(kicked()));
-    return true;
+    if (threads)
+    {
+        thread = new QThread(this);
+        connect(thread, SIGNAL(started()), user, SLOT(start()));
+        user->setParent(0);
+        user->moveToThread(thread);
+        thread->start();
+    }
+    else user->start();
+    return user;
 }
 
 void UserHandler::say(const QString message) {
@@ -199,4 +221,18 @@ int UserHandler::countUsers() {
     ** no connection in udp
     */
     return users.count();
+}
+
+User* UserHandler::last()
+{
+    User *user;
+    int count;
+
+    user = 0;
+    count = users.count();
+    if (count)
+    {
+        user = users.at(count -1);
+    }
+    return user;
 }

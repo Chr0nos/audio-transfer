@@ -68,7 +68,11 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
             AsioDevice *asio = new AsioDevice(this);
             connect(asio, SIGNAL(debug(QString)), this, SIGNAL(debug(QString)));
             *device = asio;
+            break;
         }
+#else
+        case Manager::AsIO:
+            break;
 #endif
 
 #ifdef MULTIMEDIA
