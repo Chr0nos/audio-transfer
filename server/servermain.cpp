@@ -105,7 +105,19 @@ void ServerMain::sockOpen(QTcpSocket *newSock) {
 
 void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const QByteArray *data, QUdpSocket *udp) {
     /*
+    ** this is the dispatched of udp readed data
+    ** ALL udp client will receive the sound stream throuth this
+    ** method, is perfectly possible that the client is sending
+    ** an empty udp packet, so it's important to let the isEmpty
+    ** verification at the first line to dont alocate memory for
+    ** nothing
     **
+    ** logic of the method:
+    ** -> search for the user in the users list (stored in UserHandler)
+    ** -> if the user is not found : we create one an assignat it's pointer to
+    **    "user" (if allowed by the security)
+    ** -> else we set the user pointer from the handler to "user"
+    ** -> in both case we write the sount with user->write(data);
     */
     if (data->isEmpty()) return;
     User* user = NULL;
@@ -113,23 +125,23 @@ void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const
     int pos;
 
     (void) senderPort;
-    pos = users->indexOf(udp);
+    pos = this->users->indexOf(udp);
     if (pos < 0)
     {
         say("trying to init new user: " + sender->toString());
-        max = ini->getValue("general","maxUsers").toInt();
+        max = this->ini->getValue("general","maxUsers").toInt();
         if ((max) && (users->countUsers() >= max))
         {
             say("cannot add the new user: maximum user count reached");
             return;
         }
-        if ((!security->isAuthorisedHost(sender)) && (ini->getValue("general","showUdpRejected").toInt()))
+        if ((!this->security->isAuthorisedHost(sender)) && (ini->getValue("general","showUdpRejected").toInt()))
         {
             say("rejected data from: " + sender->toString());
             return;
         }
         say("adding udp user: " + sender->toString());
-        user = users->createUser(udp, ServerSocket::Udp, sender->toString());
+        user = this->users->createUser(udp, ServerSocket::Udp, this->sender->toString());
         //connect(srv, SIGNAL(readData(QHostAddress*,const quint16*,const QByteArray*,QUdpSocket*)),
         //       user, SLOT(readData(QHostAddress*,const quint16*,const QByteArray*,QUdpSocket*)));
     }

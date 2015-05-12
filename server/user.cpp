@@ -5,6 +5,14 @@
 
 /*
 ** Todo: implement security directly in this user class
+**      dont use this->ini anymore to allow threads
+**      use signals/slots for security for the same reasons
+**
+** this class manage ONE user
+** it have it's own Manager who manage the audio output
+** to write audio the class has just to write into
+** the buffer "this->inputDevice" , this one is directly connected to
+** the manager
 */
 
 User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
@@ -38,7 +46,7 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     //because the server works in local mode we dont need a buffer
     this->mc.bufferSize = 0;
 
-    if (!ini->isKey("general","userConfig")) this->allowUserConfig = true;
+    if (!this->ini->isKey("general","userConfig")) this->allowUserConfig = true;
     else this->allowUserConfig = (bool) ini->getValue("general","userConfig").toInt();
 
     this->moduleName = this->ini->getValue("general","output");
@@ -222,15 +230,15 @@ void User::sockRead()
     QByteArray data = sock->readAll();
     const quint64 size = data.size();
 
-    if ((!bytesRead) && (!managerStarted))
+    if ((!this->bytesRead) && (!this->managerStarted))
     {
         readUserConfig(&data);
         initUser();
-        bytesRead += size;
+        this->bytesRead += size;
         return;
     }
-    inputDevice->write(data, size);
-    bytesRead += size;
+    this->inputDevice->write(data, size);
+    this->bytesRead += size;
 }
 
 void User::initUser()
@@ -250,11 +258,11 @@ void User::initUser()
 void User::initFlowChecker()
 {
     //creating the flow checker (it check if the data are comming at the good speed)
-    this->flowChecker = new FlowChecker(mc.format, this->checkInterval, this);
-    connect(flowChecker, SIGNAL(ban(QString,int)), this, SLOT(ban(QString, int)));
-    connect(flowChecker, SIGNAL(kick(QString)), this, SLOT(kill(QString)));
-    connect(flowChecker, SIGNAL(debug(QString)), this, SLOT(say(QString)));
-    flowChecker->start();
+    this->flowChecker = new FlowChecker(this->mc.format, this->checkInterval, this);
+    connect(this->flowChecker, SIGNAL(ban(QString,int)), this, SLOT(ban(QString, int)));
+    connect(this->flowChecker, SIGNAL(kick(QString)), this, SLOT(kill(QString)));
+    connect(this->flowChecker, SIGNAL(debug(QString)), this, SLOT(say(QString)));
+    this->flowChecker->start();
 }
 
 void User::sockRead(const QByteArray *data)
@@ -265,14 +273,14 @@ void User::sockRead(const QByteArray *data)
     const int size = data->size();
 
     QMutexLocker lock(this->mutex);
-    if ((!bytesRead) && (!managerStarted))
+    if ((!this->bytesRead) && (!this->managerStarted))
     {
         readUserConfig(data);
         initUser();
-        bytesRead += size;
+        this->bytesRead += size;
         return;
     }
-    inputDevice->write(data->data(),size);
+    this->inputDevice->write(data->data(),size);
     bytesRead += size;
 }
 
@@ -417,7 +425,7 @@ bool User::readUserConfigOption(const QString *key, const QString *value, const 
             this->kill("invalid channels numbers");
             return true;
         }
-        mc.format->setChannelCount(*intVal);
+        this->mc.format->setChannelCount(*intVal);
     }
     else
     {
@@ -452,16 +460,16 @@ void User::kill(const QString reason)
 {
     QByteArray reason_b;
 
-    reason_b = QString("you where kicked: reason: " + reason).toLocal8Bit();
-    flowChecker->setParent(NULL);
+    this->reason_b = QString("you where kicked: reason: " + reason).toLocal8Bit();
+    this->flowChecker->setParent(NULL);
     say("kicking user: " + reason);
     send(&reason_b);
-    if (sockType == ServerSocket::Tcp)
+    if (this->sockType == ServerSocket::Tcp)
     {
         QTcpSocket* sock = (QTcpSocket*) this->sock;
         sock->close();
     }
-    flowChecker->stop();
+    this->flowChecker->stop();
     emit(kicked());
 }
 
@@ -475,13 +483,13 @@ void User::ban(const QString reason, const int banTime)
     QHostAddress host;
 
     host = getHostAddress();
-    callSecurity()->addToBannedList(&host, banTime);
+    this->callSecurity()->addToBannedList(&host, banTime);
     kill(reason);
 }
 
 ServerSecurity* User::callSecurity()
 {
-    return security;
+    return this->security;
 }
 
 const QObject* User::getSocketPointer()
@@ -491,15 +499,15 @@ const QObject* User::getSocketPointer()
 
 quint64 User::getBytesCount()
 {
-    return bytesRead;
+    return this->bytesRead;
 }
 
 QHostAddress User::getHostAddress()
 {
     QHostAddress address;
 
-    if (sockType == ServerSocket::Udp) address.setAddress(qobject_cast<QUdpSocket*>(this->sock)->peerAddress().toIPv4Address());
-    else if (sockType == ServerSocket::Tcp) address.setAddress(qobject_cast<QTcpSocket*>(this->sock)->peerAddress().toIPv4Address());
+    if (this->sockType == ServerSocket::Udp) address.setAddress(qobject_cast<QUdpSocket*>(this->sock)->peerAddress().toIPv4Address());
+    else if (this->sockType == ServerSocket::Tcp) address.setAddress(qobject_cast<QTcpSocket*>(this->sock)->peerAddress().toIPv4Address());
     return address;
 }
 
@@ -509,20 +517,20 @@ int User::getSpeed()
     int speed;
 
     //the speed will be returned in bytes per seconds
-    lastBytesRead = bytesRead;
+    this->lastBytesRead = this->bytesRead;
     elaspedTime = speedLastCheckTime.elapsed();
     if (!elaspedTime) return -1;
 
-    speed = (bytesRead - lastBytesRead) / elaspedTime;
+    speed = (this->bytesRead - this->lastBytesRead) / elaspedTime;
 
     speedLastCheckTime = QTime::currentTime();
-    lastBytesRead = bytesRead;
+    this->lastBytesRead = this->bytesRead;
     return speed;
 }
 
 Readini* User::getIni()
 {
-    return ini;
+    return this->ini;
 }
 
 void User::moveToThread(QThread *thread)
