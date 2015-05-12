@@ -1,9 +1,9 @@
 #include "asiodevice.h"
 #include <boost/asio.hpp>
 
-AsioDevice::AsioDevice()
+AsioDevice::AsioDevice(QObject *parent)
 {
-
+    (void) parent;
 }
 
 qint64 AsioDevice::readData(char *data, qint64 maxlen)

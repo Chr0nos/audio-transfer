@@ -12,12 +12,12 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
 {
     this->ini = qobject_cast<UserHandler*>(this->parent())->getIni();
     this->security = qobject_cast<UserHandler*>(this->parent())->callSecurity();
-    bytesRead = 0;
+    this->bytesRead = 0;
     this->managerStarted = false;
     this->connectionTime = QTime::currentTime().msec();
     this->sockType = type;
     this->sock = socket;
-    lastBytesRead = 0;
+    this->lastBytesRead = 0;
     this->flowChecker = NULL;
     this->type = type;
     this->manager = NULL;
@@ -26,29 +26,34 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     //at this point, the object name IS the peer address
     this->peerAddress = this->objectName();
 
-    if (ini->getValue("general","verbose").toInt()) connect(this->manager, SIGNAL(debug(QString)), this, SIGNAL(debug(QString)));
+    if (this->ini->getValue("general","verbose").toInt())
+    {
+        connect(this->manager, SIGNAL(debug(QString)), this, SIGNAL(debug(QString)));
+    }
 
     //flow checker interval
     //note: the flow checker also check for afk users.
-    checkInterval = 2000;
+    this->checkInterval = 2000;
 
     //because the server works in local mode we dont need a buffer
-    mc.bufferSize = 0;
+    this->mc.bufferSize = 0;
 
     if (!ini->isKey("general","userConfig")) this->allowUserConfig = true;
     else this->allowUserConfig = (bool) ini->getValue("general","userConfig").toInt();
 
-    moduleName = ini->getValue("general","output");
+    this->moduleName = this->ini->getValue("general","output");
 }
 
 void User::start()
 {
+    QTcpSocket *tcp;
+
     this->mutex = new QMutex();
-    //QMutexLocker lock(this->mutex);
+    QMutexLocker lock(this->mutex);
     say("user start...");
     if (type == ServerSocket::Tcp)
     {
-        QTcpSocket *tcp = (QTcpSocket*) socket;
+        tcp = (QTcpSocket*) socket;
         tcp->setParent(this);
         connect(tcp,SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(sockStateChanged(QAbstractSocket::SocketState)));
         connect(tcp,SIGNAL(readyRead()),this,SLOT(sockRead()));
@@ -59,18 +64,18 @@ void User::start()
     //creating a 2Mb ring buffer device
     this->inputDevice = new CircularDevice(2097152, this);
     this->inputDevice->open(QIODevice::ReadWrite);
-    mc.raw.devIn = this->inputDevice;
+    this->mc.raw.devIn = this->inputDevice;
 
     say("device done");
     //confiruring output module
-    initModule();
+    this->initModule();
 
     //creating the default audio format
-    initFormat();
+    this->initFormat();
 
     //creating the manager, this class will manage the output using the CircularDevice
     this->manager = new Manager(this);
-    sendSpecs();
+    this->sendSpecs();
 
     say("user is now ready");
 }
@@ -111,29 +116,34 @@ void User::initModule()
 
 User::~User()
 {
-    //QMutexLocker lock(this->mutex);
+    QTcpSocket *tcp;
+
     say("deleting object");
     if (sockType == ServerSocket::Tcp)
     {
-        QTcpSocket *sock = (QTcpSocket*) this->sock;
-        if (sock->isOpen()) sock->close();
-        sock->disconnect();
-        sock->deleteLater();
+        tcp = (QTcpSocket*) this->sock;
+        if (tcp->isOpen()) tcp->close();
+        tcp->disconnect();
+        tcp->deleteLater();
     }
     //in udp you MUST dont close the socket.
-    if (flowChecker)
+    if (this->flowChecker)
     {
         flowChecker->stop();
         flowChecker->disconnect();
         delete(flowChecker);
     }
-    if (manager)
+    if (this->manager)
     {
+        manager->stop();
         manager->disconnect();
         delete(manager);
     }
-    //lock.unlock();
-    delete(this->mutex);
+    if (this->mutex)
+    {
+        delete(this->mutex);
+        this->mutex = NULL;
+    }
     //we dont delete 'format' here because the manager will do this :)
 }
 
@@ -207,7 +217,7 @@ void User::sockRead()
 {
     //this is the Tcp sockread, the udp data DONT cant this method
     //say("sockread !");
-    //QMutexLocker lock(this->mutex);
+    QMutexLocker lock(this->mutex);
     QTcpSocket* sock = (QTcpSocket*) this->sock;
     QByteArray data = sock->readAll();
     const quint64 size = data.size();
@@ -228,18 +238,22 @@ void User::initUser()
     this->mc.devicesNames.output = this->objectName();
     this->manager->setUserConfig(this->mc);
     this->managerStarted = this->manager->start();
+    if (!this->managerStarted)
+    {
+        say("failed to start manager");
+        emit(sockClose(this));
+        return;
+    }
     this->initFlowChecker();
 }
 
 void User::initFlowChecker()
 {
-    QMutexLocker lock(this->mutex);
-
     //creating the flow checker (it check if the data are comming at the good speed)
-    this->flowChecker = new FlowChecker(mc.format,this->checkInterval,this);
-    connect(flowChecker,SIGNAL(ban(QString,int)),this,SLOT(ban(QString,int)));
-    connect(flowChecker,SIGNAL(kick(QString)),this,SLOT(kill(QString)));
-    connect(flowChecker,SIGNAL(debug(QString)),this,SLOT(say(QString)));
+    this->flowChecker = new FlowChecker(mc.format, this->checkInterval, this);
+    connect(flowChecker, SIGNAL(ban(QString,int)), this, SLOT(ban(QString, int)));
+    connect(flowChecker, SIGNAL(kick(QString)), this, SLOT(kill(QString)));
+    connect(flowChecker, SIGNAL(debug(QString)), this, SLOT(say(QString)));
     flowChecker->start();
 }
 
@@ -250,7 +264,7 @@ void User::sockRead(const QByteArray *data)
     //(void) sock;
     const int size = data->size();
 
-    //QMutexLocker lock(this->mutex);
+    QMutexLocker lock(this->mutex);
     if ((!bytesRead) && (!managerStarted))
     {
         readUserConfig(data);
@@ -281,6 +295,7 @@ void User::stop()
     {
         this->inputDevice->close();
     }
+    lock.unlock();
     emit(sockClose(this));
 }
 

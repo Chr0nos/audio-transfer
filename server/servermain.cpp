@@ -105,40 +105,35 @@ void ServerMain::sockOpen(QTcpSocket *newSock) {
 
 void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const QByteArray *data, QUdpSocket *udp) {
     /*
-    ** this method is just called ONE time
+    **
     */
     if (data->isEmpty()) return;
     User* user = NULL;
     int max;
+    int pos;
 
     (void) senderPort;
-    (void) udp;
-
-    say("trying to init new user: " + sender->toString());
-    max = ini->getValue("general","maxUsers").toInt();
-    if ((max) && (users->countUsers() >= max))
+    pos = users->indexOf(udp);
+    if (pos < 0)
     {
-        say("cannot add the new user: maximum user count reached");
-        return;
+        say("trying to init new user: " + sender->toString());
+        max = ini->getValue("general","maxUsers").toInt();
+        if ((max) && (users->countUsers() >= max))
+        {
+            say("cannot add the new user: maximum user count reached");
+            return;
+        }
+        if ((!security->isAuthorisedHost(sender)) && (ini->getValue("general","showUdpRejected").toInt()))
+        {
+            say("rejected data from: " + sender->toString());
+            return;
+        }
+        say("adding udp user: " + sender->toString());
+        user = users->createUser(udp, ServerSocket::Udp, sender->toString());
+        //connect(srv, SIGNAL(readData(QHostAddress*,const quint16*,const QByteArray*,QUdpSocket*)),
+        //       user, SLOT(readData(QHostAddress*,const quint16*,const QByteArray*,QUdpSocket*)));
     }
-    if ((!security->isAuthorisedHost(sender)) && (ini->getValue("general","showUdpRejected").toInt()))
-    {
-        say("rejected data from: " + sender->toString());
-        return;
-    }
-    say("adding udp user: " + sender->toString());
-    user = users->createUser(udp, ServerSocket::Udp, sender->toString());
-
-    /*
-    ** here we disconnect the signal/slot fom the ServerSocket class to this one
-    ** and re-connect the readdata signal to "User" class
-    ** it's to avoid useless code here and mostly the UserHandler->indexOf
-    ** for the value of "pos"
-    */
-    disconnect(srv, SIGNAL(readData(QHostAddress*, const quint16*,const QByteArray*, QUdpSocket*)),
-                   this, SLOT(readData(QHostAddress*, const quint16*, const QByteArray*, QUdpSocket*)));
-    connect(srv, SIGNAL(readData(QHostAddress*, const quint16*, const QByteArray*, QUdpSocket*)),
-            user, SLOT(readData(QHostAddress*, const quint16*, const QByteArray*, QUdpSocket*)));
+    else user = users->at(pos);
     user->sockRead(data);
 }
 

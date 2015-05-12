@@ -58,9 +58,7 @@ void UserHandler::sockClose(User *user) {
     bytesRead += user->getBytesCount();
 
     say("deleting user: " + user->objectName());
-    user->disconnect();
     user->deleteLater();
-    //delete(user);
 
     //re-assign the pointer value to NULL just in case
     user = NULL;
@@ -173,7 +171,8 @@ User* UserHandler::at(const int pos)
     return users.at(pos);
 }
 
-quint64 UserHandler::getBytesRead() {
+quint64 UserHandler::getBytesRead()
+{
     return bytesRead + getBytesReadForConnected();
 }
 

@@ -12,7 +12,7 @@ class AsioDevice : public QIODevice
 private:
     boost::asio::io_service io_service;
 public:
-    AsioDevice();
+    AsioDevice(QObject *parent);
     bool open(OpenMode mode);
     qint64 readData(char *data, qint64 maxlen);
     qint64 writeData(const char *data, qint64 len);

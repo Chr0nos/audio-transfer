@@ -10,7 +10,10 @@ FlowChecker::FlowChecker(AudioFormat *format, const int checkInterval, QObject *
     timer.setInterval(checkInterval);
     this->lastBytesRead = 0;
     connect(&timer,SIGNAL(timeout()),this,SLOT(check()));
+    this->warningCount = 0;
+    this->enableFlowKick = true;
 }
+
 FlowChecker::~FlowChecker() {
     stop();
 }
@@ -25,17 +28,20 @@ bool FlowChecker::start() {
     timer.start();
     return true;
 }
+
 void FlowChecker::check() {
+    User* user;
+
     //the parent will set this to 0 in case of user deletion
     if (!this->parent()) return;
-    User* user = qobject_cast<User*>(this->parent());
+    else if (!this->format) return;
+    user = qobject_cast<User*>(this->parent());
     const int bytesRead = user->getBytesCount();
-
     const int neededSpeed = format->getBytesSizeForDuration(timer.interval());
+
     //here the +- tolerance is 20%
     const unsigned int maxSpeed = neededSpeed *1.2;
     const unsigned int minSpeed = neededSpeed *0.8;
-
     const unsigned int speed = bytesRead - lastBytesRead;
 
     //here we detect if the user is afk we kick him withous any warning
