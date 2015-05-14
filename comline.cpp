@@ -43,6 +43,8 @@ Comline::Comline(QStringList *argList, QObject *parent) :
     //preparing config default values
     initResult = initConfig();
 
+    this->serverType = ServerSocket::Invalid;
+
     //parsing user arguments
     parse(argList);
 }
@@ -208,7 +210,10 @@ void Comline::makeServer()
 
 void Comline::parse(QStringList *argList) {
     bool serverMode = false;
-    ServerSocket::type serverType = ServerSocket::Tcp;
+    if (this->serverType == ServerSocket::Invalid)
+    {
+        serverType = ServerSocket::Tcp;
+    }
     if ((argList->contains("--help")) || (argList->contains("-h"))) showHelp();
     else if (argList->contains("--test-circular")) {
         debug("runing circular buffer test");
@@ -435,6 +440,8 @@ void Comline::say(const QString message) {
     }
 }
 void Comline::loadIni() {
+    QString proto;
+
     if ((ini) && (ini->exists())) {
         //say("loading ini config file: " + ini->getFilePath());
         QStringList tcpInfo = ini->getValue("target","tcp").split(":");
@@ -447,6 +454,15 @@ void Comline::loadIni() {
         mc.format->setSampleRate(ini->getValue("format","sampleRate").toInt());
         mc.format->setSampleSize(ini->getValue("format","sampleSize").toInt());
         mc.format->setChannelCount(ini->getValue("format","channels").toInt());
+
+        /*
+        ** this part allow the protocol choice loading from the ini file
+        ** it dispend user to specify "--server-type udp" in command line
+        */
+        proto = this->ini->getValue("general", "proto").toLower();
+        if (proto == "tcp") this->serverType = ServerSocket::Tcp;
+        else if (proto == "udp") this->serverType = ServerSocket::Udp;
+        else this->serverType = ServerSocket::Invalid;
     }
 
 }

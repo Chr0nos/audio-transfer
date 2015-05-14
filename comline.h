@@ -38,6 +38,7 @@ private:
     void loadIni();
     void showHelp();
     void writePid(QString *value);
+    ServerSocket::type serverType;
 #ifdef SERVER
     ServerMain* srv;
     void testDevice();
