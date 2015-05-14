@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QtNetwork/QTcpSocket>
 #include <QMutex>
+#include <QTime>
 #include "manager.h"
 #include "audioformat.h"
 #include "server/serversocket.h"
@@ -43,7 +44,7 @@ private:
     quint64 bytesRead;
     ServerSocket::type sockType;
     QIODevice* inputDevice;
-    qint64 connectionTime;
+    QTime connectionTime;
     QString peerAddress;
     bool managerStarted;
     quint64 lastBytesRead;
@@ -52,7 +53,6 @@ private:
     int checkInterval;
     Readini *ini;
     ServerSecurity *security;
-    ServerSocket::type type;
     bool allowUserConfig;
     QString moduleName;
     QMutex *mutex;
@@ -72,6 +72,7 @@ public slots:
     void ban(const QString reason,const int banTime);
     void stop();
     void start();
+    void showStats(void);
 };
 
 #endif // USER_H

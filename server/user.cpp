@@ -1,4 +1,5 @@
 #include "user.h"
+#include "size.h"
 #include "server/servermain.h"
 #include <QTime>
 #include <QMutexLocker>
@@ -22,12 +23,11 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     this->security = qobject_cast<UserHandler*>(this->parent())->callSecurity();
     this->bytesRead = 0;
     this->managerStarted = false;
-    this->connectionTime = QTime::currentTime().msec();
+    this->connectionTime = QTime::currentTime();
     this->sockType = type;
     this->sock = socket;
     this->lastBytesRead = 0;
     this->flowChecker = NULL;
-    this->type = type;
     this->manager = NULL;
     this->mutex = NULL;
 
@@ -59,7 +59,7 @@ void User::start()
     this->mutex = new QMutex();
     QMutexLocker lock(this->mutex);
     say("user start...");
-    if (type == ServerSocket::Tcp)
+    if (this->sockType == ServerSocket::Tcp)
     {
         tcp = (QTcpSocket*) socket;
         tcp->setParent(this);
@@ -460,7 +460,7 @@ void User::kill(const QString reason)
 {
     QByteArray reason_b;
 
-    this->reason_b = QString("you where kicked: reason: " + reason).toLocal8Bit();
+    reason_b = QString("you where kicked: reason: " + reason).toLocal8Bit();
     this->flowChecker->setParent(NULL);
     say("kicking user: " + reason);
     send(&reason_b);
@@ -553,4 +553,9 @@ void User::moveToThread(QThread *thread)
     this->inputDevice->moveToThread(thread);
     */
     say("moving done");
+}
+
+void User::showStats(void)
+{
+    say("readed : " + Size::getWsize(this->bytesRead));
 }
