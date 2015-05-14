@@ -120,7 +120,7 @@ void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const
     ** -> in both case we write the sount with user->write(data);
     */
     if (data->isEmpty()) return;
-    User* user = NULL;
+    User *user;
     int max;
     int pos;
 
@@ -141,7 +141,7 @@ void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const
             return;
         }
         say("adding udp user: " + sender->toString());
-        user = this->users->createUser(udp, ServerSocket::Udp, this->sender->toString());
+        user = this->users->createUser(udp, ServerSocket::Udp, sender->toString());
         //connect(srv, SIGNAL(readData(QHostAddress*,const quint16*,const QByteArray*,QUdpSocket*)),
         //       user, SLOT(readData(QHostAddress*,const quint16*,const QByteArray*,QUdpSocket*)));
     }
