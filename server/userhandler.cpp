@@ -23,6 +23,10 @@ User* UserHandler::createUser(QObject *socket, ServerSocket::type type, QString 
     bool threads;
 
     threads = false;
+    if (this->getIni()->getValue("general", "threads").toInt())
+    {
+        threads = true;
+    }
     user = new User(socket, type, this);
     if (!user)
     {
@@ -38,6 +42,7 @@ User* UserHandler::createUser(QObject *socket, ServerSocket::type type, QString 
     {
         thread = new QThread(this);
         connect(thread, SIGNAL(started()), user, SLOT(start()));
+        connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
         user->setParent(0);
         user->moveToThread(thread);
         thread->start();

@@ -13,8 +13,6 @@ class ServerSecurity : public QObject
 public:
     explicit ServerSecurity(QObject *parent = 0);
     bool isAuthorisedHost(const QHostAddress *address);
-    void blockWithIpTables(const QHostAddress *address);
-    void addToBannedList(const QHostAddress *address,const int banTime);
     bool isBanned(const QHostAddress* address);
 private:
     Readini* ini();
@@ -32,7 +30,8 @@ private:
 signals:
     void debug(const QString message);
 public slots:
-
+    void blockWithIpTables(const QHostAddress *address);
+    void addToBannedList(const QHostAddress *address,const int banTime);
 };
 
 #endif // SERVERSECURITY_H

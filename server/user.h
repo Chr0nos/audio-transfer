@@ -5,10 +5,11 @@
 #include <QtNetwork/QTcpSocket>
 #include <QMutex>
 #include <QTime>
+#include <QByteArray>
 #include "manager.h"
 #include "audioformat.h"
-#include "server/serversocket.h"
 #include "modules/circulardevice.h"
+#include "server/serversocket.h"
 #include "server/security/flowchecker.h"
 #include "server/security/serversecurity.h"
 
@@ -16,7 +17,7 @@ class User : public QObject
 {
     Q_OBJECT
 public:
-    explicit User(QObject* socket,ServerSocket::type type, QObject *parent = 0);
+    explicit User(QObject *socket,ServerSocket::type type, QObject *parent = 0);
     ~User();
     void setFormat(const AudioFormat* format);
     QString getUserName();
@@ -28,6 +29,7 @@ public:
     ServerSecurity* callSecurity();
     Readini* getIni();
     void moveToThread(QThread *thread);
+
 private:
     bool readUserConfig(const QByteArray *data);
     bool isPossibleConfigLine(const char* input, int lenght);
@@ -38,8 +40,10 @@ private:
     void initModule();
     void sendSpecs();
     void initFlowChecker();
-    QObject* sock;
-    Manager* manager;
+    void flushPendingBuffer();
+    void sockReadInternal(const QByteArray *data, const int size);
+    QObject *sock;
+    Manager *manager;
     Manager::userConfig mc;
     quint64 bytesRead;
     ServerSocket::type sockType;
@@ -49,13 +53,14 @@ private:
     bool managerStarted;
     quint64 lastBytesRead;
     QTime speedLastCheckTime;
-    FlowChecker* flowChecker;
+    FlowChecker *flowChecker;
     int checkInterval;
     Readini *ini;
     ServerSecurity *security;
     bool allowUserConfig;
     QString moduleName;
     QMutex *mutex;
+    QByteArray *pendingBuffer;
 
 signals:
     void debug(const QString message);
@@ -67,12 +72,12 @@ private slots:
     void sockRead();
 public slots:
     void sockRead(const QByteArray *data);
-    void readData(QHostAddress *sender, const quint16 *senderPort, const QByteArray *data, QUdpSocket *udp);
     void kill(const QString reason);
     void ban(const QString reason,const int banTime);
     void stop();
     void start();
     void showStats(void);
+    void appendToPendingBuffer(const QByteArray *data, const int size);
 };
 
 #endif // USER_H

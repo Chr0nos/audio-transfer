@@ -9,9 +9,12 @@ ServerSecurity::ServerSecurity(QObject *parent) :
     QObject(parent)
 {
 }
-Readini* ServerSecurity::ini() {
+
+Readini* ServerSecurity::ini()
+{
     return qobject_cast<ServerMain*>(this->parent())->getIni();
 }
+
 bool ServerSecurity::isAuthorisedHost(const QHostAddress *address) {
     //Reading the allowed hosts form the ini file, empty if not
     QString rawLine = serverConfig("allowed");
@@ -34,9 +37,11 @@ bool ServerSecurity::isAuthorisedHost(const QHostAddress *address) {
 
     return isBanned(address);
 }
+
 QString ServerSecurity::serverConfig(const QString key) {
     return this->ini()->getValue("general",key);
 }
+
 void ServerSecurity::blockWithIpTables(const QHostAddress *address) {
 #ifdef WIN32
     //no iptables on win32

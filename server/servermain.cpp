@@ -135,15 +135,13 @@ void ServerMain::readData(QHostAddress *sender, const quint16 *senderPort, const
             say("cannot add the new user: maximum user count reached");
             return;
         }
-        if ((!this->security->isAuthorisedHost(sender)) && (ini->getValue("general","showUdpRejected").toInt()))
+        if ((!this->security->isAuthorisedHost(sender)) && (ini->getValue("general", "showUdpRejected").toInt()))
         {
             say("rejected data from: " + sender->toString());
             return;
         }
         say("adding udp user: " + sender->toString());
         user = this->users->createUser(udp, ServerSocket::Udp, sender->toString());
-        //connect(srv, SIGNAL(readData(QHostAddress*,const quint16*,const QByteArray*,QUdpSocket*)),
-        //       user, SLOT(readData(QHostAddress*,const quint16*,const QByteArray*,QUdpSocket*)));
     }
     else user = users->at(pos);
     user->sockRead(data);

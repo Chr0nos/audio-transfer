@@ -30,6 +30,7 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     this->flowChecker = NULL;
     this->manager = NULL;
     this->mutex = NULL;
+    this->pendingBuffer = NULL;
 
     //at this point, the object name IS the peer address
     this->peerAddress = this->objectName();
@@ -86,6 +87,25 @@ void User::start()
     this->sendSpecs();
 
     say("user is now ready");
+
+    flushPendingBuffer();
+}
+
+void User::flushPendingBuffer()
+{
+    /*
+    ** this method flush the pending buffer
+    ** the pending buffer is used to read sound before the User object is started
+    ** it's usefull for threaded use
+    */
+    if (this->pendingBuffer)
+    {
+        say("user has pending buffer: flushing it");
+        this->sockReadInternal(this->pendingBuffer, this->pendingBuffer->size());
+        this->pendingBuffer->clear();
+        delete(this->pendingBuffer);
+        this->pendingBuffer = NULL;
+    }
 }
 
 void User::sendSpecs()
@@ -221,23 +241,49 @@ QString User::getUserName()
     return this->objectName();
 }
 
+void User::sockRead(const QByteArray *data)
+{
+    //this is a Udp sockread
+    const int size = data->size();
+
+    this->sockReadInternal(data, size);
+}
+
 void User::sockRead()
 {
     //this is the Tcp sockread, the udp data DONT cant this method
     //say("sockread !");
-    QMutexLocker lock(this->mutex);
-    QTcpSocket* sock = (QTcpSocket*) this->sock;
-    QByteArray data = sock->readAll();
-    const quint64 size = data.size();
+    QByteArray data;
+    quint64 size;
+    QTcpSocket *tcp;
 
+    tcp = (QTcpSocket*) this->sock;
+    data = tcp->readAll();
+    size = data.size();
+    this->sockReadInternal(&data, size);
+}
+
+void User::sockReadInternal(const QByteArray *data, const int size)
+{
+    /*
+    ** this method is called by both Tcp and Udp protocols
+    ** if the manager is available the sound is direcly interpreted
+    ** in other case: datas are placed into a pending buffer
+    */
+    QMutexLocker lock(this->mutex);
+    if (!this->manager)
+    {
+        this->appendToPendingBuffer(data, size);
+        return;
+    }
     if ((!this->bytesRead) && (!this->managerStarted))
     {
-        readUserConfig(&data);
+        readUserConfig(data);
         initUser();
         this->bytesRead += size;
         return;
     }
-    this->inputDevice->write(data, size);
+    this->inputDevice->write(*data, size);
     this->bytesRead += size;
 }
 
@@ -265,35 +311,15 @@ void User::initFlowChecker()
     this->flowChecker->start();
 }
 
-void User::sockRead(const QByteArray *data)
-{
-    //this is a Udp sockread
-    //QUdpSocket* sock = (QUdpSocket*) this->sock;
-    //(void) sock;
-    const int size = data->size();
-
-    QMutexLocker lock(this->mutex);
-    if ((!this->bytesRead) && (!this->managerStarted))
-    {
-        readUserConfig(data);
-        initUser();
-        this->bytesRead += size;
-        return;
-    }
-    this->inputDevice->write(data->data(),size);
-    bytesRead += size;
-}
-
-void User::readData(QHostAddress *sender, const quint16 *senderPort, const QByteArray *data, QUdpSocket *udp)
+void User::appendToPendingBuffer(const QByteArray *data, const int size)
 {
     /*
-    ** this slot is used to be connected directly with
-    ** the serversocket class who read directly the udp datagram
+    ** the pending buffer is used to receive data from client while the User class
+    ** has not been started yet (in case of threads),
+    ** this buffer will be flushed into the manager when this->start(); will be called
     */
-    (void) sender;
-    (void) senderPort;
-    (void) udp;
-    this->sockRead(data);
+    if (this->pendingBuffer) this->pendingBuffer = new QByteArray();
+    this->pendingBuffer->append(*data, size);
 }
 
 void User::stop()
@@ -302,6 +328,8 @@ void User::stop()
     if (this->inputDevice)
     {
         this->inputDevice->close();
+        this->inputDevice->deleteLater();
+        this->inputDevice = NULL;
     }
     lock.unlock();
     emit(sockClose(this));
@@ -310,10 +338,10 @@ void User::stop()
 bool User::isPossibleConfigLine(const char *input, int lenght)
 {
     /*
-     ** this function check if a config line could be a valid one or not
-     ** it's here to replace the regex usage and be more acurate
-     ** allowed range are: a-z A-Z : 0-9
-     */
+    ** this function check if a config line could be a valid one or not
+    ** it's here to replace the regex usage and be more acurate
+    ** allowed range are: a-z A-Z : 0-9
+    */
     int i;
     char c;
 
@@ -483,7 +511,7 @@ void User::ban(const QString reason, const int banTime)
     QHostAddress host;
 
     host = getHostAddress();
-    this->callSecurity()->addToBannedList(&host, banTime);
+    this->security->addToBannedList(&host, banTime);
     kill(reason);
 }
 
@@ -523,7 +551,7 @@ int User::getSpeed()
 
     speed = (this->bytesRead - this->lastBytesRead) / elaspedTime;
 
-    speedLastCheckTime = QTime::currentTime();
+    this->speedLastCheckTime = QTime::currentTime();
     this->lastBytesRead = this->bytesRead;
     return speed;
 }
@@ -543,15 +571,10 @@ void User::moveToThread(QThread *thread)
     say("moving to an other thread");
     connect(thread, SIGNAL(finished()), this, SLOT(deleteLater()));
     QObject::moveToThread(thread);
-    /*
-    if (type == ServerSocket::Tcp)
+    if (this->sockType == ServerSocket::Tcp)
     {
         this->sock->moveToThread(thread);
     }
-    this->flowChecker->moveToThread(thread);
-    this->manager->moveToThread(thread);
-    this->inputDevice->moveToThread(thread);
-    */
     say("moving done");
 }
 
