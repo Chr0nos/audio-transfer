@@ -5,9 +5,9 @@
 FlowChecker::FlowChecker(AudioFormat *format, const int checkInterval, QObject *parent) :
     QObject(parent)
 {
-    this->setFormat(format);
     this->timer.setParent(this);
     this->timer.setInterval(checkInterval);
+    this->setFormat(format);
     this->lastBytesRead = 0;
     connect(&timer,SIGNAL(timeout()),this,SLOT(check()));
     this->warningCount = 0;
