@@ -16,6 +16,7 @@ public:
     int getInterval();
     void setFlowKick(const bool mode);
     void stop();
+    void setFormat(AudioFormat *format);
 private:
     AudioFormat* format;
     QTimer timer;
@@ -23,6 +24,9 @@ private:
     void say(const QString message);
     int warningCount;
     bool enableFlowKick;
+    unsigned int maxSpeed;
+    unsigned int minSpeed;
+    unsigned int neededSpeed;
 signals:
     void debug(const QString message);
     void kick(const QString reason);
