@@ -5,7 +5,7 @@
 FlowChecker::FlowChecker(AudioFormat *format, const int checkInterval, QObject *parent) :
     QObject(parent)
 {
-    this->format = format;
+    this->setFormat(format);
     this->timer.setParent(this);
     this->timer.setInterval(checkInterval);
     this->lastBytesRead = 0;
@@ -53,7 +53,7 @@ void FlowChecker::check()
     user = qobject_cast<User*>(this->parent());
     bytesRead = user->getBytesCount();
 
-    speed = this->bytesRead - this->lastBytesRead;
+    speed = bytesRead - this->lastBytesRead;
 
     //here we detect if the user is afk we kick him withous any warning
     if (!speed)
