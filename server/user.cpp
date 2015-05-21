@@ -247,11 +247,8 @@ void User::sockRead(const QByteArray *data)
     ** this is a Udp sockread slot
     ** in case of threaded user we have to copy the data
     ** because else: they will not be available anymore at the read moment
-    ** TODO: use a CircularBuffer object to store the
-    ** copied data and prevent useless ReAllocations
     */
     const int size = data->size();
-    QByteArray copiedData;
 
     if (!this->isThreaded)
     {
@@ -259,14 +256,13 @@ void User::sockRead(const QByteArray *data)
     }
     else
     {
-        copiedData = QByteArray(*data, size);
-        this->sockReadInternal(&copiedData, size);
+        this->sockReadInternalCopy(data, size);
     }
 }
 
 void User::sockRead()
 {
-    //this is the Tcp sockread, the udp data DONT cant this method
+    //this is the Tcp sockread, the udp data DONT call this method
     //say("sockread !");
     QByteArray data;
     quint64 size;
@@ -298,6 +294,18 @@ void User::sockReadInternal(const QByteArray *data, const int size)
     }
     this->inputDevice->write(*data, size);
     this->bytesRead += size;
+}
+
+void User::sockReadInternalCopy(const QByteArray *data, const int size)
+{
+    /*
+    ** TODO: use a CircularBuffer object to store the
+    ** copied data and prevent useless ReAllocations
+    */
+    QByteArray copiedData;
+
+    copiedData = QByteArray(data->data(), size);
+    this->sockReadInternal(&copiedData, size);
 }
 
 void User::initUser()
@@ -487,12 +495,13 @@ void User::send(QByteArray *data)
     if (sockType == ServerSocket::Tcp)
     {
         tcp = (QTcpSocket*) this->sock;
-        tcp->write(data->data(), size);
+        if (tcp->isWritable()) tcp->write(data->data(), size);
     }
     else
     {
         udp = (QUdpSocket*) this->sock;
         if (!udp->isOpen()) return;
+        else if (!udp->isWritable()) return;
         udp->write(data->data(), size);
     }
 }

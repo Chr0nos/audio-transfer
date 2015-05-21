@@ -71,6 +71,7 @@ private slots:
     void initFlowChecker();
     void flushPendingBuffer();
     void sockReadInternal(const QByteArray *data, const int size);
+    void sockReadInternalCopy(const QByteArray *data, const int size);
 public slots:
     void sockRead(const QByteArray *data);
     void kill(const QString reason);
