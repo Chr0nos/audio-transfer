@@ -32,7 +32,7 @@ public slots:
 private slots:
     void say(const QString message);
     void sockOpen(QTcpSocket* newSock);
-    void readData(QHostAddress *sender,const QByteArray *data,QUdpSocket* udp);
+    void readData(QHostAddress *sender, const QByteArray *data);
 };
 
 #endif // SERVERMAIN_H

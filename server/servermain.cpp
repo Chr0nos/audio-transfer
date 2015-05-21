@@ -39,10 +39,12 @@ bool ServerMain::listen(ServerSocket::type type)
     }
 
     this->srv = new ServerSocket(this);
-    connect(this->srv,SIGNAL(debug(QString)),this,SLOT(say(QString)));
-    connect(this->srv,SIGNAL(sockOpen(QTcpSocket*)),this,SLOT(sockOpen(QTcpSocket*)));
-    connect(this->srv,SIGNAL(readData(QHostAddress*,const QByteArray*,QUdpSocket*)),
-            this,SLOT(readData(QHostAddress*,const QByteArray*,QUdpSocket*)));
+    connect(this->srv, SIGNAL(debug(QString)),
+            this,SLOT(say(QString)));
+    connect(this->srv, SIGNAL(sockOpen(QTcpSocket*)),
+            this, SLOT(sockOpen(QTcpSocket*)));
+    connect(this->srv,SIGNAL(readData(QHostAddress*, const QByteArray*)),
+            this, SLOT(readData(QHostAddress*, const QByteArray*)));
 
     if (srv->startServer(type,port)) {
         say("server started on port " + QString::number(port));
@@ -109,7 +111,7 @@ void ServerMain::sockOpen(QTcpSocket *newSock) {
 }
 
 
-void ServerMain::readData(QHostAddress *sender, const QByteArray *data, QUdpSocket *udp)
+void ServerMain::readData(QHostAddress *sender, const QByteArray *data)
 {
     /*
     ** this is the dispatched of udp readed data
@@ -128,9 +130,11 @@ void ServerMain::readData(QHostAddress *sender, const QByteArray *data, QUdpSock
     */
     if (data->isEmpty()) return;
     User *user;
+    QUdpSocket *udp;
     int max;
     int pos;
 
+    udp = (QUdpSocket*) this->srv;
     pos = this->users->indexOf(udp);
     if (pos < 0)
     {
@@ -149,13 +153,13 @@ void ServerMain::readData(QHostAddress *sender, const QByteArray *data, QUdpSock
         say("adding udp user: " + sender->toString());
         user = this->users->createUser(udp, ServerSocket::Udp, sender->toString());
     }
-    else user = users->at(pos);
+    else user = this->users->at(pos);
     user->sockRead(data);
 }
 
 Readini* ServerMain::getIni()
 {
-    return ini;
+    return this->ini;
 }
 
 ServerSocket::type ServerMain::getServerType()

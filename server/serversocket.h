@@ -34,7 +34,7 @@ signals:
     void debug(const QString message);
     void sockOpen(QTcpSocket *socket);
     void sockOpen(QUdpSocket *socket);
-    void readData(QHostAddress *sender,const QByteArray *data,QUdpSocket* socket);
+    void readData(QHostAddress *sender, const QByteArray *data);
 public slots:
 
 };
