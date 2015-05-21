@@ -31,11 +31,12 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     this->manager = NULL;
     this->mutex = NULL;
     this->pendingBuffer = NULL;
+    this->isThreaded = false;
 
     //at this point, the object name IS the peer address
     this->peerAddress = this->objectName();
 
-    if (this->ini->getValue("general","verbose").toInt())
+    if (this->ini->getValue("general", "verbose").toInt())
     {
         connect(this->manager, SIGNAL(debug(QString)), this, SIGNAL(debug(QString)));
     }
@@ -47,10 +48,10 @@ User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     //because the server works in local mode we dont need a buffer
     this->mc.bufferSize = 0;
 
-    if (!this->ini->isKey("general","userConfig")) this->allowUserConfig = true;
-    else this->allowUserConfig = (bool) ini->getValue("general","userConfig").toInt();
+    if (!this->ini->isKey("general", "userConfig")) this->allowUserConfig = true;
+    else this->allowUserConfig = (bool) ini->getValue("general", "userConfig").toInt();
 
-    this->moduleName = this->ini->getValue("general","output");
+    this->moduleName = this->ini->getValue("general", "output");
 }
 
 void User::start()
@@ -98,13 +99,12 @@ void User::flushPendingBuffer()
     ** the pending buffer is used to read sound before the User object is started
     ** it's usefull for threaded use
     */
-    if (this->pendingBuffer)
+    if (!this->pendingBuffer.isEmpty())
     {
         say("user has pending buffer: flushing it");
-        this->sockReadInternal(this->pendingBuffer, this->pendingBuffer->size());
-        this->pendingBuffer->clear();
-        delete(this->pendingBuffer);
-        this->pendingBuffer = NULL;
+        this->mutex->unlock();
+        this->sockReadInternal(&this->pendingBuffer, this->pendingBuffer.size());
+        this->pendingBuffer.clear();
     }
 }
 
@@ -118,7 +118,7 @@ void User::sendSpecs()
     QByteArray specs = mc.format->getFormatTextInfo().toLocal8Bit();
     specs.append("afk:");
     specs.append(QString::number(checkInterval));
-    send(&specs);
+    this->send(&specs);
 }
 
 void User::initModule()
@@ -243,10 +243,25 @@ QString User::getUserName()
 
 void User::sockRead(const QByteArray *data)
 {
-    //this is a Udp sockread
+    /*
+    ** this is a Udp sockread slot
+    ** in case of threaded user we have to copy the data
+    ** because else: they will not be available anymore at the read moment
+    ** TODO: use a CircularBuffer object to store the
+    ** copied data and prevent useless ReAllocations
+    */
     const int size = data->size();
+    QByteArray copiedData;
 
-    this->sockReadInternal(data, size);
+    if (!this->isThreaded)
+    {
+        this->sockReadInternal(data, size);
+    }
+    else
+    {
+        copiedData = QByteArray(*data, size);
+        this->sockReadInternal(&copiedData, size);
+    }
 }
 
 void User::sockRead()
@@ -280,8 +295,6 @@ void User::sockReadInternal(const QByteArray *data, const int size)
     {
         readUserConfig(data);
         initUser();
-        this->bytesRead += size;
-        return;
     }
     this->inputDevice->write(*data, size);
     this->bytesRead += size;
@@ -317,9 +330,9 @@ void User::appendToPendingBuffer(const QByteArray *data, const int size)
     ** the pending buffer is used to receive data from client while the User class
     ** has not been started yet (in case of threads),
     ** this buffer will be flushed into the manager when this->start(); will be called
+    ** we NEED to make a copy of the data, not just using the pointer
     */
-    if (this->pendingBuffer) this->pendingBuffer = new QByteArray();
-    this->pendingBuffer->append(*data, size);
+    this->pendingBuffer.append(QByteArray(data->data(), size));
 }
 
 void User::stop()
@@ -564,9 +577,9 @@ Readini* User::getIni()
 void User::moveToThread(QThread *thread)
 {
     /*
-    ** for now: this method make the whole application has
-    ** a segmentation fault, so don't move to threads yet
-    ** i'm working on it
+    ** in case of a Tcp socket, we also move the socket to the user thread
+    ** in case of udp socket: we can't because of the non connection aspect
+    ** all user use the same udp listen socket
     */
     say("moving to an other thread");
     connect(thread, SIGNAL(finished()), this, SLOT(deleteLater()));
@@ -575,6 +588,7 @@ void User::moveToThread(QThread *thread)
     {
         this->sock->moveToThread(thread);
     }
+    this->isThreaded = true;
     say("moving done");
 }
 

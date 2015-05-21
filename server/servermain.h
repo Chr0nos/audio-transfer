@@ -20,6 +20,7 @@ public:
     ServerSecurity* security;
     ServerSocket::type getServerType();
 private:
+    void initFormat();
     ServerSocket* srv;
     UserHandler* users;
     Readini *ini;
@@ -31,7 +32,7 @@ public slots:
 private slots:
     void say(const QString message);
     void sockOpen(QTcpSocket* newSock);
-    void readData(QHostAddress *sender,const quint16 *senderPort,const QByteArray *data,QUdpSocket* udp);
+    void readData(QHostAddress *sender,const QByteArray *data,QUdpSocket* udp);
 };
 
 #endif // SERVERMAIN_H

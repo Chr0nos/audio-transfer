@@ -31,23 +31,16 @@ public:
     void moveToThread(QThread *thread);
 
 private:
+    bool readUserConfigOption(const QString *key, const QString *value, const int *intVal);
     bool readUserConfig(const QByteArray *data);
     bool isPossibleConfigLine(const char* input, int lenght);
-    void initUser();
-    void initFormat();
-    bool readUserConfigOption(const QString *key, const QString *value, const int *intVal);
     void makeSpeedStatus();
-    void initModule();
-    void sendSpecs();
-    void initFlowChecker();
-    void flushPendingBuffer();
-    void sockReadInternal(const QByteArray *data, const int size);
     QObject *sock;
     Manager *manager;
     Manager::userConfig mc;
     quint64 bytesRead;
     ServerSocket::type sockType;
-    QIODevice* inputDevice;
+    QIODevice *inputDevice;
     QTime connectionTime;
     QString peerAddress;
     bool managerStarted;
@@ -60,7 +53,8 @@ private:
     bool allowUserConfig;
     QString moduleName;
     QMutex *mutex;
-    QByteArray *pendingBuffer;
+    QByteArray pendingBuffer;
+    bool isThreaded;
 
 signals:
     void debug(const QString message);
@@ -70,6 +64,13 @@ private slots:
     void sockStateChanged(QAbstractSocket::SocketState state);
     void say(const QString message);
     void sockRead();
+    void initUser();
+    void initFormat();
+    void initModule();
+    void sendSpecs();
+    void initFlowChecker();
+    void flushPendingBuffer();
+    void sockReadInternal(const QByteArray *data, const int size);
 public slots:
     void sockRead(const QByteArray *data);
     void kill(const QString reason);

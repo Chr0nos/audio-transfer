@@ -105,7 +105,7 @@ void ServerSocket::sockOpenUdp()
         datagram.clear();
         datagram.resize(udp->pendingDatagramSize());
         udp->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
-        emit(readData(&sender, &senderPort, &datagram, udp));
+        emit(readData(&sender, &datagram, udp));
     }
 }
 
