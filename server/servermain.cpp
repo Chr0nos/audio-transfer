@@ -100,7 +100,7 @@ void ServerMain::say(const QString message)
 void ServerMain::sockOpen(QTcpSocket *newSock) {
     const int max = ini->getValue("general","maxUsers").toInt();
 
-    if ((max) && (users->countUsers() >= max))
+    if ((max) && (users->count() >= max))
     {
         say("maximum users count reach: " + QString::number(max) + " -> rejecting new user from: " + newSock->peerAddress().toString());
         newSock->deleteLater();
@@ -114,7 +114,7 @@ void ServerMain::sockOpen(QTcpSocket *newSock) {
 void ServerMain::readData(QHostAddress *sender, const QByteArray *data)
 {
     /*
-    ** this is the dispatched of udp readed data
+    ** this is the dispatcher of udp readed data
     ** ALL udp client will receive the sound stream throuth this
     ** method, is perfectly possible that the client is sending
     ** an empty udp packet, so it's important to let the isEmpty
@@ -123,38 +123,48 @@ void ServerMain::readData(QHostAddress *sender, const QByteArray *data)
     **
     ** logic of the method:
     ** -> search for the user in the users list (stored in UserHandler)
-    ** -> if the user is not found : we create one an assignat it's pointer to
+    ** -> if the user is not found : we create one and assign it's pointer to
     **    "user" (if allowed by the security)
     ** -> else we set the user pointer from the handler to "user"
     ** -> in both case we write the sount with user->write(data);
     */
     if (data->isEmpty()) return;
     User *user;
-    QUdpSocket *udp;
-    int max;
     int pos;
 
-    udp = (QUdpSocket*) this->srv;
-    pos = this->users->indexOf(udp);
+    pos = this->users->indexOf(this->srv);
     if (pos < 0)
     {
-        say("trying to init new user: " + sender->toString());
-        max = this->ini->getValue("general","maxUsers").toInt();
-        if ((max) && (users->countUsers() >= max))
-        {
-            say("cannot add the new user: maximum user count reached");
-            return;
-        }
-        if ((!this->security->isAuthorisedHost(sender)) && (ini->getValue("general", "showUdpRejected").toInt()))
-        {
-            say("rejected data from: " + sender->toString());
-            return;
-        }
-        say("adding udp user: " + sender->toString());
-        user = this->users->createUser(udp, ServerSocket::Udp, sender->toString());
+        user = this->createUser(sender);
+        if (!user) return;
     }
     else user = this->users->at(pos);
     user->sockRead(data);
+}
+
+User* ServerMain::createUser(QHostAddress *sender)
+{
+    /*
+    ** this method will TRY to create a new user checking for
+    ** the security before, if the user was created successfuly it will
+    ** return the User* pointer, in other case it will return 0
+    */
+    int max;
+
+    say("trying to init new user: " + sender->toString());
+    max = this->ini->getValue("general","maxUsers").toInt();
+    if ((max) && (users->count() >= max))
+    {
+        say("cannot add the new user: maximum user count reached");
+        return 0;
+    }
+    if ((!this->security->isAuthorisedHost(sender)) && (ini->getValue("general", "showUdpRejected").toInt()))
+    {
+        say("rejected data from: " + sender->toString());
+        return 0;
+    }
+    say("adding udp user: " + sender->toString());
+    return this->users->createUser(this->srv, ServerSocket::Udp, sender->toString());
 }
 
 Readini* ServerMain::getIni()

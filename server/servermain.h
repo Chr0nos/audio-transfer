@@ -21,6 +21,7 @@ public:
     ServerSocket::type getServerType();
 private:
     void initFormat();
+    User* createUser(QHostAddress* sender);
     ServerSocket* srv;
     UserHandler* users;
     Readini *ini;
