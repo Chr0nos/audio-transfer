@@ -38,7 +38,7 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
     }
     *device = NULL;
     QString name;
-    QString* filePath;
+    QString *filePath;
     Manager::Mode target = Manager::None;
     QIODevice *rawDev;
     int deviceId;

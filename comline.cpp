@@ -40,10 +40,10 @@ Comline::Comline(QStringList *argList, QObject *parent) :
 
     out = new QTextStream(stdout);
 
+    this->serverType = ServerSocket::Invalid;
+
     //preparing config default values
     initResult = initConfig();
-
-    this->serverType = ServerSocket::Invalid;
 
     //parsing user arguments
     parse(argList);
@@ -469,20 +469,26 @@ void Comline::loadIni() {
 void Comline::debugTrigger() {
     qDebug() << "debug trigger was called by" << sender() << qobject_cast<CircularDevice*>(sender())->bytesAvailable();
 }
-void Comline::showCommonRates() {
+
+void Comline::showCommonRates()
+{
     QList<int> rates = AudioFormat::getCommonSamplesRates();
     int rate;
     int bits;
+    int bitrate;
     QString rateString;
 
     say("indicatives bitrates usages:");
     say("Channels\tSize\tRate\t\tBitrate");
     int channels = 0;
-    while (channels++ < 8) {
+    while (channels++ < 8)
+    {
         bits = 8;
-        while (bits <= 32) {
-            foreach (rate,rates) {
-                const int bitrate = rate * bits * channels / 8;
+        while (bits <= 32)
+        {
+            foreach (rate,rates)
+            {
+                bitrate = rate * bits * channels / 8;
                 rateString = Size::getWsize(rate,1000);
                 rateString = rateString.mid(0,rateString.length() -1).rightJustified(8,QChar(32));
                 say("" + QString::number(channels).rightJustified(5,QChar(32)) + "\t\t" +

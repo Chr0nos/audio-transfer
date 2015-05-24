@@ -23,7 +23,7 @@ public:
     Readini* getIni();
     ServerSecurity* callSecurity();
     quint64 getBytesReadForConnected();
-    int countUsers();
+    int count();
     User* last();
     User* createUser(QObject *socket, ServerSocket::type type, QString userName);
 private:

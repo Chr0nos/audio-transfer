@@ -138,14 +138,15 @@ int UserHandler::indexOf(const QObject *socket)
      ** return -1
      */
     int pos;
+    QList<User*>::iterator i;
 
+    i = users.begin();
     pos = -1;
-    QList<User*>::Iterator i;
-    for (i = users.begin() ; i != users.end() ; i++)
+    while (i != users.end())
     {
         pos++;
-        User* x = (User*) *i;
-        if (x->getSocketPointer() == socket) return pos;
+        if ((*i)->getSocketPointer() == socket) return pos;
+        i++;
     }
     return -1;
 }
@@ -159,7 +160,7 @@ int UserHandler::indexOf(const User *user)
     for (i = users.begin() ; i != users.end() ; i++)
     {
         pos++;
-        if ((User*) *i == user) return pos;
+        if (*i == user) return pos;
     }
     return -1;
 }
@@ -218,7 +219,8 @@ quint64 UserHandler::getBytesReadForConnected()
     return size;
 }
 
-int UserHandler::countUsers() {
+int UserHandler::count()
+{
     /*
     ** this method return the number of connected users
     ** it's also include udp users even if there is actualy

@@ -63,15 +63,16 @@ void User::start()
     say("user start...");
     if (this->sockType == ServerSocket::Tcp)
     {
-        tcp = (QTcpSocket*) socket;
-        tcp->setParent(this);
-        connect(tcp,SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(sockStateChanged(QAbstractSocket::SocketState)));
-        connect(tcp,SIGNAL(readyRead()),this,SLOT(sockRead()));
+        tcp = (QTcpSocket*) this->sock;
+        //tcp->setParent(this);
+        connect(tcp, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(sockStateChanged(QAbstractSocket::SocketState)));
+        connect(tcp, SIGNAL(readyRead()),this,SLOT(sockRead()));
         this->setObjectName(tcp->peerAddress().toString());
     }
 
     say("user creating device");
     //creating a 2Mb ring buffer device
+
     this->inputDevice = new CircularDevice(2097152, this);
     this->inputDevice->open(QIODevice::ReadWrite);
     this->mc.raw.devIn = this->inputDevice;
@@ -157,15 +158,15 @@ User::~User()
     //in udp you MUST dont close the socket.
     if (this->flowChecker)
     {
-        flowChecker->stop();
-        flowChecker->disconnect();
-        delete(flowChecker);
+        this->flowChecker->stop();
+        this->flowChecker->disconnect();
+        delete(this->flowChecker);
     }
     if (this->manager)
     {
-        manager->stop();
-        manager->disconnect();
-        delete(manager);
+        this->manager->stop();
+        this->manager->disconnect();
+        delete(this->manager);
     }
     if (this->mutex)
     {
@@ -595,7 +596,9 @@ void User::moveToThread(QThread *thread)
     QObject::moveToThread(thread);
     if (this->sockType == ServerSocket::Tcp)
     {
+        this->sock->setParent(0);
         this->sock->moveToThread(thread);
+        connect(thread, SIGNAL(finished()), this->sock, SLOT(deleteLater()));
     }
     this->isThreaded = true;
     say("moving done");
