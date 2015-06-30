@@ -218,16 +218,26 @@ void MainWindow::on_pushButton_clicked()
         }
         else if (ui->destinationRadioTcp->isChecked()) {
             QString rawLine = ui->destinationTcpSocket->text();
-            QStringList tokens = rawLine.split(":");
-            int toks = tokens.count();
+            QStringList tokens;
+            int toks;
+            QString host;
+
+            tokens = rawLine.split(":");
+            if (tokens.first() == "udp")
+            {
+                qDebug() << "udp mode enabled";
+                rawLine = rawLine.mid(4);
+                mc.modeOutput = Manager::Udp;
+                tokens.removeAt(0);
+            }
+            else tokens = rawLine.split(":");
+            toks = tokens.count();
             if (toks < 2)
             {
                 debug("missing parameters");
                 return;
             }
-            QString host = tokens.at(toks -2);
-
-
+            host = tokens.at(toks -2);
             const int port = tokens.last().toInt();
             if (!isValidIp(host)) {
                 ui->statusBar->showMessage("Error: invalid target ip: refusing to connect");
@@ -240,7 +250,7 @@ void MainWindow::on_pushButton_clicked()
             mc.network.host = host;
             mc.network.port = port;
             mc.network.sendConfig = true;
-            mc.modeOutput = getNetModeForLine(&rawLine);
+            if (mc.modeOutput == Manager::None) mc.modeOutput = getNetModeForLine(&rawLine);
 
             ui->statusBar->showMessage("Connecting to " + host + " on port " + QString().number(port));
         }
