@@ -47,7 +47,6 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
 
     ModuleDevice    *dev;
     QString         name;
-    QString         *filePath;
     Manager::Mode   target;
     QIODevice       *rawDev;
     int             deviceId;
@@ -62,14 +61,14 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
     rawDev = NULL;
     *device = NULL;
     target = Manager::None;
-    filePath = NULL;
     deviceId = 0;
+    config.file.filePath = NULL;
 
     if (mode == QIODevice::ReadOnly)
     {
         target = config.modeInput;
         deviceId = config.devices.input;
-        filePath = &config.file.input;
+        config.file.filePath = &config.file.input;
         rawDev = config.raw.devIn;
         if (!config.devicesNames.input.isEmpty()) name = config.devicesNames.input;
     }
@@ -77,7 +76,7 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
     {
         target = config.modeOutput;
         deviceId = config.devices.output;
-        filePath = &config.file.output;
+        config.file.filePath = &config.file.output;
         rawDev = config.raw.devOut;
         if (!config.devicesNames.output.isEmpty()) name = config.devicesNames.output;
     }
@@ -101,16 +100,12 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
     devptr[Manager::Zero] = &(ZeroDevice::factory);
     devptr[Manager::Pipe] = &(PipeDevice::factory);
     devptr[Manager::FreqGen] = &(Freqgen::factory);
+    devptr[Manager::File] = &(FileDevice::factory);
 
     if (devptr.contains(target))
     {
         dev = devptr[target](name, format, &this->config ,this);
         dev->setDeviceId(mode, deviceId);
-    }
-
-    else if (target == Manager::File)
-    {
-        *device = new QFile(*filePath);
     }
     else if (target == Manager::Raw)
     {

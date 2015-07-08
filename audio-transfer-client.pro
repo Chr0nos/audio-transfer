@@ -22,11 +22,13 @@ DEFINES += PULSE PULSEASYNC PORTAUDIO COMLINE SERVER GUI MULTIMEDIA
 contains(DEFINES, ASIO)
 {
 	HEADERS += modules/asiodevice.h \
-    modules/moduledevice.h
+    modules/moduledevice.h \
+    modules/filedevice.h
         #lib/ASIOSDK2.3/common/asio.h
 
         SOURCES += modules/asiodevice.cpp \
-    modules/moduledevice.cpp
+    modules/moduledevice.cpp \
+    modules/filedevice.cpp
         #lib/ASIOSDK2.3/common/asio.cpp
 }
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport

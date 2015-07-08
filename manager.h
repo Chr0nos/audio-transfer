@@ -12,6 +12,7 @@
 #include "modules/udpdevice.h"
 #include "modules/zerodevice.h"
 #include "modules/pipedevice.h"
+#include "modules/filedevice.h"
 
 #ifdef PULSE
     #include "modules/pulse.h"
@@ -95,6 +96,7 @@ public:
        struct fileCfg {
            QString output;
            QString input;
+           QString *filePath;
        };
 
        pipeCfg pipe;

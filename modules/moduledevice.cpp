@@ -25,7 +25,8 @@ bool ModuleDevice::setDeviceId(QIODevice::OpenModeFlag mode, const int id)
     return false;
 }
 
-void ModuleDevice::say(QString message)
+void ModuleDevice::say(const QString message)
 {
     (void) message;
+    //emit(debug("ModuleDevice: " + message));
 }
