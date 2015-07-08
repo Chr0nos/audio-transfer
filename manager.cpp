@@ -23,8 +23,18 @@ Manager::Manager(QObject *parent) :
 Manager::~Manager()
 {
     say("deleting manager");
-    if (devIn) delete(devIn);
-    if (devOut) delete(devOut);
+    if (devIn)
+    {
+        devIn->close();
+        devIn->disconnect();
+        delete(devIn);
+    }
+    if (devOut)
+    {
+        devOut->close();
+        devOut->disconnect();
+        delete(devOut);
+    }
     if (buffer) delete(buffer);
     delete(format);
 }
@@ -113,7 +123,7 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
         *device = dev;
     }
     if (!*device) return false;
-    if (mode == QIODevice::ReadOnly) connect(*device,SIGNAL(readyRead()),this,SLOT(transfer()));
+    if (mode == QIODevice::ReadOnly) connect(*device, SIGNAL(readyRead()), this, SLOT(transfer()));
 
     //if a name is available lets assign it to the new device
     if (!name.isEmpty()) (**device).setObjectName(name);
