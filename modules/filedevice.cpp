@@ -57,7 +57,7 @@ qint64 FileDevice::writeData(const char *data, qint64 len)
     quint64 wrote;
 
     if (!this->file->isWritable()) return -1;
-    write = this->file->write(data, len);
+    wrote = this->file->write(data, len);
     //this->writeWaveHeader();
     return wrote;
 }

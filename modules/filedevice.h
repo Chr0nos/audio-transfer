@@ -7,7 +7,7 @@
 
 class FileDevice : public ModuleDevice
 {
-    //Q_OBJECT
+    Q_OBJECT
 public:
     FileDevice(QString filePath,AudioFormat *foramt, QObject *parent = 0);
     ~FileDevice();

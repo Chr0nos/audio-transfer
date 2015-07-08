@@ -8,7 +8,7 @@
 
 class ModuleDevice : public QIODevice
 {
-    //Q_OBJECT
+    Q_OBJECT
 public:
     ModuleDevice(QObject *parent);
     virtual bool setDeviceId(QIODevice::OpenModeFlag mode, const int id);

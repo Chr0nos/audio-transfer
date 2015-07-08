@@ -62,8 +62,7 @@ void AsioDevice::close()
 
 void AsioDevice::say(const QString message)
 {
-    (void) message;
-    //emit(debug("AsioDevice: " + message));
+    emit(debug("AsioDevice: " + message));
 }
 
 ModuleDevice* AsioDevice::factory(QString name, AudioFormat *format, void *userData, QObject *parent);

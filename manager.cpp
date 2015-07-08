@@ -44,7 +44,6 @@ typedef ModuleDevice* (*FactoryFct_t)(QString, AudioFormat*, void*, QObject*);
 
 bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
 {
-
     ModuleDevice    *dev;
     QString         name;
     Manager::Mode   target;

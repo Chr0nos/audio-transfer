@@ -8,6 +8,7 @@
 
 class AsioDevice : public QIODevice
 {
+    Q_OBJECT
 private:
     ASIODriverInfo *info;
     bool start();
