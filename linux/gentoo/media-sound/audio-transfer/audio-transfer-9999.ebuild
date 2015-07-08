@@ -10,19 +10,23 @@ EGIT_REPO_URI="https://github.com/Chr0nos/audio-transfer.git"
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS=""
-IUSE="+qt4 qt5 pulseaudio debug portaudio +comline +server systemd"
+IUSE="X +qt4 qt5 pulseaudio debug portaudio +comline +server systemd"
 REQUIRED_USE="^^ ( qt4 qt5 )"
 append-cppflags "-DMULTIMEDIA"
 
-RDEPEND="qt5? ( dev-qt/qtgui:5
-                dev-qt/qtcore:5
+RDEPEND="qt5? ( dev-qt/qtcore:5
                 dev-qt/qtnetwork:5
                 dev-qt/qtmultimedia:5
-		dev-qt/qtwidgets:5
 	)
-        qt4? ( dev-qt/qtgui:4
-                dev-qt/qtcore:4
+        qt4? (  dev-qt/qtcore:4
                 dev-qt/qtmultimedia:4
+	)
+	X? (
+	   qt5? ( dev-qt/qtgui:5
+	   	  dev-qt/qtwidgets:5
+	   	)
+	   qt4? ( dev-qt/qtgui:4
+	   	)
 	)
 	pulseaudio? (
 		media-sound/pulseaudio
@@ -42,7 +46,7 @@ src_configure() {
 	use portaudio && append-cppflags "-DPORTAUDIO"
 	use debug && append-cppflags "-DDEBUG"
 	use server && append-cppflags "-DSERVER"
-
+	use X && append-cppflags "-DGUI"
 
 	#dont works if i put this in a src_compile() section
 	use qt5 && eqmake5
