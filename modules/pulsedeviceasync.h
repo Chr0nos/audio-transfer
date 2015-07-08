@@ -3,7 +3,6 @@
 #ifndef PULSEDEVICEASYNC_H
 #define PULSEDEVICEASYNC_H
 
-#include <QIODevice>
 #include <QStringList>
 #include <QList>
 
@@ -11,8 +10,9 @@
 
 #include "circularbuffer.h"
 #include "audioformat.h"
+#include "modules/moduledevice.h"
 
-class PulseDeviceASync : public QIODevice
+class PulseDeviceASync : public ModuleDevice
 {
     Q_OBJECT
 public:
@@ -32,6 +32,7 @@ public:
     static void stream_read_callback(pa_stream* stream,size_t len,void* userdata);
     qint64 bytesAvailable();
     void setObjectName(const QString &name);
+    static ModuleDevice *factory(QString name, AudioFormat *format, void *userData, QObject *parent);
 private:
     qint64 readData(char *data, qint64 maxlen);
     qint64 writeData(const char *data, qint64 len);

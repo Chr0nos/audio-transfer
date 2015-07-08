@@ -1,10 +1,10 @@
 #ifndef CIRCULARDEVICE_H
 #define CIRCULARDEVICE_H
 
-#include <QIODevice>
 #include "circularbuffer.h"
+#include "modules/moduledevice.h"
 
-class CircularDevice : public QIODevice
+class CircularDevice : public ModuleDevice
 {
     Q_OBJECT
 public:

@@ -350,7 +350,8 @@ void User::stop()
     if (this->inputDevice)
     {
         this->inputDevice->close();
-        this->inputDevice->deleteLater();
+        this->inputDevice->disconnect();
+        delete(this->inputDevice);
         this->inputDevice = NULL;
     }
     lock.unlock();
@@ -487,6 +488,11 @@ bool User::readUserConfigOption(const QString *key, const QString *value, const 
 
 void User::send(QByteArray *data)
 {
+    /*
+    ** this method is used to send data from the server
+    ** to the client, in threaded mode this method does nothing in threaded
+    ** mode for now for udp connections (tcp are ok because on same thread as user)
+    */
     QTcpSocket *tcp;
     QUdpSocket *udp;
     quint64 size;
@@ -501,8 +507,8 @@ void User::send(QByteArray *data)
     else
     {
         udp = (QUdpSocket*) this->sock;
-        if (!udp->isOpen()) return;
-        else if (!udp->isWritable()) return;
+        if (this->isThreaded) return;
+        else if ((!udp) || (!udp->isWritable())) return;
         udp->write(data->data(), size);
     }
 }
@@ -510,6 +516,7 @@ void User::send(QByteArray *data)
 void User::kill(const QString reason)
 {
     QByteArray reason_b;
+    QTcpSocket* sock;
 
     reason_b = QString("you where kicked: reason: " + reason).toLocal8Bit();
     this->flowChecker->setParent(NULL);
@@ -517,7 +524,7 @@ void User::kill(const QString reason)
     send(&reason_b);
     if (this->sockType == ServerSocket::Tcp)
     {
-        QTcpSocket* sock = (QTcpSocket*) this->sock;
+        sock = (QTcpSocket*) this->sock;
         sock->close();
     }
     this->flowChecker->stop();

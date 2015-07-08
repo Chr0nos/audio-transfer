@@ -4,7 +4,6 @@
 #include "readini.h"
 #include "size.h"
 #include "ui/graphicgenerator.h"
-#include "ui/soundanalyser.h"
 
 #include <QtGui>
 #include <QString>
@@ -195,8 +194,8 @@ void MainWindow::on_pushButton_clicked()
         if (ui->clientName->isChecked()) mc.devicesNames.output = ui->clientNameEdit->text();
 
 #ifdef PORTAUDIO
-        mc.portAudio.deviceIdOutput = ui->destinationPortAudioList->currentIndex();
-        mc.portAudio.deviceIdInput = ui->portAudioSourceList->currentIndex();
+        mc.devices.output = ui->destinationPortAudioList->currentIndex();
+        mc.devices.input = ui->portAudioSourceList->currentIndex();
 #endif
         debug("buffer size: " + Size::getWsize(mc.bufferSize));
 
@@ -260,7 +259,6 @@ void MainWindow::on_pushButton_clicked()
             }
             //mc.modeOutput = Manager::PulseAudio;
             mc.modeOutput = Manager::PulseAudioAsync;
-
         }
         else if (ui->destinationRadioZeroDevice->isChecked()) mc.modeOutput = Manager::Zero;
         else if (ui->destinationRadioPortAudio->isChecked()) mc.modeOutput = Manager::PortAudio;

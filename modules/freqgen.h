@@ -1,13 +1,13 @@
 #ifndef FREQGEN_H
 #define FREQGEN_H
 
-#include <QIODevice>
 #include <QByteArray>
 #include <QTime>
 #include <QTimer>
 #include "audioformat.h"
+#include "modules/moduledevice.h"
 
-class Freqgen : public QIODevice
+class Freqgen : public ModuleDevice
 {
     Q_OBJECT
 public:
@@ -17,6 +17,8 @@ public:
     qint64 bytesAvailable();
     QByteArray generateSound(int duration, float *frequence);
     QByteArray generateSample(float *frequence);
+    void setSample(float frequence);
+    static ModuleDevice *factory(QString name, AudioFormat *format, void *userData, QObject *parent);
 private:
     qint64 readData(char *data, qint64 maxlen);
     qint64 writeData(const char *data, qint64 len);
@@ -27,7 +29,7 @@ private:
     QTime lastReadTime;
     QTimer timer;
     int readLeft;
-    float getValue(unsigned int *time,float* frequence,float* amplification);
+    float getValue(unsigned int *time, float* frequence, float* amplification);
     float getValue(float *time,float* frequence,float* amplification);
     int currentPos;
     void duplicateSoundForChannels(const short *channels, QByteArray *target, int *value, unsigned int *position);

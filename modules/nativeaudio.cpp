@@ -17,7 +17,7 @@
  * */
 
 NativeAudio::NativeAudio(const QString name,AudioFormat *format, QObject *parent) :
-    QIODevice(parent)
+    ModuleDevice(parent)
 {
     say("init");
     //switching from my AudioFormat to QAudioFormat
@@ -105,7 +105,7 @@ bool NativeAudio::configureDevice(QAudio::Mode mode, const int deviceId) {
 }
 
 void NativeAudio::close() {
-    QIODevice::close();
+    ModuleDevice::close();
     emit(aboutToClose());
     if (devOut) devOut->close();
     if (devIn) devIn->close();
@@ -123,6 +123,7 @@ qint64 NativeAudio::readData(char *data, qint64 maxlen) {
 void NativeAudio::say(const QString message) {
     emit(debug("Native: " + message));
 }
+
 bool NativeAudio::setDeviceId(QAudio::Mode mode, const int id) {
     if (id > QAudioDeviceInfo::availableDevices(mode).count()) return false;
     if (mode == QAudio::AudioInput) this->deviceIdIn = id;
@@ -167,4 +168,11 @@ QAudio::Mode NativeAudio::getAudioFlag(const OpenModeFlag mode) {
     if (mode == QIODevice::WriteOnly) return QAudio::AudioOutput;
     return QAudio::AudioInput;
 }
+
+ModuleDevice *NativeAudio::factory(QString name, AudioFormat *format,void *userData, QObject *parent)
+{
+    (void) userData;
+    return new NativeAudio(name, format, parent);
+}
+
 #endif

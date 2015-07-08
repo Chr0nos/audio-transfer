@@ -4,6 +4,7 @@
 #include "audioformat.h"
 #include "circularbuffer.h"
 
+#include "modules/moduledevice.h"
 #ifdef MULTIMEDIA
     #include "modules/nativeaudio.h"
 #endif
@@ -25,7 +26,7 @@
 #endif
 
 #ifdef ASIO
-    #include "modules/asiodevice.h"
+//    #include "modules/asiodevice.h"
 #endif
 
 #include "modules/freqgen.h"
@@ -57,10 +58,6 @@ public:
         FreqGen = 11,
         AsIO = 12
     };
-    struct portAudioSpecs {
-        int deviceIdInput;
-        int deviceIdOutput;
-    };
 
     struct userConfig {
        Mode modeInput;
@@ -74,7 +71,6 @@ public:
 
        int bufferSize;
        int bufferMaxSize;
-       portAudioSpecs portAudio;
 
        struct Name {
            QString input;

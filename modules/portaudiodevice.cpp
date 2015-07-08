@@ -27,7 +27,7 @@
  * */
 
 PortAudioDevice::PortAudioDevice(AudioFormat *format, QObject *parent) :
-    QIODevice(parent)
+    ModuleDevice(parent)
 {
     say("init");
     modeAsync = true;
@@ -267,7 +267,7 @@ const PaDeviceInfo *PortAudioDevice::getDeviceInfo(const int deviceId) {
     if (!initPa()) return (PaDeviceInfo*)NULL;
     return Pa_GetDeviceInfo(deviceId);
 }
-bool PortAudioDevice::setDeviceId(const int deviceId,QIODevice::OpenModeFlag mode) {
+bool PortAudioDevice::setDeviceId(QIODevice::OpenModeFlag mode, const int deviceId) {
     if (deviceId > getDevicesCount()) return false;
     else if (deviceId < 0) return false;
     if (mode == QIODevice::ReadOnly) currentDeviceIdInput = deviceId;
@@ -314,6 +314,13 @@ qint64 PortAudioDevice::bytesAvailable() {
     if (!stream) return -1;
     if (modeAsync) return readBuffer->getAvailableBytesCount();
     return Pa_GetStreamReadAvailable(stream) + QIODevice::bytesAvailable();
+}
+
+ModuleDevice* PortAudioDevice::factory(QString name, AudioFormat *format, void *userData, QObject *parent)
+{
+    (void) name;
+    (void) userData;
+    return new PortAudioDevice(format, parent);
 }
 
 #endif

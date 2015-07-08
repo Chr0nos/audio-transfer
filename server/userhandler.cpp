@@ -3,34 +3,34 @@
 #include "server/servermain.h"
 #include <QThread>
 
-/* this class manage all connected users
- * the user list is stored in this->users
- * each user is a "User*" object
- * TODO: handle each user on a separate Thread
- * */
+/*
+** this class manage all connected users
+** the user list is stored in this->users
+** each user is a "User*" object
+*/
 
 UserHandler::UserHandler(QObject *parent) :
     QObject(parent)
 {
     //bascicly: bytesRead store all the "offline" users data read (after they disconnected)
     this->bytesRead = 0;
+
 }
 
 User* UserHandler::createUser(QObject *socket, ServerSocket::type type, QString userName)
 {
     User* user;
-    QThread *thread;
-    bool threads;
 
     threads = false;
     if (this->getIni()->getValue("general", "threads").toInt())
     {
         threads = true;
     }
+
     user = new User(socket, type, this);
     if (!user)
     {
-        say("error: cannot create new user: failed to alocate memory");
+        say("error: cannot create new user: failed to allocate memory");
         return 0;
     }
     connect(user, SIGNAL(sockClose(User*)), this, SLOT(sockClose(User*)));
@@ -38,17 +38,29 @@ User* UserHandler::createUser(QObject *socket, ServerSocket::type type, QString 
     connect(user, SIGNAL(kicked()), this, SLOT(kicked()));
     user->setObjectName(userName);
     this->users.append(user);
-    if (threads)
+    if (this->threads)
     {
-        thread = new QThread(this);
-        connect(thread, SIGNAL(started()), user, SLOT(start()));
-        connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
-        user->setParent(0);
-        user->moveToThread(thread);
-        thread->start();
+        this->moveUserToThread(user);
     }
     else user->start();
     return user;
+}
+
+void UserHandler::moveUserToThread(User *user)
+{
+    /*
+    ** this method is called in threads mode:
+    ** it move "user" to a new thread (created in this function)
+    ** the clean of the QThread * is done by the signal "finished" received by the thread
+    */
+    QThread *thread;
+
+    thread = new QThread(this);
+    connect(thread, SIGNAL(started()), user, SLOT(start()));
+    connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
+    user->setParent(0);
+    user->moveToThread(thread);
+    thread->start();
 }
 
 void UserHandler::say(const QString message) {
@@ -62,15 +74,14 @@ void UserHandler::sockClose(User *user) {
     //Adding the total bytes read of this user to the main counter (offline counter)
     bytesRead += user->getBytesCount();
 
-    say("deleting user: " + user->objectName());
-    user->deleteLater();
-
-    //re-assign the pointer value to NULL just in case
-    user = NULL;
-
     //deleteing the user from the user list
     users.removeAt(pos);
 
+    say("deleting user: " + user->objectName());
+    user->disconnect();
+    delete(user);
+    //re-assign the pointer value to NULL just in case
+    user = NULL;
     //showing user actualy online and stats
     showUsersOnline();
 }
@@ -84,13 +95,14 @@ void UserHandler::showUsersOnline()
      ** inactivity
      */
     int count;
+    User *x;
+    QList<User*>::Iterator i;
 
     say("current online users:");
     count = 0;
-    QList<User*>::Iterator i;
     for (i = users.begin() ; i != users.end() ; i++)
     {
-        User* x = (User*) *i;
+        x = (User*) *i;
         say(QString::number(count++) + ": " + x->objectName() + QString(" -> readed: ") + Size::getWsize(x->getBytesCount()));
     }
     say("total readed data: " + Size::getWsize(getBytesRead()));
@@ -105,10 +117,10 @@ void UserHandler::killAll(const QString reason)
     ** both udp and tcp users
     */
     QList<User*>::Iterator i;
+
     for (i = users.begin() ; i != users.end() ; i++)
     {
-        User* x = (User*) *i;
-        x->kill(reason);
+        (*i)->kill(reason);
     }
 }
 
@@ -120,10 +132,10 @@ bool UserHandler::contains(const QObject *socket)
     ** it's faster than indexOf
     */
     QList<User*>::Iterator i;
+
     for (i = users.begin() ; i != users.end() ; i++)
     {
-        User* x = (User*) *i;
-        if (x->getSocketPointer() == socket) return true;
+        if ((*i)->getSocketPointer() == socket) return true;
     }
     return false;
 }

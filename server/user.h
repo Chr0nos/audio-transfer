@@ -6,6 +6,7 @@
 #include <QMutex>
 #include <QTime>
 #include <QByteArray>
+
 #include "manager.h"
 #include "audioformat.h"
 #include "modules/circulardevice.h"

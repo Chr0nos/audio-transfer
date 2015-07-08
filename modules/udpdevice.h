@@ -2,18 +2,19 @@
 #define UDPDEVICE_H
 
 #include <QString>
-#include <QIODevice>
 #include <QtNetwork/QUdpSocket>
 
 #include "audioformat.h"
+#include "modules/moduledevice.h"
 
-class UdpDevice : public QIODevice
+class UdpDevice : public ModuleDevice
 {
     Q_OBJECT
 public:
     explicit UdpDevice(const QString host,const int port,AudioFormat *format,const bool sendConfig = true,QObject *parent = 0);
     bool open(OpenMode mode);
     void close();
+    static ModuleDevice *factory(QString name, AudioFormat *format, void *userData, QObject *parent);
 private:
     QUdpSocket *sock;
     QString host;

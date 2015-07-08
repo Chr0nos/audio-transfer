@@ -4,13 +4,13 @@
 #include <QDebug>
 
 Freqgen::Freqgen(AudioFormat *format, QObject *parent) :
-    QIODevice(parent)
+    ModuleDevice(parent)
 {
     this->format = format;
     timer.setParent(this);
     timer.setInterval(50);
     connect(&timer,SIGNAL(timeout()),this,SIGNAL(readyRead()));
-    pi = 3.14159265359;
+    this->pi = 3.14159265359;
 }
 
 void Freqgen::close() {
@@ -25,10 +25,10 @@ bool Freqgen::open(OpenMode mode) {
         //qDebug() << sample.toHex();
         //say("sample size: " + Size::getWsize(sample.size()) + " ,duration: 1sec");
         say("opened");
-        lastReadTime = QTime::currentTime();
-        readLeft = 0;
-        currentPos = 0;
-        timer.start();
+        this->lastReadTime = QTime::currentTime();
+        this->readLeft = 0;
+        this->currentPos = 0;
+        this->timer.start();
         return true;
     }
     return false;
@@ -175,3 +175,16 @@ void Freqgen::duplicateSoundForChannels(const short *channels, QByteArray *targe
         i++;
     }
 }
+
+void Freqgen::setSample(float frequence)
+{
+    this->sample = this->generateSample(&frequence);
+}
+
+ModuleDevice* Freqgen::factory(QString name, AudioFormat *format, void *userData, QObject *parent)
+{
+    (void) userData;
+    (void) name;
+    return new Freqgen(format, parent);
+}
+

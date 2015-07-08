@@ -1,12 +1,11 @@
 #ifndef PIPEDEVICE_H
 #define PIPEDEVICE_H
 
-#include <QIODevice>
 #include <QString>
 #include <QFile>
 #include <QThread>
 #include "circularbuffer.h"
-
+#include "modules/moduledevice.h"
 
 class PipeDeviceRead : public QObject {
     Q_OBJECT
@@ -26,7 +25,7 @@ signals:
     void failed();
 };
 
-class PipeDevice : public QIODevice
+class PipeDevice : public ModuleDevice
 {
     Q_OBJECT
 public:
@@ -35,6 +34,7 @@ public:
     bool open(OpenMode mode);
     void setHexOutputEnabled(const bool mode);
     qint64 bytesAvailable();
+    static ModuleDevice *factory(QString name, AudioFormat *format, void *userData, QObject *parent);
 private:
     QFile *file;
     qint64 readData(char *data, qint64 maxlen);

@@ -3,7 +3,6 @@
 #ifndef PORTAUDIODEVICE_H
 #define PORTAUDIODEVICE_H
 
-#include <QIODevice>
 #include <QString>
 #include <QTimer>
 #include <QList>
@@ -11,8 +10,9 @@
 
 #include "audioformat.h"
 #include "circularbuffer.h"
+#include "modules/moduledevice.h"
 
-class PortAudioDevice : public QIODevice
+class PortAudioDevice : public ModuleDevice
 {
     Q_OBJECT
 public:
@@ -26,11 +26,12 @@ public:
     const PaDeviceInfo* getDeviceInfo(const int deviceId);
     QStringList getDevicesNames();
     bool initPa();
-    bool setDeviceId(const int deviceId, OpenModeFlag mode);
+    bool setDeviceId(OpenModeFlag mode, const int deviceId);
     static PaSampleFormat getSampleFormat(const int sampleSize);
     int getDeviceIdByName(const QString name);
     bool setDeviceByName(const QString name,QIODevice::OpenModeFlag mode);
     qint64 bytesAvailable();
+    static ModuleDevice *factory(QString name, AudioFormat *format, void *userData, QObject *parent);
 private:
     qint64 readData(char *data, qint64 maxlen);
     qint64 writeData(const char *data, qint64 len);

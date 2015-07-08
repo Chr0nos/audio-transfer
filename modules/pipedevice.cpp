@@ -1,4 +1,5 @@
 #include "pipedevice.h"
+#include "manager.h"
 
 #include <QDebug>
 
@@ -6,7 +7,7 @@
 //it require "console" in QT arguments
 
 PipeDevice::PipeDevice(const QString name, QObject *parent) :
-    QIODevice(parent)
+    ModuleDevice(parent)
 {
     this->setObjectName(name);
     this->hexOutput = false;
@@ -14,6 +15,7 @@ PipeDevice::PipeDevice(const QString name, QObject *parent) :
     buffer = NULL;
     thread = NULL;
 }
+
 PipeDevice::~PipeDevice() {
     say("closing device");
     if (file) {
@@ -22,6 +24,7 @@ PipeDevice::~PipeDevice() {
     }
     stop();
 }
+
 bool PipeDevice::open(OpenMode mode) {
     if (isOpen()) return true;
     say("opening device");
@@ -131,6 +134,17 @@ qint64 PipeDevice::bytesAvailable() {
     return buffer->getAvailableBytesCount() + QIODevice::bytesAvailable();
 }
 
+ModuleDevice* PipeDevice::factory(QString name, AudioFormat *format, void *userData, QObject *parent)
+{
+    PipeDevice          *dev;
+    Manager::userConfig *config;
+
+    config = (Manager::userConfig*) userData;
+    dev = new PipeDevice(name, parent);
+    if (config->pipe.hexMode) dev->setHexOutputEnabled(true);
+    (void) format;
+    return dev;
+}
 
 //over this line the class is PipeDeviceRead: it's runing on a separate thread
 
@@ -184,3 +198,4 @@ void PipeDeviceRead::start() {
 void PipeDeviceRead::say(const QString message) {
     emit(debug("PipeDeviceRead: " + message));
 }
+

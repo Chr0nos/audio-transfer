@@ -8,7 +8,6 @@
 #include <pulse/pulseaudio.h>
 
 #include <QObject>
-#include <QIODevice>
 #include <QString>
 #include <QStringList>
 #include <QTime>
@@ -17,6 +16,7 @@
 #include "circularbuffer.h"
 
 #include "audioformat.h"
+#include "modules/moduledevice.h"
 
 /* because the pulse simple api is blocant
  * i needed to make it on a separate thread
@@ -25,7 +25,7 @@
 class PulseDeviceRead : public QThread {
     Q_OBJECT
 public:
-    PulseDeviceRead(pa_simple* stream,CircularBuffer* buffer,QObject* parent);
+    PulseDeviceRead(pa_simple* stream, CircularBuffer* buffer, QObject* parent);
     ~PulseDeviceRead();
     void run();
     QByteArray getAvailableData();
@@ -40,8 +40,7 @@ signals:
 };
 
 
-
-class PulseDevice : public QIODevice {
+class PulseDevice : public ModuleDevice {
     Q_OBJECT
 public:
     PulseDevice(const QString name, const QString target, AudioFormat *format, QObject *parent);
@@ -50,6 +49,8 @@ public:
     void close();
     qint64 bytesAvailable();
     QStringList getDevicesNames(QIODevice::OpenMode mode);
+    static ModuleDevice *factory(QString name, AudioFormat *format, void *userData, QObject *parent);
+
 private:
     qint64 writeData(const char *data, qint64 len);
     qint64 readData(char *data, qint64 maxlen);

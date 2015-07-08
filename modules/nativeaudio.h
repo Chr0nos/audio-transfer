@@ -12,8 +12,9 @@
 #include <QtMultimedia/QAudioDeviceInfo>
 
 #include "audioformat.h"
+#include "modules/moduledevice.h"
 
-class NativeAudio : public QIODevice
+class NativeAudio : public ModuleDevice
 {
     Q_OBJECT
 public:
@@ -25,6 +26,7 @@ public:
     static QStringList getDevicesNames(QAudio::Mode mode);
     qint64 bytesAvailable();
     static QAudio::Mode getAudioFlag(const QIODevice::OpenModeFlag mode);
+    static ModuleDevice *factory(QString name, AudioFormat *format, void *userData, QObject *parent);
 private:
     qint64 readData(char *data, qint64 maxlen);
     qint64 writeData(const char *data, qint64 len);

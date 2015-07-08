@@ -1,13 +1,13 @@
 #ifndef TCPDEVICE_H
 #define TCPDEVICE_H
 
-#include <QIODevice>
 #include <QtNetwork/QTcpSocket>
 #include <QString>
 
 #include "audioformat.h"
+#include "modules/moduledevice.h"
 
-class TcpDevice : public QIODevice
+class TcpDevice : public ModuleDevice
 {
     Q_OBJECT
 public:
@@ -15,6 +15,8 @@ public:
     bool open(OpenMode mode);
     void close();
     qint64 bytesAvailable();
+    static ModuleDevice *factory(QString name, AudioFormat *format, void *userData, QObject *parent);
+
 private:
     QTcpSocket *sock;
     QString host;

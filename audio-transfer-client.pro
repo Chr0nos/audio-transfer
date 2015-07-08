@@ -15,15 +15,20 @@
 
 QT       += core gui network
 CONFIG   += c++11
-DEFINES += PULSE PULSEASYNC PORTAUDIO COMLINE SERVER GUI MULTIMEDIA ASIO
+DEFINES += PULSE PULSEASYNC PORTAUDIO COMLINE SERVER GUI MULTIMEDIA
 #DEFINES += GUI
 
 
 contains(DEFINES, ASIO)
 {
-    LIBS += -lboost_system
-}
+	HEADERS += modules/asiodevice.h \
+    modules/moduledevice.h
+        #lib/ASIOSDK2.3/common/asio.h
 
+        SOURCES += modules/asiodevice.cpp \
+    modules/moduledevice.cpp
+        #lib/ASIOSDK2.3/common/asio.cpp
+}
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 TARGET = audio-transfer
@@ -31,12 +36,10 @@ TEMPLATE = app
 
 contains(DEFINES,GUI) {
     SOURCES += ui/mainwindow.cpp \
-	ui/graphicgenerator.cpp
-	ui/soundanalyser.cpp
+        ui/graphicgenerator.cpp
 
     HEADERS += ui/mainwindow.h \
-	ui/graphicgenerator.h
-	ui/soundanalyser.h
+        ui/graphicgenerator.h
 
     FORMS    += ui/mainwindow.ui \
 	ui/soundanalyser.ui
@@ -58,8 +61,7 @@ SOURCES += main.cpp\
     circularbuffer.cpp \
     modules/circulardevice.cpp \
     modules/freqgen.cpp \
-    modules/filters/volumechange.cpp \
-    modules/asiodevice.cpp
+    modules/filters/volumechange.cpp
 
 HEADERS  += manager.h \
     main.h \
@@ -77,8 +79,7 @@ HEADERS  += manager.h \
     modules/pulsedeviceasync.h \
     circularbuffer.h \
     modules/freqgen.h \
-    modules/filters/volumechange.h \
-    modules/asiodevice.h
+    modules/filters/volumechange.h
 
 contains(DEFINES,COMLINE) {
     CONFIG += console

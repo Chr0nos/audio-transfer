@@ -4,13 +4,14 @@
 
 #include "tcpdevice.h"
 #include "audioformat.h"
+#include "manager.h"
 #include <QString>
 #include <QIODevice>
 #include <QtNetwork/QHostInfo>
 #include <QDebug>
 
 TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,bool sendConfig,QObject *parent) :
-    QIODevice(parent)
+    ModuleDevice(parent)
 {
     say("init");
     this->port = port;
@@ -109,4 +110,15 @@ void TcpDevice::stateChanged(QAbstractSocket::SocketState state) {
 qint64 TcpDevice::bytesAvailable() {
     if (!sock) return 0;
     return sock->bytesAvailable() + QIODevice::bytesAvailable();
+}
+
+ModuleDevice* TcpDevice::factory(QString name, AudioFormat *format, void *userData, QObject *parent)
+{
+    Manager::userConfig *config;
+    TcpDevice *device;
+
+    config = (Manager::userConfig*) userData;
+    device = new TcpDevice(config->network.host, config->network.port, format, true, parent);
+    device->setObjectName(name);
+    return device;
 }

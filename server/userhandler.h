@@ -30,6 +30,8 @@ private:
     QList<User*> users;
     Manager::userConfig defaultConfig;
     quint64 bytesRead;
+    bool threads;
+    void moveUserToThread(User *user);
 signals:
     void debug(const QString message);
 public slots:

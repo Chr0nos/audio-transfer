@@ -2,7 +2,7 @@
 #include <QDebug>
 
 CircularDevice::CircularDevice(const uint size, QObject *parent) :
-    QIODevice(parent)
+    ModuleDevice(parent)
 {
     this->buffer = new CircularBuffer(size,"CircularDevice",this);
     connect(buffer,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));

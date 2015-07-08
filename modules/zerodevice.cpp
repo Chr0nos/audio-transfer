@@ -8,7 +8,7 @@
 //but cross platform and with the good bitrate
 
 ZeroDevice::ZeroDevice(AudioFormat* format,QObject *parent) :
-    QIODevice(parent)
+    ModuleDevice(parent)
 {
     this->format = format;
     bytesCountPs = format->getBitrate();
@@ -36,7 +36,7 @@ qint64 ZeroDevice::readData(char *data, qint64 maxlen) {
 }
 
 bool ZeroDevice::open(OpenMode mode) {
-    QIODevice::open(mode);
+    ModuleDevice::open(mode);
     if ((mode == QIODevice::ReadOnly) || (mode == QIODevice::ReadWrite)) {
         lastReadTime = QTime::currentTime().msec();
         emit(readyRead());
@@ -49,4 +49,11 @@ qint64 ZeroDevice::bytesAvailable() {
     const int elapsedTime = currentTime - lastReadTime;
     if (!elapsedTime) return 0;
     return format->getBytesSizeForDuration(elapsedTime) + QIODevice::bytesAvailable();
+}
+
+ModuleDevice* ZeroDevice::factory(QString name, AudioFormat *format, void *userData, QObject *parent)
+{
+    (void) name;
+    (void) userData;
+    return new ZeroDevice(format,parent);
 }

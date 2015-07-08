@@ -10,7 +10,7 @@ QString Size::getWsize(const quint64 size, const int steps) {
     double isize = size;
     QStringList keys = Size::getUnits();
     int n;
-    for (n = 0;isize >= steps;n++) isize /= steps;
+    for (n = 0 ; isize >= steps ; n++) isize /= steps;
     if (n >= keys.count()) n = keys.count() -1;
     return QString::number(isize,10,2) + keys.at(n);
 }
@@ -22,9 +22,10 @@ quint64 Size::getRsize(const QString wsize) {
     int len;
     int sizeEndPos;
     double size;
+    int p;
 
     keys = Size::getUnits();
-    for (int p = keys.count() -1 ; p ; p--) {
+    for (p = keys.count() -1 ; p ; p--) {
         len = keys.at(p).length();
         sizeEndPos = wsize.length() - len;
         //prevent empty sizes like "b" (withous any numbers)

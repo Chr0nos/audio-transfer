@@ -109,8 +109,8 @@ bool Comline::initConfig() {
     mc.modeInput = Manager::PulseAudio;
 #endif
 #ifdef PORTAUDIO
-    mc.portAudio.deviceIdInput = 0;
-    mc.portAudio.deviceIdOutput = 0;
+    mc.devices.input = 0;
+    mc.devices.output = 0;
 #endif
     mc.modeOutput = Manager::Tcp;
     mc.network.port = 1042;

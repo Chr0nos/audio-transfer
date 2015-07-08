@@ -3,8 +3,8 @@
 
 #include <QString>
 #include <QIODevice>
-//#include <QtNetwork/QNetworkInterface>
 #include <QFile>
+#include <QMap>
 
 Manager::Manager(QObject *parent) :
     QObject(parent)
@@ -29,19 +29,31 @@ Manager::~Manager()
     delete(format);
 }
 
+//pointer of function
+typedef ModuleDevice* (*FactoryFct_t)(QString, AudioFormat*, void*, QObject*);
+
 bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
 {
+
+    ModuleDevice    *dev;
+    QString         name;
+    QString         *filePath;
+    Manager::Mode   target;
+    QIODevice       *rawDev;
+    int             deviceId;
+    QMap<Manager::Mode, FactoryFct_t> devptr;
+
     if ((device) && ((*device)))
     {
         (**device).disconnect();
         delete(*device);
     }
+    dev = NULL;
+    rawDev = NULL;
     *device = NULL;
-    QString name;
-    QString *filePath;
-    Manager::Mode target = Manager::None;
-    QIODevice *rawDev;
-    int deviceId;
+    target = Manager::None;
+    filePath = NULL;
+    deviceId = 0;
 
     if (mode == QIODevice::ReadOnly)
     {
@@ -59,123 +71,48 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
         rawDev = config.raw.devOut;
         if (!config.devicesNames.output.isEmpty()) name = config.devicesNames.output;
     }
-
-    switch (target)
-    {
-#ifdef ASIO
-        case Manager::AsIO:
-        {
-            AsioDevice *asio = new AsioDevice(this);
-            connect(asio, SIGNAL(debug(QString)), this, SIGNAL(debug(QString)));
-            *device = asio;
-            break;
-        }
-#else
-        case Manager::AsIO:
-            break;
-#endif
-
 #ifdef MULTIMEDIA
-        case Manager::Device: {
-            NativeAudio *native = new NativeAudio(name,format,this);
-            connect(native,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-            if (!native->setDeviceId(NativeAudio::getAudioFlag(mode),deviceId))
-            {
-                delete(native);
-                return false;
-            }
-            *device = native;
-            break;
-        }
-#else
-        case Manager::Device:
-            (void) deviceId;
-            say("not compiled with QtMultimedia support");
-            return false;
+    devptr[Manager::Device] = &(NativeAudio::factory);
 #endif
-        case Manager::Tcp: {
-            TcpDevice* tcpDevice = new TcpDevice(config.network.host,config.network.port,format,config.network.sendConfig,this);
-            connect(tcpDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-            *device = tcpDevice;
-            break;
-        }
-        case Manager::Udp: {
-            UdpDevice *udpDevice = new UdpDevice(config.network.host,config.network.port,format,config.network.sendConfig,this);
-            connect(udpDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-            *device = udpDevice;
-            break;
-        }
+#ifdef ASIO
+    devptr[Manager::AsIO] = &(AsioDevice::factory);
+#endif
 #ifdef PULSE
-        case Manager::PulseAudio: {
-            PulseDevice *pulseDevice = new PulseDevice(name,config.pulse.target,format,this);
-            connect(pulseDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-            *device = pulseDevice;
-            break;
-        }
-#else
-    case Manager::PulseAudio:
-            //in normal case: this condition will NEVER appens: the ui will not send PulseAudio is the module is not built in: but: security before evrythink.
-            emit(errors("pulse audio output requested but ATC was not compiled with pa module"));
-            return false;
-            break;
+    devptr[Manager::PulseAudio] = &(PulseDevice::factory);
 #endif
-
 #ifdef PULSEASYNC
-        case Manager::PulseAudioAsync:
-        {
-            PulseDeviceASync* pulse = new PulseDeviceASync(format,config.pulse.target,this);
-            pulse->setObjectName("Audio-Transfer");
-            connect(pulse,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-            *device = pulse;
-            break;
-        }
-#else
-        case Manager::PulseAudioAsync:
-            return false;
+    devptr[Manager::PulseAudioAsync] = &(PulseDeviceASync::factory);
 #endif
-        case Manager::Zero:
-            *device = new ZeroDevice(format,this);
-            break;
-        case Manager::None:
-            *device = NULL;
-            break;
-         case Manager::File:
-            *device = new QFile(*filePath);
-            break;
-         case Manager::Pipe:
-         {
-            PipeDevice *pipeDevice = new PipeDevice(name + "PipeDevice socket",this);
-            connect(pipeDevice,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-            if (config.pipe.hexMode) pipeDevice->setHexOutputEnabled(true);
-            *device = pipeDevice;
-            break;
-         }
 #ifdef PORTAUDIO
-         case Manager::PortAudio:
-        {
-            PortAudioDevice* api = new PortAudioDevice(format,this);
-            if (mode == QIODevice::ReadOnly) api->setDeviceId(config.portAudio.deviceIdInput,mode);
-            else if (mode == QIODevice::WriteOnly) api->setDeviceId(config.portAudio.deviceIdOutput,mode);
-            connect(api,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-
-            *device = api;
-            break;
-        }
-#else
-         case Manager::PortAudio:
-            return false;
+    devptr[Manager::PortAudio] = &(PortAudioDevice::factory);
 #endif
-         case Manager::Raw:
-            *device = rawDev;
-            break;
-         case Manager::FreqGen:
-            Freqgen *freqgen = new Freqgen(format,this);
-            connect(freqgen,SIGNAL(debug(QString)),this,SIGNAL(debug(QString)));
-            *device = freqgen;
-            break;
+    devptr[Manager::Tcp] = &(TcpDevice::factory);
+    devptr[Manager::Udp] = &(UdpDevice::factory);
+    devptr[Manager::Zero] = &(ZeroDevice::factory);
+    devptr[Manager::Pipe] = &(PipeDevice::factory);
+    devptr[Manager::FreqGen] = &(Freqgen::factory);
+
+    if (devptr.contains(target))
+    {
+        dev = devptr[target](name, format,&this->config ,this);
+        dev->setDeviceId(mode, deviceId);
+    }
+
+    else if (target == Manager::File)
+    {
+        *device = new QFile(*filePath);
+    }
+    else if (target == Manager::Raw)
+    {
+        *device = rawDev;
+    }
+
+    if (dev)
+    {
+        connect(dev, SIGNAL(debug(QString)), this, SIGNAL(debug(QString)));
+        *device = dev;
     }
     if (!*device) return false;
-
     if (mode == QIODevice::ReadOnly) connect(*device,SIGNAL(readyRead()),this,SLOT(transfer()));
 
     //if a name is available lets assign it to the new device

@@ -1,10 +1,11 @@
 #include "udpdevice.h"
+#include "manager.h"
 #include <QtNetwork/QHostInfo>
 
 //this module can work in WriteOnly mode but no others: Udp dont use a connection, it just send data over the network and... thats all
 
 UdpDevice::UdpDevice(const QString host, const int port, AudioFormat *format, const bool sendConfig, QObject *parent) :
-    QIODevice(parent)
+    ModuleDevice(parent)
 {
     this->host= host;
     this->port = port;
@@ -21,7 +22,7 @@ bool UdpDevice::open(OpenMode mode) {
             QString name = this->objectName();
             if (name.isEmpty()) name = QHostInfo::localHostName();
 
-            QIODevice::open(mode);
+            ModuleDevice::open(mode);
             QByteArray specs = format->getFormatTextInfo().toLocal8Bit();
             specs.append(" name:" + name);
             sock->write(specs);
@@ -47,7 +48,7 @@ qint64 UdpDevice::readData(char *data, qint64 maxlen) {
     return maxlen;
 }
 void UdpDevice::close() {
-    QIODevice::close();
+    ModuleDevice::close();
     if (sock->isOpen()) sock->close();
     say("device closed");
 }
@@ -56,5 +57,16 @@ void UdpDevice::say(const QString message) {
     qDebug() << "UdpDevice : " + message;
 #endif
     emit(debug("UdpDevice: " + message));
+}
+
+ModuleDevice* UdpDevice::factory(QString name, AudioFormat *format, void *userData, QObject *parent)
+{
+    Manager::userConfig *config;
+    UdpDevice           *dev;
+
+    config = (Manager::userConfig*) userData;
+    dev = new UdpDevice(config->network.host, config->network.port, format, true, parent);
+    dev->setObjectName(name);
+    return dev;
 }
 

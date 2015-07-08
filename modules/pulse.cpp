@@ -1,6 +1,7 @@
 #ifdef PULSE
 
 #include "pulse.h"
+#include "manager.h"
 
 #include <pulse/simple.h>
 #include <pulse/error.h>
@@ -42,7 +43,9 @@ void PulseDevice::testSlot() {
     emit(readyRead());
 }
 
-PulseDevice::PulseDevice(const QString name, const QString target, AudioFormat *format, QObject *parent) {
+PulseDevice::PulseDevice(const QString name, const QString target, AudioFormat *format, QObject *parent) :
+    ModuleDevice(parent)
+{
     this->parent = parent;
     say("init : start");
     say("requested format: channels:" + QString::number(format->getChannelsCount()) + " sampleRate:" + QString::number(format->getSampleRate()) + " sampleSize:" + QString::number(format->getSampleSize()));
@@ -76,7 +79,7 @@ PulseDevice::~PulseDevice() {
 }
 void PulseDevice::close() {
     emit(aboutToClose());
-    QIODevice::close();
+    ModuleDevice::close();
     if (s) {
         say("closing playback");
         //deleting the unplayed buffer
@@ -131,7 +134,7 @@ void PulseDevice::say(const QString message) {
     emit(debug("Pulse: " + message));
 }
 bool PulseDevice::open(OpenMode mode) {
-    QIODevice::open(mode);
+    ModuleDevice::open(mode);
     say("opening device");
 
     if (mode == QIODevice::ReadOnly) {
@@ -220,6 +223,13 @@ bool PulseDevice::prepare(OpenMode mode, pa_simple **pulse) {
     return true;
 }
 
+ModuleDevice* PulseDevice::factory(QString name, AudioFormat *format, void *userData, QObject *parent)
+{
+    Manager::userConfig *config;
+
+    config = (Manager::userConfig*) userData;
+    return new PulseDevice(name, config->pulse.target, format, parent);
+}
 
 qint64 PulseDevice::bytesAvailable() {
     return QIODevice::bytesAvailable() + readBuffer->getAvailableBytesCount();

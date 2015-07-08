@@ -2,6 +2,7 @@
 
 #include "pulsedeviceasync.h"
 #include "audioformat.h"
+#include "manager.h"
 
 #include <pulse/pulseaudio.h>
 #include <pulse/error.h>
@@ -30,8 +31,8 @@
  * pour la lecture il n'est pas recomandé d'appeler readData sans avoir préalablement recu un signal readyRead()
  */
 
-PulseDeviceASync::PulseDeviceASync(AudioFormat *format,const QString serverHost,QObject *parent) :
-    QIODevice(parent)
+PulseDeviceASync::PulseDeviceASync(AudioFormat *format, const QString serverHost, QObject *parent) :
+    ModuleDevice(parent)
 {
     say("init start");
     this->format = format;
@@ -291,7 +292,7 @@ bool PulseDeviceASync::open(OpenMode mode) {
      * une fois créé et connecté, il crééra un stream via makeStream
      * alors la classe sera utilisable, il est aussi possible de vérifier si la classe est prete en attendant le signal readyWrite();
     */
-    QIODevice::open(mode);
+    ModuleDevice::open(mode);
     return true;
 }
 bool PulseDeviceASync::isValidSampleSepcs() {
@@ -338,7 +339,7 @@ qint64 PulseDeviceASync::writeData(const char *data, qint64 len) {
     return result;
 }
 void PulseDeviceASync::close() {
-    QIODevice::close();
+    ModuleDevice::close();
     say("closed");
 }
 void PulseDeviceASync::say(const QString message) {
@@ -477,7 +478,7 @@ void PulseDeviceASync::setObjectName(const QString &name) {
     /* je surclasse cette fonction pour renomer le flux en meme temps que l'objet
      * ainsi on s'y retrouve plus facilement dans les flux sur pulseaudio dans le controleur de volume
      */
-    QIODevice::setObjectName(name);
+    ModuleDevice::setObjectName(name);
     if (stream) {
         pa_stream_set_name(stream,name.toLocal8Bit().data(),NULL,NULL);
         say("renaming stream to: " + name);
@@ -503,6 +504,17 @@ void PulseDeviceASync::stream_read_callback(pa_stream *stream, size_t len, void 
     if (result < 0) p->say("error while reading audio from record stream");
     else if (!p->readBuffer->append(data,availableBytes)) p->say("error: unable to add audio to read buffer");
     pa_stream_drop(stream);
+}
+
+ModuleDevice* PulseDeviceASync::factory(QString name, AudioFormat *format, void *userData, QObject *parent)
+{
+    PulseDeviceASync    *dev;
+    Manager::userConfig *config;
+
+    config = (Manager::userConfig*) userData;
+    dev = new PulseDeviceASync(format, config->pulse.target, parent);
+    dev->setObjectName(name);
+    return dev;
 }
 
 #endif
