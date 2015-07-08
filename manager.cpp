@@ -94,7 +94,7 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
 
     if (devptr.contains(target))
     {
-        dev = devptr[target](name, format,&this->config ,this);
+        dev = devptr[target](name, format, &this->config ,this);
         dev->setDeviceId(mode, deviceId);
     }
 
