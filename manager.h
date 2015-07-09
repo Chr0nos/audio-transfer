@@ -42,8 +42,6 @@ class Manager : public QObject
 {
     Q_OBJECT
 public:
-
-
     enum Mode {
         File = 0,
         Device = 1,
@@ -123,6 +121,15 @@ public:
     static QString getStringFromMode(const Manager::Mode *mode);
 
 private:
+    //pointer of function
+    typedef ModuleDevice* (*FactoryFct_t)(QString, AudioFormat*, void*, QObject*);
+    struct prepair_cfg
+    {
+        QString         name;
+        Manager::Mode   target;
+        QIODevice       *rawDev;
+        int             deviceId;
+    };
     userConfig config;
     bool openInput();
     bool openOutput();
@@ -136,6 +143,8 @@ private:
     bool prepare(QIODevice::OpenModeFlag mode, QIODevice **device);
     void say(const QString message);
     bool transferChecks();
+    void init_cfg(QIODevice::OpenModeFlag mode, prepair_cfg* cfg);
+    void init_devptr(QMap<Manager::Mode, FactoryFct_t> *devptr);
 
 signals:
     void errors(const QString error);

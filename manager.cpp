@@ -39,16 +39,68 @@ Manager::~Manager()
     delete(format);
 }
 
-//pointer of function
-typedef ModuleDevice* (*FactoryFct_t)(QString, AudioFormat*, void*, QObject*);
+void Manager::init_cfg(QIODevice::OpenModeFlag mode, prepair_cfg *cfg)
+{
+    /*
+    ** this method configure the *cfg pointer
+    ** cfg is used to be passed to modules factory method
+    ** this method is called exclusively by this->prepare();
+    */
+    cfg->rawDev = NULL;
+    cfg->target = Manager::None;
+    cfg->deviceId = 0;
+    if (mode == QIODevice::ReadOnly)
+    {
+        cfg->target = this->config.modeInput;
+        cfg->deviceId = this->config.devices.input;
+        config.file.filePath = &this->config.file.input;
+        cfg->rawDev = this->config.raw.devIn;
+        if (!this->config.devicesNames.input.isEmpty()) cfg->name = this->config.devicesNames.input;
+    }
+    else if (mode == QIODevice::WriteOnly)
+    {
+        cfg->target = this->config.modeOutput;
+        cfg->deviceId = this->config.devices.output;
+        this->config.file.filePath = &this->config.file.output;
+        cfg->rawDev = this->config.raw.devOut;
+        if (!this->config.devicesNames.output.isEmpty()) cfg->name = this->config.devicesNames.output;
+    }
+}
+
+void Manager::init_devptr(QMap<Manager::Mode, FactoryFct_t> *devptr)
+{
+    /*
+    ** this method is literaly the heart of this class:
+    ** it initialise all pointers on factory functions
+    ** each module MUST be declared here
+    */
+#ifdef MULTIMEDIA
+    (*devptr)[Manager::Device] = &(NativeAudio::factory);
+#endif
+#ifdef ASIO
+    (*devptr)[Manager::AsIO] = &(AsioDevice::factory);
+#endif
+#ifdef PULSE
+    (*devptr)[Manager::PulseAudio] = &(PulseDevice::factory);
+#endif
+#ifdef PULSEASYNC
+    (*devptr)[Manager::PulseAudioAsync] = &(PulseDeviceASync::factory);
+#endif
+#ifdef PORTAUDIO
+    (*devptr)[Manager::PortAudio] = &(PortAudioDevice::factory);
+#endif
+    (*devptr)[Manager::Tcp] = &(TcpDevice::factory);
+    (*devptr)[Manager::Udp] = &(UdpDevice::factory);
+    (*devptr)[Manager::Zero] = &(ZeroDevice::factory);
+    (*devptr)[Manager::Pipe] = &(PipeDevice::factory);
+    (*devptr)[Manager::FreqGen] = &(Freqgen::factory);
+    (*devptr)[Manager::File] = &(FileDevice::factory);
+}
 
 bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
 {
+    prepair_cfg     cfg;
     ModuleDevice    *dev;
-    QString         name;
-    Manager::Mode   target;
-    QIODevice       *rawDev;
-    int             deviceId;
     QMap<Manager::Mode, FactoryFct_t> devptr;
 
     if ((device) && ((*device)))
@@ -57,58 +109,20 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
         delete(*device);
     }
     dev = NULL;
-    rawDev = NULL;
     *device = NULL;
-    target = Manager::None;
-    deviceId = 0;
+
     config.file.filePath = NULL;
+    this->init_cfg(mode, &cfg);
+    this->init_devptr(&devptr);
 
-    if (mode == QIODevice::ReadOnly)
+    if (devptr.contains(cfg.target))
     {
-        target = config.modeInput;
-        deviceId = config.devices.input;
-        config.file.filePath = &config.file.input;
-        rawDev = config.raw.devIn;
-        if (!config.devicesNames.input.isEmpty()) name = config.devicesNames.input;
+        dev = devptr[cfg.target](cfg.name, format, &this->config ,this);
+        dev->setDeviceId(mode, cfg.deviceId);
     }
-    else if (mode == QIODevice::WriteOnly)
+    else if (cfg.target == Manager::Raw)
     {
-        target = config.modeOutput;
-        deviceId = config.devices.output;
-        config.file.filePath = &config.file.output;
-        rawDev = config.raw.devOut;
-        if (!config.devicesNames.output.isEmpty()) name = config.devicesNames.output;
-    }
-#ifdef MULTIMEDIA
-    devptr[Manager::Device] = &(NativeAudio::factory);
-#endif
-#ifdef ASIO
-    devptr[Manager::AsIO] = &(AsioDevice::factory);
-#endif
-#ifdef PULSE
-    devptr[Manager::PulseAudio] = &(PulseDevice::factory);
-#endif
-#ifdef PULSEASYNC
-    devptr[Manager::PulseAudioAsync] = &(PulseDeviceASync::factory);
-#endif
-#ifdef PORTAUDIO
-    devptr[Manager::PortAudio] = &(PortAudioDevice::factory);
-#endif
-    devptr[Manager::Tcp] = &(TcpDevice::factory);
-    devptr[Manager::Udp] = &(UdpDevice::factory);
-    devptr[Manager::Zero] = &(ZeroDevice::factory);
-    devptr[Manager::Pipe] = &(PipeDevice::factory);
-    devptr[Manager::FreqGen] = &(Freqgen::factory);
-    devptr[Manager::File] = &(FileDevice::factory);
-
-    if (devptr.contains(target))
-    {
-        dev = devptr[target](name, format, &this->config ,this);
-        dev->setDeviceId(mode, deviceId);
-    }
-    else if (target == Manager::Raw)
-    {
-        *device = rawDev;
+        *device = cfg.rawDev;
     }
 
     if (dev)
@@ -120,10 +134,10 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
     if (mode == QIODevice::ReadOnly) connect(*device, SIGNAL(readyRead()), this, SLOT(transfer()));
 
     //if a name is available lets assign it to the new device
-    if (!name.isEmpty()) (**device).setObjectName(name);
+    if (!cfg.name.isEmpty()) (**device).setObjectName(cfg.name);
 
     //in raw mode: we just dont open the device
-    if (target == Manager::Raw) return true;
+    if (cfg.target == Manager::Raw) return true;
     return (**device).open(mode);
 }
 
