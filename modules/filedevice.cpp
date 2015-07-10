@@ -22,9 +22,20 @@ FileDevice::~FileDevice()
 
 bool FileDevice::open(OpenMode mode)
 {
+    if (this->file->exists())
+    {
+        say("overwriting the existing file");
+        if (!this->file->remove())
+        {
+            say("unable to remove the file");
+            emit(error(1, "unable to remove the file: check perms"));
+            return false;
+        }
+    }
     if (this->file->open(mode))
     {
         ModuleDevice::open(mode);
+        say("file is now open and ready");
         return true;
     }
     return false;
@@ -58,13 +69,12 @@ qint64 FileDevice::writeData(const char *data, qint64 len)
 
     if (!this->file->isWritable()) return -1;
     wrote = this->file->write(data, len);
-    //this->writeWaveHeader();
+    if (wrote) this->writeWaveHeader();
     return wrote;
 }
 void FileDevice::say(const QString message)
 {
-    (void) message;
-    //emit(debug("FileDevice: " + message));
+    emit(debug("FileDevice: " + message));
 }
 
 void FileDevice::writeWaveHeader()
@@ -83,7 +93,7 @@ void FileDevice::writeWaveHeader()
     header.append("WAVE");                                                       //WAV description header
     header.append("fmt ");                                                       //format description header
     header.append(16);                                                           //size of WAVE section chunck
-    header.append(010);                                                          //PCM
+    header.append(01);                                                           //PCM
     header.append(this->format->getChannelsCount());                             //channels
     header.append(this->format->getSampleRate());                                //samples per second
     header.append(this->format->getBitrate());                                   //bytes per seconds
