@@ -117,7 +117,7 @@ void User::sendSpecs()
     ** called by: this->start();
     */
     QByteArray specs = mc.format->getFormatTextInfo().toLocal8Bit();
-    specs.append("afk:");
+    specs.append(" afk:");
     specs.append(QString::number(checkInterval));
     this->send(&specs);
 }
