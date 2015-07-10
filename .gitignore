@@ -1,0 +1,6 @@
+*.o
+moc_*
+Makefile
+audio-transfer
+audio-transfer-client.pro.user*
+
