@@ -45,8 +45,7 @@ contains(DEFINES,GUI) {
         ui/graphicgenerator.h \
         ui/connector.h
 
-    FORMS    += ui/mainwindow.ui \
-        ui/soundanalyser.ui
+    FORMS    += ui/mainwindow.ui
 }
 
 SOURCES += main.cpp\

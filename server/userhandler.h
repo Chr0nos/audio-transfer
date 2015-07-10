@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QList>
+#include <QAbstractSocket>
 #include "server/user.h"
 #include "server/security/serversecurity.h"
 #include "server/serversocket.h"

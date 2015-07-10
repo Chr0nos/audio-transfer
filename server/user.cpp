@@ -16,7 +16,7 @@
 ** the manager
 */
 
-User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
+User::User(QAbstractSocket *socket, ServerSocket::type type, QObject *parent) :
     QObject(parent)
 {
     this->ini = qobject_cast<UserHandler*>(this->parent())->getIni();
@@ -154,6 +154,7 @@ User::~User()
         if (tcp->isOpen()) tcp->close();
         tcp->disconnect();
         tcp->deleteLater();
+        this->sock = NULL;
     }
     //in udp you MUST dont close the socket.
     if (this->flowChecker)
@@ -161,12 +162,14 @@ User::~User()
         this->flowChecker->stop();
         this->flowChecker->disconnect();
         delete(this->flowChecker);
+        this->flowChecker = NULL;
     }
     if (this->manager)
     {
         this->manager->stop();
         this->manager->disconnect();
         delete(this->manager);
+        this->manager = NULL;
     }
     if (this->mutex)
     {
@@ -490,27 +493,12 @@ void User::send(QByteArray *data)
 {
     /*
     ** this method is used to send data from the server
-    ** to the client, in threaded mode this method does nothing in threaded
-    ** mode for now for udp connections (tcp are ok because on same thread as user)
+    ** to the client, in threaded mode this method does nothing in threaded udp
     */
-    QTcpSocket *tcp;
-    QUdpSocket *udp;
-    quint64 size;
 
-    data->append((char) 10);
-    size = data->size();
-    if (sockType == ServerSocket::Tcp)
-    {
-        tcp = (QTcpSocket*) this->sock;
-        if (tcp->isWritable()) tcp->write(data->data(), size);
-    }
-    else
-    {
-        udp = (QUdpSocket*) this->sock;
-        if (this->isThreaded) return;
-        else if ((!udp) || (!udp->isWritable())) return;
-        udp->write(data->data(), size);
-    }
+    if ((this->sockType == ServerSocket::Udp) && (this->isThreaded)) return;
+    if ((!this->sock) || (!this->sock->isWritable())) return;
+    this->sock->write(data->data(), data->size());
 }
 
 void User::kill(const QString reason)

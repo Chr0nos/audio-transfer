@@ -27,7 +27,7 @@ User* UserHandler::createUser(QObject *socket, ServerSocket::type type, QString 
         threads = true;
     }
 
-    user = new User(socket, type, this);
+    user = new User((QAbstractSocket*) socket, type, this);
     if (!user)
     {
         say("error: cannot create new user: failed to allocate memory");
@@ -79,7 +79,8 @@ void UserHandler::sockClose(User *user) {
 
     say("deleting user: " + user->objectName());
     user->disconnect();
-    delete(user);
+    user->deleteLater();
+    //delete(user);
     //re-assign the pointer value to NULL just in case
     user = NULL;
     //showing user actualy online and stats

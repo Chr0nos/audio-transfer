@@ -133,3 +133,7 @@ QString ServerSocket::typeToString(ServerSocket::type type)
     }
     return QString("Unknow");
 }
+QObject* ServerSocket::getSocketPointer()
+{
+    return this->srv;
+}

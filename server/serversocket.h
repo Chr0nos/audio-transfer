@@ -20,6 +20,7 @@ public:
     QUdpSocket* getUdpSocket();
     type getServerType();
     static QString typeToString(ServerSocket::type type);
+    QObject *getSocketPointer();
 private:
     QObject *srv;
     type currentType;

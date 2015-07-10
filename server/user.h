@@ -6,6 +6,7 @@
 #include <QMutex>
 #include <QTime>
 #include <QByteArray>
+#include <QAbstractSocket>
 
 #include "manager.h"
 #include "audioformat.h"
@@ -18,7 +19,7 @@ class User : public QObject
 {
     Q_OBJECT
 public:
-    explicit User(QObject *socket,ServerSocket::type type, QObject *parent = 0);
+    explicit User(QAbstractSocket *socket,ServerSocket::type type, QObject *parent = 0);
     ~User();
     void setFormat(const AudioFormat* format);
     QString getUserName();
@@ -36,7 +37,7 @@ private:
     bool readUserConfig(const QByteArray *data);
     bool isPossibleConfigLine(const char* input, int lenght);
     void makeSpeedStatus();
-    QObject *sock;
+    QAbstractSocket *sock;
     Manager *manager;
     Manager::userConfig mc;
     quint64 bytesRead;

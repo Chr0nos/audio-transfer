@@ -163,7 +163,7 @@ User* ServerMain::createUser(QHostAddress *sender)
         say("rejected data from: " + sender->toString());
         return 0;
     }
-    say("adding udp user: " + sender->toString());
+    say("adding udp user: " + sender->toString());    
     return this->users->createUser(this->srv, ServerSocket::Udp, sender->toString());
 }
 
