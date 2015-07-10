@@ -21,20 +21,20 @@ User* UserHandler::createUser(QObject *socket, ServerSocket::type type, QString 
 {
     User* user;
 
-    threads = false;
+    this->threads = false;
     if (this->getIni()->getValue("general", "threads").toInt())
     {
-        threads = true;
+        this->threads = true;
     }
 
-    user = new User((QAbstractSocket*) socket, type, this);
+    user = new User(socket, type, this);
     if (!user)
     {
         say("error: cannot create new user: failed to allocate memory");
         return 0;
     }
     connect(user, SIGNAL(sockClose(User*)), this, SLOT(sockClose(User*)));
-    connect(user, SIGNAL(debug(QString)),this, SIGNAL(debug(QString)));
+    connect(user, SIGNAL(debug(QString)), this, SIGNAL(debug(QString)));
     connect(user, SIGNAL(kicked()), this, SLOT(kicked()));
     user->setObjectName(userName);
     this->users.append(user);

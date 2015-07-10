@@ -16,7 +16,7 @@
 ** the manager
 */
 
-User::User(QAbstractSocket *socket, ServerSocket::type type, QObject *parent) :
+User::User(QObject *socket, ServerSocket::type type, QObject *parent) :
     QObject(parent)
 {
     this->ini = qobject_cast<UserHandler*>(this->parent())->getIni();
@@ -459,7 +459,7 @@ bool User::readUserConfigOption(const QString *key, const QString *value, const 
             kill("invalid sample rate.");
             return true;
         }
-        else mc.format->setSampleRate(*intVal);
+        else this->mc.format->setSampleRate(*intVal);
     }
     else if (*key == "samplesize") mc.format->setSampleSize(*intVal);
     else if (*key == "name")
@@ -494,11 +494,21 @@ void User::send(QByteArray *data)
     /*
     ** this method is used to send data from the server
     ** to the client, in threaded mode this method does nothing in threaded udp
+    ** because in udp mode the "socket" (in listen mode) is on a
+    ** separate thread
     */
+    QAbstractSocket *dev;
 
-    if ((this->sockType == ServerSocket::Udp) && (this->isThreaded)) return;
-    if ((!this->sock) || (!this->sock->isWritable())) return;
-    this->sock->write(data->data(), data->size());
+    if (!this->sock)  return;
+    dev = (QAbstractSocket*) this->sock;
+    if (dev->thread() != this->thread())
+    {
+        say("refusing to send: " + QString::fromLocal8Bit(data->data(), data->size()) + " : socket is on a separate thread");
+    }
+    else if (dev->isWritable())
+    {
+        dev->write(data->data(), data->size());
+    }
 }
 
 void User::kill(const QString reason)

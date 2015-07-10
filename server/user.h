@@ -19,7 +19,7 @@ class User : public QObject
 {
     Q_OBJECT
 public:
-    explicit User(QAbstractSocket *socket,ServerSocket::type type, QObject *parent = 0);
+    explicit User(QObject *socket,ServerSocket::type type, QObject *parent = 0);
     ~User();
     void setFormat(const AudioFormat* format);
     QString getUserName();
@@ -37,7 +37,7 @@ private:
     bool readUserConfig(const QByteArray *data);
     bool isPossibleConfigLine(const char* input, int lenght);
     void makeSpeedStatus();
-    QAbstractSocket *sock;
+    QObject *sock;
     Manager *manager;
     Manager::userConfig mc;
     quint64 bytesRead;

@@ -42,6 +42,7 @@ bool Readini::parseIni() {
             else if (section.isEmpty());
             else {
                 pos = line->indexOf('=');
+                fields.clear();
                 fields << line->mid(0,pos);
                 fields << line->mid(pos + 1);
                 //qDebug() << "section: " << section << "key:" << fields[0] << "value: " << fields[1];

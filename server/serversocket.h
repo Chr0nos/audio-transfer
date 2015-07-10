@@ -26,9 +26,12 @@ private:
     type currentType;
     QTextStream* out;
     void say(const QString message);
-    QTcpSocket* sockOpenTcp();
     void sockOpenUdp();
     Readini *ini;
+    QTcpServer* makeTcpServer(const int port);
+    QUdpSocket* makeUdpServer(const int port);
+    bool newConnectionCheckTcp(QTcpSocket *sock);
+
 private slots:
     void newConnection();
 signals:
