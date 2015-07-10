@@ -4,6 +4,7 @@
 #include "readini.h"
 #include "size.h"
 #include "ui/graphicgenerator.h"
+#include "ui/connector.h"
 
 #include <QtGui>
 #include <QString>
@@ -28,27 +29,33 @@ MainWindow::MainWindow(QWidget *parent) :
     manager = new Manager(this);
     timer = new QTimer(this);
     timer->setInterval(300);
-    connect(manager,SIGNAL(stoped()),this,SLOT(recStoped()));
+    /*
+    this->thread = new QThread(this);
+    this->manager->setParent(0);
+    connect(this->thread, SIGNAL(started()), this->manager, SLOT(start()));
+    connect(this->thread, SIGNAL(finished()), this->manager, SLOT(deleteLater()));
+    */
 
-    connect(ui->sourceRadioDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
-    connect(ui->sourceRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
-    connect(ui->sourceRadioZeroDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
-    connect(ui->sourceRadioPulseAudio,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
-    connect(ui->sourceRadioPortAudio,SIGNAL(clicked()),this,SLOT(refreshEnabledSources()));
-    connect(ui->destinationDeviceRadio,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
-    connect(ui->destinationRadioFile,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
-    connect(ui->destinationRadioTcp,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
-    connect(ui->destinationRadioPulseAudio,SIGNAL(clicked()),SLOT(refreshEnabledDestinations()));
-    connect(ui->destinationRadioZeroDevice,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
-    connect(ui->destinationRadioPortAudio,SIGNAL(clicked()),this,SLOT(refreshEnabledDestinations()));
+    connect(manager, SIGNAL(stoped()), this, SLOT(recStoped()));
+    connect(manager, SIGNAL(errors(QString)), this, SLOT(errors(QString)));
+    connect(manager, SIGNAL(started()), this, SLOT(started()));
+    connect(manager, SIGNAL(debug(QString)), this, SLOT(debug(QString)));
 
-    connect(manager,SIGNAL(errors(QString)),this,SLOT(errors(QString)));
-    connect(manager,SIGNAL(started()),this,SLOT(started()));
-    connect(manager,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
+    QList<QAbstractButton*> buttons;
+    buttons << ui->sourceRadioDevice << ui->sourceRadioFile
+            << ui->sourceRadioPortAudio << ui->sourceRadioZeroDevice
+            << ui->sourceRadioPulseAudio << ui->sourceRadioFile;
+    Connector::connect_buttons_sources(buttons, this);
+    buttons.clear();
+    buttons << ui->destinationDeviceRadio << ui->destinationRadioFile
+            << ui->destinationRadioPortAudio << ui->destinationRadioTcp
+            << ui->destinationRadioZeroDevice << ui->destinationRadioPulseAudio;
+    Connector::connect_buttons_destinations(buttons, this);
+
     connect(ui->samplesRates,SIGNAL(currentIndexChanged(int)),this,SLOT(refreshEstimatedBitrate()));
     connect(ui->samplesSize,SIGNAL(currentIndexChanged(int)),this,SLOT(refreshEstimatedBitrate()));
     connect(ui->channelsCount,SIGNAL(valueChanged(int)),this,SLOT(refreshEstimatedBitrate()));
-    connect(timer,SIGNAL(timeout()),this,SLOT(refreshReadedData()));
+    connect(timer, SIGNAL(timeout()), this, SLOT(refreshReadedData()));
 #ifndef PULSE
     ui->destinationRadioPulseAudio->setEnabled(false);
     ui->destinationRadioPulseAudio->hide();
@@ -94,6 +101,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    this->thread->wait(300);
+    this->thread->terminate();
+    this->thread->disconnect();
+    delete(this->thread);
     delete manager;
     delete ini;
     delete ui;
@@ -337,19 +348,20 @@ void MainWindow::refreshEnabledSources() {
 #endif
 }
 void MainWindow::refreshEnabledDestinations() {
-    ui->destinationFilePath->setEnabled(false);
-    ui->destinationPathBrowse->setEnabled(false);
-    ui->destinationTcpBufferDuration->setEnabled(false);
-    ui->destinationTcpSocket->setEnabled(false);
-    ui->destinationDeviceCombo->setEnabled(false);
-    ui->refreshOutputDevices->setEnabled(false);
-    //port audio
-    ui->destinationPortAudioList->setEnabled(false);
-    ui->refreshPortAudioDestinationButton->setEnabled(false);
+    QList<QWidget*>             widgets;
+    QList<QWidget*>::iterator   i;
 
+    widgets << ui->destinationFilePath << ui->destinationPathBrowse
+            << ui->destinationPathBrowse << ui->destinationTcpBufferDuration
+            << ui->destinationDeviceCombo << ui->refreshOutputDevices
+            << ui->destinationPortAudioList << ui->refreshPortAudioDestinationButton;
 #ifdef PULSE
-    ui->destinationPulseAudioLineEdit->setEnabled(false);
+    widgets << ui->destinationPulseAudioLineEdit;
 #endif
+    for (i = widgets.begin() ; i != widgets.end() ; i++)
+    {
+        (*i)->setEnabled(false);
+    }
 
     if (ui->destinationDeviceRadio->isChecked()) {
         ui->destinationDeviceCombo->setEnabled(true);
@@ -685,4 +697,16 @@ void MainWindow::on_actionFreqgen_triggered()
     //SoundAnalyser a(this);
     //a.exec();
     //a.show();
+}
+
+void MainWindow::on_destinationPathBrowse_clicked()
+{
+    QFileDialog d(this);
+    d.setAcceptMode(QFileDialog::AcceptSave);
+    d.show();
+    d.exec();
+    if (!d.selectedFiles().first().isEmpty())
+    {
+        ui->destinationFilePath->setText(d.selectedFiles().first());
+    }
 }

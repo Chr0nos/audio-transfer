@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QString>
 #include <QComboBox>
+#include <QThread>
 #include "manager.h"
 #include "readini.h"
 
@@ -48,6 +49,8 @@ private slots:
     void on_actionExit_triggered();
     void on_actionFreqgen_triggered();
 
+    void on_destinationPathBrowse_clicked();
+
 public slots:
     void errors(const QString error);
     void debug(const QString message);
@@ -63,6 +66,7 @@ private:
     Manager::Mode modeSource;
     Manager::Mode modeDest;
     Readini *ini;
+    QThread *thread;
     void refreshPortAudioDevices(QComboBox* target);
     void setDefaultFormats();
     QList<int> speeds;

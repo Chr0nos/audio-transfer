@@ -38,13 +38,15 @@ TEMPLATE = app
 
 contains(DEFINES,GUI) {
     SOURCES += ui/mainwindow.cpp \
-        ui/graphicgenerator.cpp
+        ui/graphicgenerator.cpp \
+        ui/connector.h
 
     HEADERS += ui/mainwindow.h \
         ui/graphicgenerator.h
 
     FORMS    += ui/mainwindow.ui \
-	ui/soundanalyser.ui
+        ui/soundanalyser.ui \
+        ui/connector.cpp
 }
 
 SOURCES += main.cpp\

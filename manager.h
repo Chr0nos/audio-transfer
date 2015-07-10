@@ -106,8 +106,6 @@ public:
 
     explicit Manager(QObject *parent = 0);
     ~Manager();
-    bool start();
-    void stop();
     #ifdef MULTIMEDIA
     static QStringList getDevicesNames(QAudio::Mode mode);
     #endif
@@ -155,6 +153,8 @@ public slots:
     void transfer();
     void devInClose();
     void devOutClose();
+    bool start();
+    void stop();
 };
 
 #endif // MANAGER_H
