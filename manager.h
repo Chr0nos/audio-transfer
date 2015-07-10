@@ -143,6 +143,7 @@ private:
     bool transferChecks();
     void init_cfg(QIODevice::OpenModeFlag mode, prepair_cfg* cfg);
     void init_devptr(QMap<Manager::Mode, FactoryFct_t> *devptr);
+    void clean_devices();
 
 signals:
     void errors(const QString error);

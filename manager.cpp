@@ -23,20 +23,33 @@ Manager::Manager(QObject *parent) :
 Manager::~Manager()
 {
     say("deleting manager");
-    if (devIn)
-    {
-        devIn->close();
-        devIn->disconnect();
-        delete(devIn);
-    }
-    if (devOut)
-    {
-        devOut->close();
-        devOut->disconnect();
-        delete(devOut);
-    }
+    this->clean_devices();
     if (buffer) delete(buffer);
     delete(format);
+}
+
+void Manager::clean_devices()
+{
+    /*
+    ** this method clean input and output devices
+    ** in order: close -> disconnect -> delete
+    */
+    QList<QIODevice**> devs;
+    QList<QIODevice**>::iterator i;
+
+    devs << &this->devIn << &this->devOut;
+    for (i = devs.begin() ; i != devs.end() ; i++)
+    {
+        say("checking for clean devices");
+        if ((*i) && (**i))
+        {
+            say("cleaning device: " + (**i)->objectName());
+            (**i)->close();
+            (**i)->disconnect();
+            delete(*i);
+        }
+    }
+    say("clean devices: done");
 }
 
 void Manager::init_cfg(QIODevice::OpenModeFlag mode, prepair_cfg *cfg)
