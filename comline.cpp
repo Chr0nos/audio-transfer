@@ -189,12 +189,15 @@ void Comline::makeServer()
     */
     QStringList configPath;
     QString goodConfigFilePath;
+    Readini *ini;
+    QString proto;
 
     configPath << QDir::home().path() + "/.audio-transfer/server.ini";
     configPath << QDir::home().path() + "/.audio-transfer-server.ini";
     configPath << "/etc/audio-transfer/server.ini";
     foreach (QString filePath,configPath) {
-        if (QFile::exists(filePath)) {
+        if (QFile::exists(filePath))
+        {
             goodConfigFilePath = filePath;
             break;
         }
@@ -202,9 +205,26 @@ void Comline::makeServer()
     if (goodConfigFilePath.isEmpty()) {
         say("warning: no configuration file found !");
     }
+    else {
+        say("Loading server configuration");
+        ini = new Readini(goodConfigFilePath, this);
+        ini->parseIni();
+        /*
+        ** this part allow the protocol choice loading from the ini file
+        ** it dispend user to specify "--server-type udp" in command line
+        */
+        proto = ini->getValue("general", "proto").toLower();
+        if (proto == "tcp") this->serverType = ServerSocket::Tcp;
+        else if (proto == "udp") this->serverType = ServerSocket::Udp;
+        else this->serverType = ServerSocket::Invalid;
 
-    srv = new ServerMain(goodConfigFilePath,this);
-    connect(srv,SIGNAL(debug(QString)),this,SLOT(debug(QString)));
+        if (ini->getValue("general", "threads").toInt()) say("Threads mode is enabled");
+        delete(ini);
+        say("Configuration loaded");
+    }
+
+    srv = new ServerMain(goodConfigFilePath, this);
+    connect(srv, SIGNAL(debug(QString)), this, SLOT(debug(QString)));
 }
 #endif
 
@@ -440,8 +460,6 @@ void Comline::say(const QString message) {
     }
 }
 void Comline::loadIni() {
-    QString proto;
-
     if ((ini) && (ini->exists())) {
         //say("loading ini config file: " + ini->getFilePath());
         QStringList tcpInfo = ini->getValue("target","tcp").split(":");
@@ -449,20 +467,10 @@ void Comline::loadIni() {
             mc.network.host = tcpInfo.at(0);
             mc.network.port = tcpInfo.at(1).toInt();
         }
-
         mc.format->setCodec(ini->getValue("format","codec"));
         mc.format->setSampleRate(ini->getValue("format","sampleRate").toInt());
         mc.format->setSampleSize(ini->getValue("format","sampleSize").toInt());
         mc.format->setChannelCount(ini->getValue("format","channels").toInt());
-
-        /*
-        ** this part allow the protocol choice loading from the ini file
-        ** it dispend user to specify "--server-type udp" in command line
-        */
-        proto = this->ini->getValue("general", "proto").toLower();
-        if (proto == "tcp") this->serverType = ServerSocket::Tcp;
-        else if (proto == "udp") this->serverType = ServerSocket::Udp;
-        else this->serverType = ServerSocket::Invalid;
     }
 
 }
