@@ -35,8 +35,8 @@ bool Readini::parseIni() {
             if (!lineLen);
             //ignoring lines starting with ";" or "#"
             else if ((line->startsWith(';')) || (line->startsWith('#')));
-            else if ((line->startsWith('[')) && (line->endsWith(']'))) {
-                //qDebug() << "new section";
+            else if ((line->startsWith('[')) && (line->endsWith(']')))
+            {
                 section = line->mid(1,lineLen -2);
             }
             else if (section.isEmpty());
