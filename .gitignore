@@ -3,4 +3,7 @@ moc_*
 Makefile
 audio-transfer
 audio-transfer-client.pro.user*
+lib/
+ui_mainwindow.h
+ui_soundanalyser.h
 
