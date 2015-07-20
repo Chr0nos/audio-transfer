@@ -27,7 +27,7 @@
 #endif
 
 #ifdef ASIO
-//    #include "modules/asiodevice.h"
+    #include "modules/asiodevice.h"
 #endif
 
 #include "modules/freqgen.h"

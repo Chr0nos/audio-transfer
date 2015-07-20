@@ -15,21 +15,21 @@
 
 QT       += core gui network
 CONFIG   += c++11
-DEFINES += PULSE PULSEASYNC PORTAUDIO COMLINE SERVER GUI MULTIMEDIA
+DEFINES += PULSE PULSEASYNC PORTAUDIO COMLINE SERVER GUI MULTIMEDIA ASIO
 #DEFINES += GUI
 
 
 contains(DEFINES, ASIO)
 {
 	HEADERS += modules/asiodevice.h \
-    modules/moduledevice.h \
-    modules/filedevice.h
-        #lib/ASIOSDK2.3/common/asio.h
+                   modules/moduledevice.h \
+                   modules/filedevice.h
 
         SOURCES += modules/asiodevice.cpp \
-    modules/moduledevice.cpp \
-    modules/filedevice.cpp
-        #lib/ASIOSDK2.3/common/asio.cpp
+                   modules/moduledevice.cpp \
+                   modules/filedevice.cpp
+
+        LIBS += /home/adamaru/projets/audio-transfer/audio-transfer-client/lib/ASIOSDK2.3/common/asio.h
 }
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
