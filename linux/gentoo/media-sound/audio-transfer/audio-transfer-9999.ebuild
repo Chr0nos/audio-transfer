@@ -16,7 +16,7 @@ append-cppflags "-DMULTIMEDIA"
 
 RDEPEND="qt5? ( dev-qt/qtcore:5
                 dev-qt/qtnetwork:5
-                dev-qt/qtmultimedia:5
+				dev-qt/qtmultimedia:5[widgets]
 	)
         qt4? (  dev-qt/qtcore:4
                 dev-qt/qtmultimedia:4
