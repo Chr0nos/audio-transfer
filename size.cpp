@@ -5,14 +5,21 @@ Size::Size()
 {
 }
 
-QString Size::getWsize(const quint64 size, const int steps) {
+QString Size::getWsize(quint64 size, const unsigned int steps)
+{
     //this function convert a bytes size into an human readble size
-    double isize = size;
     QStringList keys = Size::getUnits();
     int n;
-    for (n = 0 ; isize >= steps ; n++) isize /= steps;
-    if (n >= keys.count()) n = keys.count() -1;
-    return QString::number(isize,10,2) + keys.at(n);
+
+    for (n = 0 ; size >= steps ; n++)
+	{
+		size /= steps;
+	}
+    if (n >= keys.count())
+	{
+		n = keys.count() -1;
+	}
+    return QString::number(size,10,2) + keys.at(n);
 }
 
 quint64 Size::getRsize(const QString wsize) {

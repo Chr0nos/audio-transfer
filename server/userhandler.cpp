@@ -12,9 +12,7 @@
 UserHandler::UserHandler(QObject *parent) :
     QObject(parent)
 {
-    //bascicly: bytesRead store all the "offline" users data read (after they disconnected)
     this->bytesRead = 0;
-
 }
 
 User* UserHandler::createUser(QObject *socket, ServerSocket::type type, QString userName)
@@ -26,7 +24,6 @@ User* UserHandler::createUser(QObject *socket, ServerSocket::type type, QString 
     {
         this->threads = true;
     }
-
     user = new User(socket, type, this);
     if (!user)
     {
@@ -70,20 +67,14 @@ void UserHandler::say(const QString message) {
 void UserHandler::sockClose(User *user) {
     const int pos = users.indexOf(user);
 
-    if (pos < 0) return;
-    //Adding the total bytes read of this user to the main counter (offline counter)
+    if (pos < 0)
+        return ;
     bytesRead += user->getBytesCount();
-
-    //deleteing the user from the user list
     users.removeAt(pos);
-
     say("deleting user: " + user->objectName());
     user->disconnect();
     user->deleteLater();
-    //delete(user);
-    //re-assign the pointer value to NULL just in case
     user = NULL;
-    //showing user actualy online and stats
     showUsersOnline();
 }
 
@@ -95,20 +86,23 @@ void UserHandler::showUsersOnline()
      ** an udp user is just an user who wasent kicked due to
      ** inactivity
      */
-    int count;
-    User *x;
-    QList<User*>::Iterator i;
+    int                     count;
+    User                    *x;
+    QList<User*>::Iterator  i;
 
     say("current online users:");
     count = 0;
     for (i = users.begin() ; i != users.end() ; i++)
     {
         x = (User*) *i;
-        say(QString::number(count++) + ": " + x->objectName() + QString(" -> readed: ") + Size::getWsize(x->getBytesCount()));
+        say(QString::number(count++) + ": " + x->objectName() +
+            QString(" -> readed: ") + Size::getWsize(x->getBytesCount()));
     }
     say("total readed data: " + Size::getWsize(getBytesRead()));
-    if (!count) say("no user(s) online.");
-    else say("end of list");
+    if (!count)
+        say("no user(s) online.");
+    else
+        say("end of list");
 }
 
 void UserHandler::killAll(const QString reason)
@@ -120,9 +114,7 @@ void UserHandler::killAll(const QString reason)
     QList<User*>::Iterator i;
 
     for (i = users.begin() ; i != users.end() ; i++)
-    {
         (*i)->kill(reason);
-    }
 }
 
 bool UserHandler::contains(const QObject *socket)
@@ -158,7 +150,8 @@ int UserHandler::indexOf(const QObject *socket)
     while (i != users.end())
     {
         pos++;
-        if ((*i)->getSocketPointer() == socket) return pos;
+        if ((*i)->getSocketPointer() == socket)
+            return pos;
         i++;
     }
     return -1;
@@ -173,7 +166,8 @@ int UserHandler::indexOf(const User *user)
     for (i = users.begin() ; i != users.end() ; i++)
     {
         pos++;
-        if (*i == user) return pos;
+        if (*i == user)
+            return pos;
     }
     return -1;
 }
@@ -186,7 +180,8 @@ User* UserHandler::at(const int pos)
     ** if the requested position is invalid, the function will
     ** return null
     */
-    if (users.count() < pos) return NULL;
+    if (users.count() < pos)
+        return NULL;
     return users.at(pos);
 }
 
@@ -203,7 +198,9 @@ void UserHandler::kicked()
     ** even if the client has not closed it properly
     ** or if he was kicked
     */
-    User* user = (User*) sender();
+    User* user;
+
+    user = (User*) sender();
     sockClose(user);
 }
 
@@ -221,14 +218,12 @@ quint64 UserHandler::getBytesReadForConnected()
     ** this method return the total readed size
     ** so all user readed size combined
     */
-    quint64 size;
+    quint64                 size;
+    QList<User*>::iterator  i;
 
     size = 0;
-    QList<User*>::iterator i;
     for (i = users.begin() ; i != users.end() ; i++)
-    {
         size += (*i)->getBytesCount();
-    }
     return size;
 }
 
@@ -244,14 +239,12 @@ int UserHandler::count()
 
 User* UserHandler::last()
 {
-    User *user;
-    int count;
+    User    *user;
+    int     count;
 
     user = 0;
     count = users.count();
     if (count)
-    {
         user = users.at(count -1);
-    }
     return user;
 }

@@ -4,16 +4,14 @@
 
 #include <QObject>
 #include <QIODevice>
-//#include "./lib/ASIOSDK2.3/common/asio.h"
+#include "moduledevice.h"
 
-class AsioDevice : public QIODevice
+#include "./lib/ASIOSDK2.3/common/asio.h"
+
+class AsioDevice : public ModuleDevice
 {
     Q_OBJECT
-private:
-    ASIODriverInfo *info;
-    bool start();
-    void say(const QString message);
-    static ModuleDevice *factory(QString name, AudioFormat *format, void *userData, QObject *parent);
+
 public:
     AsioDevice(QObject *parent);
     bool open(OpenMode mode);
@@ -21,6 +19,11 @@ public:
     qint64 writeData(const char *data, qint64 len);
     int getAvailableChannels();
     void close();
+    static ModuleDevice* factory(QString name, AudioFormat *format, void *userData, QObject *parent);
+private:
+    ASIODriverInfo *info;
+    bool start();
+    void say(const QString message);
 signals:
     void debug(QString message);
 };

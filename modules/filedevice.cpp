@@ -92,8 +92,8 @@ void FileDevice::writeWaveHeader()
     header.append(pos - 8);                                                      //file size not including header
     header.append("WAVE");                                                       //WAV description header
     header.append("fmt ");                                                       //format description header
-    header.append(16);                                                           //size of WAVE section chunck
-    header.append(01);                                                           //PCM
+    header.append((char) 16);                                                     //size of WAVE section chunck
+    header.append((char) 01);                                                    //PCM
     header.append(this->format->getChannelsCount());                             //channels
     header.append(this->format->getSampleRate());                                //samples per second
     header.append(this->format->getBitrate());                                   //bytes per seconds

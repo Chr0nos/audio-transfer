@@ -1,8 +1,11 @@
 #ifdef ASIO
 #include "asiodevice.h"
-//#include "./lib/ASIOSDK2.3/common/asio.h"
+#include "moduledevice.h"
 
-AsioDevice::AsioDevice(QObject *parent)
+#include "./lib/ASIOSDK2.3/common/asio.h"
+
+AsioDevice::AsioDevice(QObject *parent) :
+    ModuleDevice(parent)
 {
     (void) parent;
     this->info = NULL;
@@ -30,21 +33,26 @@ bool AsioDevice::open(OpenMode mode)
 
 int AsioDevice::getAvailableChannels()
 {
-    //return ASIOGetChannels();
+    long        input;
+    long        output;
+    ASIOError   err;
+
+    input = 0;
+    output = 0;
+    err = ASIOGetChannels(&input, &output);
     return 0;
 }
 
 bool AsioDevice::start()
 {
-    ASIOError err;
+    ASIOError            err;
+    ASIODriverInfo      *info;
 
-    this->info = new ASIODriverInfo();
-    this->info->asioVersion = 0;
-    this->info->name[0] = '\0';
-    this->info->errorMessage[0] = '\0';
+    info = new ASIODriverInfo();
+    err = ASIOInit(this->info);
     say("Asio version: " + QString::number(info->asioVersion));
     say("Asio Name: " + QString(info->name));
-    err = ASIOInit(this->info);
+    this->info = info;
     (void) err;
     return true;
 }
@@ -65,13 +73,15 @@ void AsioDevice::say(const QString message)
     emit(debug("AsioDevice: " + message));
 }
 
-ModuleDevice* AsioDevice::factory(QString name, AudioFormat *format, void *userData, QObject *parent);
+ModuleDevice* AsioDevice::factory(QString name, AudioFormat *format, void *userData, QObject *parent)
 {
     AsioDevice *dev;
+
     (void) userData;
     (void) format;
     dev = new AsioDevice(parent);
     dev->setObjectName(name);
     return dev;
 }
+
 #endif

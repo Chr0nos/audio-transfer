@@ -157,6 +157,9 @@ void NativeAudio::stateChanged(QAudio::State state) {
         case QAudio::IdleState:
             say("changed state to idle");
             break;
+		case QAudio::InterruptedState:
+			say("interupted");
+			break;
     }
 }
 

@@ -70,7 +70,7 @@ void FlowChecker::check()
         //in case of an overflow attemps, it's realy more dangerous than underflow so: banning the user for 2 mins
         if (warningCount++ > 3) {
             stop();
-            emit(ban("overflow",120000));
+            emit(ban("overflow", 120000));
             return;
         }
     }

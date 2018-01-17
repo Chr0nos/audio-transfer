@@ -320,7 +320,7 @@ void User::initUser()
     if (!this->managerStarted)
     {
         say("failed to start manager");
-        emit(sockClose(this));
+        kill("failed to start manager");
         return;
     }
     this->initFlowChecker();

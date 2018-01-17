@@ -123,41 +123,36 @@ bool Manager::prepare(QIODevice::OpenModeFlag mode, QIODevice **device)
     }
     dev = NULL;
     *device = NULL;
-
     config.file.filePath = NULL;
     this->init_cfg(mode, &cfg);
     this->init_devptr(&devptr);
-
     if (devptr.contains(cfg.target))
     {
         dev = devptr[cfg.target](cfg.name, format, &this->config ,this);
         dev->setDeviceId(mode, cfg.deviceId);
     }
     else if (cfg.target == Manager::Raw)
-    {
         *device = cfg.rawDev;
-    }
-
     if (dev)
     {
         connect(dev, SIGNAL(debug(QString)), this, SIGNAL(debug(QString)));
         *device = dev;
     }
-    if (!*device) return false;
-    if (mode == QIODevice::ReadOnly) connect(*device, SIGNAL(readyRead()), this, SLOT(transfer()));
-
-    //if a name is available lets assign it to the new device
-    if (!cfg.name.isEmpty()) (**device).setObjectName(cfg.name);
-
+    if (!*device)
+        return false;
+    if (mode == QIODevice::ReadOnly)
+        connect(*device, SIGNAL(readyRead()), this, SLOT(transfer()));
+    if (!cfg.name.isEmpty())
+        (**device).setObjectName(cfg.name);
     //in raw mode: we just dont open the device
-    if (cfg.target == Manager::Raw) return true;
+    if (cfg.target == Manager::Raw)
+        return true;
     return (**device).open(mode);
 }
 
 bool Manager::start()
 {
     say("Starting manager...");
-
     if (!prepare(QIODevice::WriteOnly,&devOut))
     {
         emit(errors("failed to  start output"));
@@ -179,7 +174,6 @@ bool Manager::start()
         bisRecording = true;
         bytesCount = 0;
         emit(started());
-        //transfer();
         return true;
     }
     return false;
@@ -232,14 +226,14 @@ bool Manager::transferChecks()
     if ((!devOut) || (!devIn) || (!devIn->isOpen()) || (!devOut->isOpen()))
     {
         say("transfer: stoping");
-        qDebug() << "devOut: " << devOut;
-        if (!devOut) say("transfer: devOut is null");
-        else if (!devOut->isOpen()) say("manager: transfer: devOut is closed");
-
-        qDebug() << "devIn: " << devIn;
-        if (!devIn) say("transfer: devIn is null");
-        else if (!devIn->isOpen()) say("transfer: devIn is closed");
-
+        if (!devOut)
+            say("transfer: devOut is null");
+        else if (!devOut->isOpen())
+            say("manager: transfer: devOut is closed");
+        if (!devIn)
+            say("transfer: devIn is null");
+        else if (!devIn->isOpen())
+            say("transfer: devIn is closed");
         say("manager: stoping record");
         stop();
         return false;
@@ -267,22 +261,17 @@ void Manager::transfer()
     #endif
         return;
     }
-
     bytesCount += data.size();
     //in case of no buffer usage we dont copy data to buffer (better performance)
     if (!config.bufferSize)
-    {
         devOut->write(data);
-    }
     else
     {
         //if the buffer size is too big: we just drop the datas to prevent memory overflow by this buffer
         const int available = buffer->getAvailableBytesCount() + data.size();
         buffer->append(data);
         if (available >= config.bufferSize)
-        {
             devOut->write(buffer->getCurrentPosData(available));
-        }
     }
 }
 
@@ -300,18 +289,19 @@ QStringList Manager::intListToQStringList(QList<int> source)
 {
     QStringList result;
     QList<int>::iterator i;
-    for (i = source.begin();i != source.end();i++) {
+
+    for (i = source.begin() ; i != source.end() ; i++)
         result << QString::number(*i);
-    }
     return result;
 }
 
 void Manager::debugList(const QStringList list)
 {
-    int count = 0;
-    foreach (QString x,list) {
+    int count;
+
+    count = 0;
+    foreach (QString x,list)
         debug("[" + QString::number(count++) + "] " + x);
-    }
 }
 
 void Manager::devOutClose()
@@ -365,19 +355,19 @@ Manager::Mode Manager::getModeFromString(const QString *name)
     QMap<Manager::Mode,QString>::iterator i;
     QMap<Manager::Mode,QString> map = Manager::getModesMap();
     for (i = map.begin() ; i != map.end() ; i++)
-    {
-        if (*name == i.value()) return i.key();
-    }
+        if (*name == i.value())
+            return i.key();
     return Manager::None;
 }
 
 QString Manager::getStringFromMode(const Manager::Mode *mode)
 {
-    QMap<Manager::Mode,QString> map = getModesMap();
+    QMap<Manager::Mode,QString> map;
     QMap<Manager::Mode,QString>::iterator i;
+
+    map = getModesMap();
     for (i = map.begin() ; i != map.end() ; i++)
-    {
-        if (i.key() == *mode) return i.value();
-    }
+        if (i.key() == *mode)
+            return i.value();
     return QString("none");
 }

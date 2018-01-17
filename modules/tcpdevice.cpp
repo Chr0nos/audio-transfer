@@ -28,6 +28,7 @@ TcpDevice::TcpDevice(const QString host, const int port, AudioFormat *format,boo
     bSendConfig = sendConfig;
     say("init done");
 }
+
 bool TcpDevice::open(OpenMode mode) {
     say("opening device (connect)");
     say("connecting to: " + host + " on port: " + QString::number(port));
@@ -42,6 +43,7 @@ bool TcpDevice::open(OpenMode mode) {
     emit(sockClose());
     return false;
 }
+
 qint64 TcpDevice::readData(char *data, qint64 maxlen) {
     (void) data;
     if (sock->isReadable()) {
@@ -50,12 +52,14 @@ qint64 TcpDevice::readData(char *data, qint64 maxlen) {
     }
     return -1;
 }
+
 qint64 TcpDevice::writeData(const char *data, qint64 len) {
     if (sock->isWritable()) {
         return sock->write(data,len);
     }
     return -1;
 }
+
 void TcpDevice::sendFormatSpecs() {
     say("sending format specs");
     QString name = this->objectName();
@@ -66,22 +70,27 @@ void TcpDevice::sendFormatSpecs() {
     sock->write(specs);
     sock->flush();
 }
+
 void TcpDevice::sockClose() {
     say("socket closed");
     this->close();
 }
+
 void TcpDevice::sockOpen() {
    say("connected to remote server");
    if (bSendConfig) sendFormatSpecs();
 }
+
 void TcpDevice::say(const QString message) {    
     emit(debug("TcpDevice: " + message));
 }
+
 void TcpDevice::close() {
     say("closing device");
     QIODevice::close();
     sock->close();
 }
+
 void TcpDevice::stateChanged(QAbstractSocket::SocketState state) {
     switch (state) {
         case QAbstractSocket::UnconnectedState:
@@ -107,6 +116,7 @@ void TcpDevice::stateChanged(QAbstractSocket::SocketState state) {
             break;
     }
 }
+
 qint64 TcpDevice::bytesAvailable() {
     if (!sock) return 0;
     return sock->bytesAvailable() + QIODevice::bytesAvailable();
