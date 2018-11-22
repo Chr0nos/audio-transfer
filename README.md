@@ -7,7 +7,7 @@ it use audio/pcm as default format to prevent cpu usage and keep quality
 
 the bandwith consumtion for stereo 16bits 44.1khz is ~172kb/s
 
-it can handle up to 9 channels, on 32bits at 320khz (depending of the hardwore on the server)
+it can handle up to 9 channels, on 32bits at 320khz (depending of the hardware on the server)
 
 client and server are in the same application (they use the sames modules so why dont the job twice ?)
 
@@ -48,11 +48,3 @@ choose where you want compiled software
 4. edit audio-transfer-client.pro and change the "DEFINES" use
 you have to remove PORTAUDIO and PULSE
 now you can build the project as release
-
----
-
-#### get a binary
-
-Just get a [binary](http://62.210.182.55/Chr0nos/audio-transfer.zip)
-note: the build will not be recent as from source (i dont make a build on each commit)
-
